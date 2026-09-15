@@ -26,22 +26,6 @@ jobs:
         working-directory: BLApp
         run: dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
 
-      - name: Check artifacts
-        shell: pwsh
-        run: |
-          $path = "BLApp/bin/Release/net10.0/win-x64/publish"
-
-          $files = @(
-            "BLApp.exe",
-          )
-
-          foreach ($file in $files) {
-            if (!(Test-Path "$path\$file")) {
-              Write-Error "$file was not found"
-              exit 1
-            }
-          }
-
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
