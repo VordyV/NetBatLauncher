@@ -1,0 +1,78 @@
+name: Build Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+          
+  build-launcher:
+    name: Build launcher
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build
+        working-directory: BLApp
+        run: dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+
+      - name: Check artifacts
+        shell: pwsh
+        run: |
+          $path = "BLApp/bin/Release/net10.0/win-x64/publish"
+
+          $files = @(
+            "BLApp.exe",
+          )
+
+          foreach ($file in $files) {
+            if (!(Test-Path "$path\$file")) {
+              Write-Error "$file was not found"
+              exit 1
+            }
+          }
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: launcher
+          path: |
+            BLApp/bin/Release/net10.0/win-x64/publish/BLApp.exe
+          
+  release:
+    name: Add artifacts to release
+    runs-on: windows-latest
+
+    needs:
+      - build-launcher
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+    
+      - name: Download proxy
+        uses: actions/download-artifact@v4
+        with:
+          name: launcher
+          path: release
+
+      - name: Create/Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          preserve_order: true
+          overwrite_files: true
+          fail_on_unmatched_files: true
+          files: |
+            release/BLApp.exe
