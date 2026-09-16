@@ -1,0 +1,65 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignWidth="540"
+             d:DesignHeight="450"
+             Background="Transparent"
+             xmlns:u="https://irihi.tech/ursa"
+             xmlns:c="clr-namespace:NBLApp.Controls"
+             Width="540"
+             x:Class="NBLApp.Forms.SimpInst">
+	<c:Form Title="Установка игры"
+            SubTitle="BattleField 2142"
+            Width="540">
+		<c:Form.Content>
+			<StackPanel Spacing="12">
+				<TextBlock Text="Путь игры"
+                           Foreground="#B1B1B1"/>
+				<u:PathPicker Name="PathPickerGamePath"
+                              Title="OVERVIEW"
+                              UsePickerType="OpenFolder"/>
+				<TextBlock Name="TextBlockError"
+                           Text=""
+                           Foreground="#f54e4e"
+                           IsVisible="False"
+                           TextWrapping="Wrap"/>
+				<StackPanel Name="PanelProgress"
+                            Spacing="8"
+                            IsVisible="False">
+					<TextBlock Name="TextBlockStatus"
+                               Text="Установка..."
+                               Foreground="#B1B1B1"/>
+					<TextBlock Name="TextBlockSpeed"
+                               Text="Скорость: —"
+                               Foreground="#B1B1B1"/>
+					<TextBlock Name="TextBlockEta"
+                               Text="Осталось: —"
+                               Foreground="#B1B1B1"/>
+					<TextBlock Name="TextBlockOverall"
+                               Text="Общий прогресс: 0%"
+                               Foreground="#B1B1B1"/>
+					<ProgressBar Name="ProgressBarOverall"
+                                 Minimum="0"
+                                 Maximum="100"
+                                 Value="0"/>
+				</StackPanel>
+			</StackPanel>
+		</c:Form.Content>
+		<c:Form.ActionContent>
+			<StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Spacing="8">
+				<Button Name="ButtonCancel"
+                        Click="ButtonCancel_OnClick"
+                        Content="Cancel"/>
+				<Button Name="ButtonSave"
+                        Click="ButtonSave_OnClick"
+                        Content="Install"
+                        Classes="Primary"
+                        Theme="{StaticResource SolidButton}"/>
+			</StackPanel>
+		</c:Form.ActionContent>
+	</c:Form>
+</UserControl>

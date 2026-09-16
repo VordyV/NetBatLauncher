@@ -1,0 +1,30 @@
+﻿<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:NBLApp.Controls">
+    <Design.PreviewWith>
+        <controls:Form />
+    </Design.PreviewWith>
+    <Style Selector="controls|Form">
+        <!-- Set Defaults -->
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid RowDefinitions="Auto, *, Auto">
+                    <Border Grid.Row="0" Background="Black" Opacity="0.35" Height="80"/>
+                    <Border Grid.Row="0" VerticalAlignment="Center" Height="80" Padding="40 0">
+                        <StackPanel VerticalAlignment="Center" Spacing="8">
+                            <TextBlock Text="{TemplateBinding Title}" Classes="H5" Theme="{StaticResource TitleTextBlock}"/>
+                            <TextBlock Text="{TemplateBinding SubTitle}" Foreground="#B1B1B1"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Row="1" VerticalAlignment="Top" Padding="40 50">
+                        <ContentPresenter Content="{TemplateBinding Content}"/>
+                    </Border>
+                    <Border Grid.Row="2" Background="Black" Opacity="0.35" Height="80"/>
+                    <Border Grid.Row="2" VerticalAlignment="Center" Height="80" Padding="40 0">
+                        <ContentPresenter Content="{TemplateBinding ActionContent}"/>
+                    </Border>
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+</Styles>

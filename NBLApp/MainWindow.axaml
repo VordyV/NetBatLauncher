@@ -1,0 +1,23 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="450"
+        xmlns:u="https://irihi.tech/ursa"
+        xmlns:local="clr-namespace:NBLApp"
+        xmlns:c="clr-namespace:NBLApp.Controls"
+        x:DataType="local:MainWindow"
+        x:Class="NBLApp.MainWindow"
+        WindowDecorations="BorderOnly"
+        ExtendClientAreaToDecorationsHint="True"
+        Title="NBLApp">
+    <c:Window ClickHide="Window_OnClickHide" ClickMinMax="Window_OnClickMinMax" ClickClose="Window_OnClickClose">
+        <c:Window.TitleContent>
+            <TextBlock Foreground="#fcffff">NetBat2142 Launcher</TextBlock>
+        </c:Window.TitleContent>
+        <Grid>
+            <ContentControl Name="MainContent"/>
+            <u:OverlayDialogHost HostId="main"/>
+        </Grid>
+    </c:Window>
+</Window>

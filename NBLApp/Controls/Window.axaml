@@ -1,0 +1,75 @@
+﻿<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:NBLApp.Controls">
+    <Design.PreviewWith>
+        <controls:Window Width="700" Height="450"/>
+    </Design.PreviewWith>
+    <Style Selector="controls|Window">
+        <!-- Set Defaults -->
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid RowDefinitions="*">
+                    <Border Grid.Row="0">
+                        <Grid>
+                            <Border Padding="-10">
+                                <Image Stretch="UniformToFill" Source="/Assets/theme1.jpg">
+                                    <Image.Effect>
+                                        <BlurEffect Radius="18"/>
+                                    </Image.Effect>
+                                </Image>
+                            </Border>
+                            <Border>
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="50%,0%" EndPoint="50%,100%">
+                                        <GradientStop Color="#00000000" Offset="0.0"/>
+                                        <GradientStop Color="#000000" Offset="0.9"/>
+                                        <GradientStop Color="#000000" Offset="1.0"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                            </Border>
+                        </Grid>
+                    </Border>
+                    <Border Grid.Row="0" Height="40" VerticalAlignment="Top">
+                        <Grid>
+                            <Border Background="#212936" WindowDecorationProperties.ElementRole="TitleBar">
+                            </Border>
+                            <Canvas HorizontalAlignment="Right">
+                                <Polygon Points="0,10 20,50 100,50 120,10" Fill="#141821" Canvas.Top="-20" Canvas.Right="-5"/>
+                            </Canvas>
+                            <Border VerticalAlignment="Center" Padding="20 0">
+                                <StackPanel Orientation="Horizontal">
+                                    <ContentPresenter Content="{TemplateBinding TitleContent}"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Padding="0 0 20 10">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="15">
+                                    <Button Background="Transparent" Name="PART_ButtonWinHide" Padding="0">
+                                        <Button.Content>
+                                            <Image Source="/Assets/iconhide.png" Stretch="None"/>
+                                        </Button.Content>
+                                    </Button>
+                                    <Button Background="Transparent" Name="PART_ButtonWinMinMax" Padding="0">
+                                        <Button.Content>
+                                            <StackPanel>
+                                                <Image Name="ImageIconMax" Source="/Assets/iconmax.png" IsVisible="False" Stretch="None"/>
+                                                <Image Name="ImageIconMin" Source="/Assets/iconmin.png" IsVisible="True" Stretch="None"/>
+                                            </StackPanel>
+                                        </Button.Content>
+                                    </Button>
+                                    <Button Background="Transparent" Name="PART_ButtonWinClose" Padding="0">
+                                        <Button.Content>
+                                            <Image Source="/Assets/iconclose.png" Stretch="None"/>
+                                        </Button.Content>
+                                    </Button>
+                                </StackPanel>                    
+                            </Border>
+                        </Grid>
+                    </Border>
+                    <Border Grid.Row="0" Padding="0 40 0 0">
+                        <ContentPresenter Content="{TemplateBinding Content}"/>
+                    </Border>
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+</Styles>

@@ -1,0 +1,190 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignWidth="600"
+             d:DesignHeight="700"
+             xmlns:c="clr-namespace:NBLApp.Controls"
+             x:Class="NBLApp.Forms.SettingsGear">
+	<c:Form
+        Title="Настройки"
+        SubTitle="Настройки лаунчера и Battlefield 2142"
+        Width="600">
+		<c:Form.Content>
+			<ScrollViewer
+                HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Auto">
+				<StackPanel Spacing="25">
+					<StackPanel Spacing="12">
+						<TextBlock
+                            Text="НАСТРОЙКИ ЛАУНЧЕРА"
+                            Classes="H7"
+                            Theme="{StaticResource TitleTextBlock}"/>
+						<Grid
+                            ColumnDefinitions="*,220"
+                            RowDefinitions="Auto"
+                            RowSpacing="8">
+						</Grid>
+					</StackPanel>
+					<StackPanel Spacing="12">
+						<TextBlock
+                            Text="ГРАФИКА"
+                            Classes="H7"
+                            Theme="{StaticResource TitleTextBlock}"/>
+						<TextBlock
+                            Name="TextBlockVideoSettingsStatus"
+                            Text="Аккаунт игры не найден. Настройки графики недоступны."
+                            Foreground="Red"
+                            FontWeight="Bold"
+                            Opacity="0.6"
+                            FontSize="12"
+                            IsVisible="False"
+                            TextWrapping="Wrap"/>
+						<!-- Разрешение и частота -->
+						<Grid
+                            ColumnDefinitions="*,220"
+                            RowDefinitions="Auto,Auto"
+                            RowSpacing="8">
+							<TextBlock
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                Text="Разрешение"
+                                VerticalAlignment="Center"/>
+							<ComboBox
+                                Name="ComboBoxResolution"
+                                Grid.Row="0"
+                                Grid.Column="1"
+                                SelectionChanged="ComboBoxResolution_OnSelectionChanged"/>
+							<TextBlock
+                                Grid.Row="1"
+                                Grid.Column="0"
+                                Text="Частота обновления"
+                                VerticalAlignment="Center"/>
+							<ComboBox
+                                Name="ComboBoxRefreshRate"
+                                Grid.Row="1"
+                                Grid.Column="1"/>
+						</Grid>
+						<!-- Качество -->
+						<Grid
+                            ColumnDefinitions="*,220"
+                            RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                            RowSpacing="8">
+							<TextBlock
+                                Grid.Row="0"
+                                Text="Ландшафт"/>
+							<ComboBox
+                                Name="ComboBoxTerrain"
+                                Grid.Row="0"
+                                Grid.Column="1"/>
+							<TextBlock
+                                Grid.Row="1"
+                                Text="Геометрия"/>
+							<ComboBox
+                                Name="ComboBoxGeometry"
+                                Grid.Row="1"
+                                Grid.Column="1"/>
+							<TextBlock
+                                Grid.Row="2"
+                                Text="Освещение"/>
+							<ComboBox
+                                Name="ComboBoxLighting"
+                                Grid.Row="2"
+                                Grid.Column="1"/>
+							<TextBlock
+                                Grid.Row="3"
+                                Text="Динамическое освещение"/>
+							<ComboBox
+                                Name="ComboBoxDynamicLighting"
+                                Grid.Row="3"
+                                Grid.Column="1"/>
+							<TextBlock
+                                Grid.Row="4"
+                                Text="Динамические тени"/>
+							<ComboBox
+                                Name="ComboBoxDynamicShadows"
+                                Grid.Row="4"
+                                Grid.Column="1"/>
+							<TextBlock
+                                Grid.Row="5"
+                                Text="Эффекты"/>
+							<ComboBox
+                                Name="ComboBoxEffects"
+                                Grid.Row="5"
+                                Grid.Column="1"/>
+							<TextBlock
+                                Grid.Row="6"
+                                Text="Текстуры"/>
+							<ComboBox
+                                Name="ComboBoxTextures"
+                                Grid.Row="6"
+                                Grid.Column="1"/>
+							<TextBlock
+                                Grid.Row="7"
+                                Text="Фильтрация текстур"/>
+							<ComboBox
+                                Name="ComboBoxTextureFiltering"
+                                Grid.Row="7"
+                                Grid.Column="1"/>
+						</Grid>
+						<Grid
+                            ColumnDefinitions="*,220"
+                            RowDefinitions="Auto,Auto,Auto"
+                            RowSpacing="8">
+							<TextBlock
+                                Grid.Row="0"
+                                Text="Сглаживание"/>
+							<ComboBox
+                                Name="ComboBoxAntialiasing"
+                                Grid.Row="0"
+                                Grid.Column="1"/>
+							<TextBlock
+                                Grid.Row="1"
+                                Text="Дальность прорисовки"/>
+							<Slider
+                                Name="SliderViewDistance"
+                                Grid.Row="1"
+                                Grid.Column="1"
+                                Minimum="0"
+                                Maximum="1"
+                                TickFrequency="0.1"
+                                IsSnapToTickEnabled="True"/>
+							<TextBlock
+                                Grid.Row="2"
+                                Text="Bloom"/>
+							<CheckBox
+                                Name="CheckBoxBloom"
+                                Grid.Row="2"
+                                Grid.Column="1"
+                                Content="Включён"/>
+						</Grid>
+					</StackPanel>
+					<StackPanel Spacing="12">
+						<TextBlock
+                            Text="АУДИО"
+                            Classes="H7"
+                            Theme="{StaticResource TitleTextBlock}"/>
+					</StackPanel>
+				</StackPanel>
+			</ScrollViewer>
+		</c:Form.Content>
+		<c:Form.ActionContent>
+			<StackPanel
+                Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Spacing="8">
+				<Button
+                    Name="ButtonCancel"
+                    Click="ButtonCancel_OnClick"
+                    Content="Отмена"/>
+				<Button
+                    Name="ButtonSave"
+                    Click="ButtonSave_OnClick"
+                    Content="Сохранить"
+                    Classes="Primary"
+                    Theme="{StaticResource SolidButton}"/>
+			</StackPanel>
+		</c:Form.ActionContent>
+	</c:Form>
+</UserControl>
