@@ -3,7 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="450"
-             x:Class="BLApp.Views.MainView">
+             x:Class="NBLApp.Views.MainView">
     <Grid ColumnDefinitions="Auto, *" RowDefinitions="Auto, *">
         <Border Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" Width="80">
             <Border Background="#ffffff" Opacity="0.1" Width="1" HorizontalAlignment="Right"/>
@@ -11,50 +11,45 @@
         <Border Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2" Height="80">
             <Border Background="#ffffff" Opacity="0.1" Height="1" VerticalAlignment="Bottom"/>
         </Border>
-        
-        <Image Grid.Row="0" Grid.Column="0" Source="/Assets/logouoc.png" Stretch="None" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-        
+        <Image Grid.Row="0" Grid.Column="0" Source="/Assets/NetBat2142log1.png" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" Width="60" Height="60" />
         <Border Grid.Row="1" Grid.Column="0" Padding="0 15">
             <Grid RowDefinitions="Auto, *, Auto, *, Auto">
                 <StackPanel Spacing="10">
-                    
                 </StackPanel>
-                
-                <StackPanel Grid.Row="2">
-                    <Image Source="/Assets/bell.png" Width="16" Height="16"/>
-                </StackPanel>
-                
-                <Grid Grid.Row="4">
-                    <Button Background="Transparent" HorizontalAlignment="Center">
-                        <Button.Content>
-                            <Image Source="/Assets/gear.png" Width="16" Height="16"/>
-                        </Button.Content>
-                    </Button>
-                    <Border Background="#ffffff" Opacity="1.0" Width="1" HorizontalAlignment="Right"/>
-                </Grid>
+				<Grid Grid.Row="4">
+					    <StackPanel>
+						    <Button Background="Transparent" HorizontalAlignment="Center">
+							    <Button.Content>
+								    <Image Source="/Assets/bell.png" Width="19" Height="19"/>
+							    </Button.Content>
+						    </Button>
+							<Button Name="ButtonSettings" Background="Transparent" HorizontalAlignment="Center" Click="ButtonSettings_OnClick">
+								<Image Source="/Assets/gear.png" Width="19" Height="19"/>
+							</Button>
+						    <Border Background="#ffffff" Opacity="1.0" Width="1" HorizontalAlignment="Right"/>
+					    </StackPanel>
+					</Grid>
             </Grid>
         </Border>
-        
-        <ScrollViewer Grid.Row="0" Grid.Column="1" HorizontalScrollBarVisibility="Auto">
-            <TabStrip  Margin="20 -0.3" Padding="0 0" VerticalAlignment="Bottom">
-                <TabStripItem>ШТАБ</TabStripItem>
-                <TabStripItem>НОВОСТИ</TabStripItem>
-                <TabStripItem>ОБЩЕНИЕ</TabStripItem>
-                <TabStripItem>UOC LEAGUE</TabStripItem>
-                <TabStripItem>ПОДДЕРЖКА</TabStripItem>
-                <TabStripItem>ПРОЕКТ 2142UOC</TabStripItem>
+        <ScrollViewer Grid.Row="0" Grid.Column="1" HorizontalScrollBarVisibility="Auto" >
+			<TabStrip Margin="20 -0.3" Padding="0 0" VerticalAlignment="Bottom">
+			    <TabStripItem>ГЛАВНАЯ</TabStripItem>
+				<TabStripItem>ШТАБ</TabStripItem>
+				<TabStripItem>СООБЩЕСТВО</TabStripItem>
+				<TabStripItem>ПОДДЕРЖКА</TabStripItem>
+				<TabStripItem>КАРТЫ</TabStripItem>
+				<TabStripItem>ТАБЛИЦА ЛИДЕРОВ</TabStripItem>
+				<TabStripItem>БАНЛИСТ</TabStripItem>
                 <TabStrip.Styles>
                     <Style Selector="TabStripItem">
                         <Setter Property="Height" Value="50"/>
                     </Style>
                     <Style Selector="TabStripItem:selected /template/ ContentPresenter#PART_ContentPresenter">
                         <Setter Property="BorderBrush" Value="#ffffff"/>
-                    
                         <Setter Property="BorderThickness" Value="0 0 0 1"/>
                     </Style>
                     <Style Selector="TabStripItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
                         <Setter Property="BorderBrush" Value="#ffffff"/>
-                    
                         <Setter Property="BorderThickness" Value="0 0 0 2"/>
                     </Style>
                     <Style Selector="TabStrip /template/ Border#PART_BorderSeparator">
@@ -63,18 +58,17 @@
                 </TabStrip.Styles>
             </TabStrip>
         </ScrollViewer>
-        
         <Grid Grid.Row="1" Grid.Column="1" RowDefinitions="*, Auto" Margin="40 20">
-            <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto">
+            <ScrollViewer Grid.Row="1" Name="GameControlsPanel" HorizontalScrollBarVisibility="Auto">
                 <Grid ColumnDefinitions="Auto, Auto, *, Auto, Auto, Auto" RowDefinitions="Auto, Auto" RowSpacing="20" ColumnSpacing="40">
                     <Button Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" Name="Button_MainAction" Click="Button_MainAction_OnClick" Background="Transparent" BorderBrush="#ffffff" CornerRadius="0" Height="70" Width="250" Foreground="#ffffff">ЗАПУСТИТЬ BF2142</Button>
-                    
-                    <TextBlock Grid.Column="1" Grid.Row="0" Text="ПРЕДВАРИТЕЛЬНЫЕ НАСТРОЙКИ:" Classes="H7" Theme="{StaticResource TitleTextBlock}"/>
+                    <TextBlock Grid.Column="1" Grid.Row="0" Text="НАСТРОЙКИ:" Classes="H7" Theme="{StaticResource TitleTextBlock}"/>
                     <StackPanel Grid.Column="1" Grid.Row="1" Orientation="Horizontal">
                         <StackPanel Orientation="Horizontal" Spacing="10">
                             <TextBlock Text="Платформа:" VerticalAlignment="Center"/>
                             <ComboBox Name="ComboBoxClients"  SelectionChanged="ComboBoxClients_OnSelectionChanged" SelectedIndex="0" VerticalAlignment="Center" Background="Transparent">
                                 <ComboBoxItem Content="Stellar"/>
+								<ComboBoxItem Content="BallerBude"/>
                             </ComboBox>
                             <TextBlock Text="Мод:" VerticalAlignment="Center"/>
                             <ComboBox SelectedIndex="0" VerticalAlignment="Center" Background="Transparent">
@@ -83,19 +77,14 @@
                             <Button Name="ButtonParams" Click="ButtonParams_OnClick" Content="Параметры" Background="Transparent" Foreground="AliceBlue" VerticalAlignment="Center"/>
                         </StackPanel>
                     </StackPanel>
-                    
-                    
-                    <TextBlock Grid.Column="3" Grid.Row="0" Text="СЕРВЕРА"/>
+                    <TextBlock Grid.Column="3" Grid.Row="0" Text="ИГРОКИ"/>
                     <TextBlock Grid.Column="3" Grid.Row="1" Text="-" TextAlignment="Center"/>
-                    
                     <TextBlock Grid.Column="4" Grid.Row="0" Text="ПИНГ"/>
                     <TextBlock Grid.Column="4" Grid.Row="1" Text="-" TextAlignment="Center"/>
-                    
                     <TextBlock Grid.Column="5" Grid.Row="0" Text="ДОСТУП К ПЛАТФОРМЕ"/>
                     <TextBlock Grid.Column="5" Grid.Row="1" Text="-" TextAlignment="Center"/>
                 </Grid>                      
             </ScrollViewer>
-            
             <ContentControl Grid.Row="0" Name="MainContent"/>
         </Grid>
     </Grid>

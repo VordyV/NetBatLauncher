@@ -4,23 +4,20 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="450"
         xmlns:u="https://irihi.tech/ursa"
-        xmlns:local="clr-namespace:BLApp"
-        xmlns:c="clr-namespace:BLApp.Controls"
+        xmlns:local="clr-namespace:NBLApp"
+        xmlns:c="clr-namespace:NBLApp.Controls"
         x:DataType="local:MainWindow"
-        x:Class="BLApp.MainWindow"
-        WindowStartupLocation="CenterScreen"
+        x:Class="NBLApp.MainWindow"
         WindowDecorations="BorderOnly"
         ExtendClientAreaToDecorationsHint="True"
         Title="NBLApp">
-    <c:Window Name="Window" ClickHide="Window_OnClickHide" ClickMinMax="Window_OnClickMinMax" ClickClose="Window_OnClickClose">
+    <c:Window ClickHide="Window_OnClickHide" ClickMinMax="Window_OnClickMinMax" ClickClose="Window_OnClickClose">
         <c:Window.TitleContent>
-            <TextBlock Foreground="#fcffff">Battle Launcher</TextBlock>
+            <TextBlock Foreground="#fcffff">NetBat2142 Launcher</TextBlock>
         </c:Window.TitleContent>
-        
         <Grid>
             <ContentControl Name="MainContent"/>
             <u:OverlayDialogHost HostId="main"/>
         </Grid>
-        
     </c:Window>
 </Window>

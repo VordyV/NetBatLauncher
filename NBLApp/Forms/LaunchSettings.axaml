@@ -2,18 +2,59 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="540" d:DesignHeight="450"
-             xmlns:c="clr-namespace:BLApp.Controls"
-             x:Class="BLApp.Forms.LaunchSettings">
-    <c:Form Title="Launch settings" SubTitle="Game launch parameter management" Width="540">
-        <c:Form.Content>
-            <ContentControl Name="MainContent"/>
-        </c:Form.Content>
-        <c:Form.ActionContent>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
-                <Button Name="ButtonCancel" Click="ButtonCancel_OnClick" Content="Cancel"/>
-                <Button Name="ButtonSave" Click="ButtonSave_OnClick" Content="Save" Classes="Primary" Theme="{StaticResource SolidButton}"/>
-            </StackPanel>
-        </c:Form.ActionContent>
-    </c:Form>
+             mc:Ignorable="d"
+             d:DesignWidth="600"
+             d:DesignHeight="650"
+             xmlns:c="clr-namespace:NBLApp.Controls"
+             x:Class="NBLApp.Forms.LaunchSettings">
+	<c:Form
+        Title="Настройки"
+        SubTitle="Параметры запуска Battlefield 2142"
+        Width="600">
+		<c:Form.Content>
+			<ScrollViewer
+                HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Auto">
+				<StackPanel Spacing="25">
+					<StackPanel Spacing="10">
+						<TextBlock
+                            Text="ПАРАМЕТРЫ ЗАПУСКА"
+                            Classes="H7"
+                            Theme="{StaticResource TitleTextBlock}"/>
+						<TextBlock>
+							Режим окна
+						</TextBlock>
+						<ContentControl
+                            Name="MainContent"/>
+						<CheckBox
+                            Name="CheckBoxNoIntro"
+                            Content="Без интро"/>
+						<TextBlock
+                            Name="TextBlockNoIntroStatus"
+                            Text="Игра не установлена"
+                            Opacity="0.6"
+                            FontSize="12"
+                            TextWrapping="Wrap"/>
+					</StackPanel>
+				</StackPanel>
+			</ScrollViewer>
+		</c:Form.Content>
+		<c:Form.ActionContent>
+			<StackPanel
+                Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Spacing="8">
+				<Button
+                    Name="ButtonCancel"
+                    Click="ButtonCancel_OnClick"
+                    Content="Отмена"/>
+				<Button
+                    Name="ButtonSave"
+                    Click="ButtonSave_OnClick"
+                    Content="Сохранить"
+                    Classes="Primary"
+                    Theme="{StaticResource SolidButton}"/>
+			</StackPanel>
+		</c:Form.ActionContent>
+	</c:Form>
 </UserControl>

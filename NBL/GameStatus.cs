@@ -1,5 +1,4 @@
-﻿namespace BL;
-
+﻿namespace NBL;
 public enum GameStatus
 {
     NotInstalled,

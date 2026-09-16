@@ -1,0 +1,35 @@
+name: Build NetBat2142 Launcher
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore NBLApp/NBLApp.csproj
+
+      - name: Build
+        run: dotnet build NBLApp/NBLApp.csproj -c Release --no-restore
+
+      - name: Publish
+        run: dotnet publish NBLApp/NBLApp.csproj -c Release -r win-x64 --self-contained true --output publish
+
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: NetBat2142-Launcher
+          path: publish/

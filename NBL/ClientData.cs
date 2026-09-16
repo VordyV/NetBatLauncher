@@ -1,5 +1,4 @@
-﻿namespace BL;
-
+﻿namespace NBL;
 public class ClientData
 {
     public string ID { get; set; }
