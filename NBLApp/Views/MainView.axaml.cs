@@ -6,6 +6,7 @@ using Avalonia.Threading;
 using NBL;
 using NBLApp.Controls;
 using NBLApp.Forms;
+using NBLApp.Localization;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -21,6 +22,31 @@ public partial class MainView : View
     protected Game Game;
     protected bool isLoaded =
         false;
+    public string MainText => Locale.Get("Main");
+    public string HeadquartersText => Locale.Get("Headquarters");
+    public string CommunityText => Locale.Get("Community");
+    public string SupportText => Locale.Get("Support");
+    public string MapsText => Locale.Get("Maps");
+    public string LeaderboardText => Locale.Get("Leaderboard");
+    public string BanlistText => Locale.Get("Banlist");
+    public string LaunchGameText => Locale.Get("LaunchGame");
+    public string SettingsText => Locale.Get("Settings");
+    public string PlatformText => Locale.Get("Platform");
+    public string ModText => Locale.Get("Mod");
+    public string ParametersText => Locale.Get("Parameters");
+    public string PlayersText => Locale.Get("Players");
+    public string PingText => Locale.Get("Ping");
+    public string PlatformAccessText => Locale.Get("PlatformAccess");
+    public string InstallGameText => Locale.Get("InstallGame");
+    public string GameRunningText => Locale.Get("GameRunning");
+    public string StoppingText => Locale.Get("Stopping");
+    private void Locale_LanguageChanged(
+    object? sender,
+    EventArgs e)
+    {
+        this.DataContext = null;
+        this.DataContext = this;
+    }
     public MainView(
         Launcher launcher,
         ViewPresenter<Launcher> viewPresenter,
@@ -30,6 +56,7 @@ public partial class MainView : View
             viewPresenter,
             arg)
     {
+        Locale.LanguageChanged += this.Locale_LanguageChanged;
         this.Loaded +=
             async (sender, args) =>
                 await this.OnLoaded();
@@ -117,19 +144,22 @@ public partial class MainView : View
             {
                 case GameStatus.NotInstalled:
                     this.Button_MainAction.Content =
-                        "УСТАНОВИТЬ ИГРУ";
+                        this.InstallGameText;
                     break;
+
                 case GameStatus.NotRunning:
                     this.Button_MainAction.Content =
-                        "ЗАПУСТИТЬ ИГРУ";
+                        this.LaunchGameText;
                     break;
+
                 case GameStatus.Running:
                     this.Button_MainAction.Content =
-                        "ИГРА ЗАПУЩЕНА";
+                        this.GameRunningText;
                     break;
+
                 case GameStatus.Stopping:
                     this.Button_MainAction.Content =
-                        "ОСТАНОВКА...";
+                        this.StoppingText;
                     break;
             }
         });
@@ -192,7 +222,7 @@ public partial class MainView : View
             Console.WriteLine(
                 exception);
             Notify.ShowError(
-                "Не удалось запустить игру",
+                Locale.Get("GameLaunchFailed"),
                 exception.Message);
         }
     }
@@ -245,7 +275,7 @@ public partial class MainView : View
         catch (Exception exception)
         {
             Notify.ShowError(
-                "Клиент игры не был изменен",
+                Locale.Get("ClientChangeFailed"),
                 exception.Message);
         }
     }

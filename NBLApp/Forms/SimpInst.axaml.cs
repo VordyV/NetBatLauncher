@@ -77,69 +77,13 @@ public partial class SimpInst : UserControl
             var progress =
                 new Progress<ClientUpdateProgress>(
                     UpdateProgress);
-            await updateService.UpdateAsync(
-                server,
-                path,
-                progress,
-                _installationCancellation.Token);
-            string clientFilesPath =
-                Path.Combine(
-                    AppContext.BaseDirectory,
-                    "ClientFiles");
-            string sourceBf2142 =
-                Path.Combine(
-                    clientFilesPath,
-                    "BF2142.exe");
-            string sourceRendDx9 =
-                Path.Combine(
-                    clientFilesPath,
-                    "RendDX9.dll");
-            string sourceRendDx9Ori =
-                Path.Combine(
-                    clientFilesPath,
-                    "RendDX9_ori.dll");
-            string targetBf2142 =
-                Path.Combine(
-                    path,
-                    "BF2142.exe");
-            string targetRendDx9 =
-                Path.Combine(
-                    path,
-                    "RendDX9.dll");
-            string targetRendDx9Ori =
-                Path.Combine(
-                    path,
-                    "RendDX9_ori.dll");
-            if (!File.Exists(sourceBf2142))
-            {
-                throw new FileNotFoundException(
-                    "Не найден BF2142.exe.",
-                    sourceBf2142);
-            }
-            if (!File.Exists(sourceRendDx9))
-            {
-                throw new FileNotFoundException(
-                    "Не найден RendDX9.dll.",
-                    sourceRendDx9);
-            }
-            if (!File.Exists(sourceRendDx9Ori))
-            {
-                throw new FileNotFoundException(
-                    "Не найден RendDX9_ori.dll.",
-                    sourceRendDx9Ori);
-            }
-            File.Copy(
-                sourceBf2142,
-                targetBf2142,
-                true);
-            File.Copy(
-                sourceRendDx9,
-                targetRendDx9,
-                true);
-            File.Copy(
-                sourceRendDx9Ori,
-                targetRendDx9Ori,
-                true);
+            await updateService.UpdateAsync(server, path, progress, _installationCancellation.Token);
+
+            TextBlockStatus.Text =
+                "Установка файлов лаунчера...";
+
+            GameFilePatcher.Install(path);
+
             TextBlockStatus.Text =
                 "Завершение...";
             ClientData client =

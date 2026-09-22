@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Styling;
+using AutoUpdaterDotNET;
 using NBL;
 using System;
 using System.IO;
@@ -25,6 +26,13 @@ public partial class App : Application
                 "bnconfig.registry");
         this.Launcher =
             new Launcher(pathConfig: configPath);
+
+        AvaloniaXamlLoader.Load(this);
+
+        Console.WriteLine(Localization.Locale.Get("LauncherTitle"));
+        Console.WriteLine(Localization.Locale.Get("Settings"));
+        Console.WriteLine(Localization.Locale.Get("Parameters"));
+
         ILaunchParam[] launchParams = new ILaunchParam[]
         {
             new LaunchParamDict() {Id = "screen", Name = "Screen", Dictionary = new()
@@ -46,14 +54,17 @@ public partial class App : Application
             new LaunchParamCustom() {Id = "customparam", Name = "CustomParam", FullFormat = true}
         };
         this.Launcher.RegisterGame(gameId: "bf2142", name: "Battlefield 2142", shortName: "BF2142", determinants: new[] { "bf2142.exe" }, launchParams: launchParams);
-        AvaloniaXamlLoader.Load(this);
+ 
+        AutoUpdater.Start("https://raw.githubusercontent.com/VordyV/NetBatLauncher/main/update.xml");
     }
     public override void OnFrameworkInitializationCompleted()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = new MainWindow(launcher: this.Launcher);
+            desktop.MainWindow = new MainWindow(this.Launcher);
         }
+
         base.OnFrameworkInitializationCompleted();
+
     }
 }

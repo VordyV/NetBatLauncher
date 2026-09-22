@@ -14,6 +14,11 @@ public partial class SettingsGear : UserControl
     private GameVideoSettings VideoSettings = new();
     private DisplayModeService DisplayModeService;
     private bool VideoSettingsAvailable;
+
+    private AudioSettingsService? AudioSettingsService;
+    private GameAudioSettings AudioSettings = new();
+    private bool AudioSettingsAvailable;
+
     protected Game Game;
     public SettingsGear(Game game)
     {
@@ -24,6 +29,7 @@ public partial class SettingsGear : UserControl
         this.DisplayModeService =
             new DisplayModeService();
         this.LoadVideoSettings();
+        this.LoadAudioSettings();
     }
     private void DisableVideoSettings()
     {
@@ -131,6 +137,21 @@ public partial class SettingsGear : UserControl
             this.DisableVideoSettings();
         }
     }
+    private void DisableAudioSettings()
+    {
+        this.AudioSettingsAvailable = false;
+        this.SliderEffectsVolume.IsEnabled = false;
+        this.SliderMusicVolume.IsEnabled = false;
+        this.SliderHelpVoiceVolume.IsEnabled = false;
+        this.ComboBoxSoundQuality.IsEnabled = false;
+        this.CheckBoxVoipEnabled.IsEnabled = false;
+        this.SliderVoipPlaybackVolume.IsEnabled = false;
+        this.SliderVoipCaptureVolume.IsEnabled = false;
+        this.CheckBoxVoipPushToTalk.IsEnabled = false;
+        this.CheckBoxVoipBoost.IsEnabled = false;
+        this.TextBlockAudioSettingsStatus.IsVisible = true;
+    }
+
     private void LoadRefreshRates()
     {
         if (!this.VideoSettingsAvailable)
@@ -259,6 +280,7 @@ public partial class SettingsGear : UserControl
         try
         {
             this.SaveVideoSettings();
+            this.SaveAudioSettings();
         }
         catch (Exception exception)
         {
@@ -279,5 +301,176 @@ public partial class SettingsGear : UserControl
         {
             ctx.Close();
         }
+    }
+    private void LoadAudioSettings()
+    {
+        try
+        {
+            string audioSettingsPath =
+                AudioSettingsPath.GetPath();
+
+            this.AudioSettingsService =
+                new AudioSettingsService(
+                    audioSettingsPath);
+
+            this.AudioSettings =
+                this.AudioSettingsService.Load();
+
+            this.AudioSettingsAvailable =
+                true;
+
+            this.TextBlockAudioSettingsStatus.IsVisible =
+                false;
+
+            this.SliderEffectsVolume.Value =
+                Math.Clamp(
+                    this.AudioSettings.EffectsVolume,
+                    0.0f,
+                    1.0f);
+
+            this.SliderMusicVolume.Value =
+                Math.Clamp(
+                    this.AudioSettings.MusicVolume,
+                    0.0f,
+                    1.0f);
+
+            this.SliderHelpVoiceVolume.Value =
+                Math.Clamp(
+                    this.AudioSettings.HelpVoiceVolume,
+                    0.0f,
+                    1.0f);
+
+            this.ComboBoxSoundQuality.ItemsSource =
+                new[]
+                {
+                "Low",
+                "Medium",
+                "High"
+                };
+
+            this.ComboBoxSoundQuality.SelectedItem =
+                this.AudioSettings.SoundQuality;
+
+            this.CheckBoxVoipEnabled.IsChecked =
+                this.AudioSettings.VoipEnabled;
+
+            this.SliderVoipPlaybackVolume.Value =
+                Math.Clamp(
+                    this.AudioSettings.VoipPlaybackVolume,
+                    0.0f,
+                    1.0f);
+
+            this.SliderVoipCaptureVolume.Value =
+                Math.Clamp(
+                    this.AudioSettings.VoipCaptureVolume,
+                    0.0f,
+                    1.0f);
+
+            this.CheckBoxVoipPushToTalk.IsChecked =
+                this.AudioSettings.VoipUsePushToTalk;
+
+            this.CheckBoxVoipBoost.IsChecked =
+                this.AudioSettings.VoipBoostEnabled;
+        }
+        catch
+        {
+            this.DisableAudioSettings();
+        }
+    }
+
+    private void SaveAudioSettings()
+    {
+        if (!this.AudioSettingsAvailable)
+            return;
+
+        if (this.AudioSettingsService == null)
+            return;
+
+        this.AudioSettings.EffectsVolume =
+            (float)this.SliderEffectsVolume.Value;
+
+        this.AudioSettings.MusicVolume =
+            (float)this.SliderMusicVolume.Value;
+
+        this.AudioSettings.HelpVoiceVolume =
+            (float)this.SliderHelpVoiceVolume.Value;
+
+        if (this.ComboBoxSoundQuality.SelectedItem
+            is string soundQuality)
+        {
+            this.AudioSettings.SoundQuality =
+                soundQuality;
+        }
+
+        this.AudioSettings.VoipEnabled =
+            this.CheckBoxVoipEnabled.IsChecked == true;
+
+        this.AudioSettings.VoipPlaybackVolume =
+            (float)this.SliderVoipPlaybackVolume.Value;
+
+        this.AudioSettings.VoipCaptureVolume =
+            (float)this.SliderVoipCaptureVolume.Value;
+
+        this.AudioSettings.VoipUsePushToTalk =
+            this.CheckBoxVoipPushToTalk.IsChecked == true;
+
+        this.AudioSettings.VoipBoostEnabled =
+            this.CheckBoxVoipBoost.IsChecked == true;
+
+        this.AudioSettingsService.Save(
+            this.AudioSettings);
+    }
+
+    private void UpdateVolumeText(
+    TextBlock textBlock,
+    double value)
+    {
+        textBlock.Text =
+            $"{Math.Round(value * 100)}%";
+    }
+
+    private void SliderEffectsVolume_OnValueChanged(
+    object? sender,
+    Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e)
+    {
+        this.UpdateVolumeText(
+            this.TextBlockEffectsVolume,
+            e.NewValue);
+    }
+
+    private void SliderMusicVolume_OnValueChanged(
+        object? sender,
+        Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e)
+    {
+        this.UpdateVolumeText(
+            this.TextBlockMusicVolume,
+            e.NewValue);
+    }
+
+    private void SliderHelpVoiceVolume_OnValueChanged(
+        object? sender,
+        Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e)
+    {
+        this.UpdateVolumeText(
+            this.TextBlockHelpVoiceVolume,
+            e.NewValue);
+    }
+
+    private void SliderVoipPlaybackVolume_OnValueChanged(
+        object? sender,
+        Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e)
+    {
+        this.UpdateVolumeText(
+            this.TextBlockVoipPlaybackVolume,
+            e.NewValue);
+    }
+
+    private void SliderVoipCaptureVolume_OnValueChanged(
+        object? sender,
+        Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e)
+    {
+        this.UpdateVolumeText(
+            this.TextBlockVoipCaptureVolume,
+            e.NewValue);
     }
 }

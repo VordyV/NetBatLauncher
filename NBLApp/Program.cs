@@ -2,6 +2,7 @@
 using System;
 using AutoUpdaterDotNET;
 namespace NBLApp;
+
 class Program
 {
     /// private const string UpdateUrl = "https://netbat2142api"; жду API для обновлений

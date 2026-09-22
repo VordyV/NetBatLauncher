@@ -2,9 +2,11 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:local="clr-namespace:NBLApp.Views"
              mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="450"
+			 x:DataType="local:MainView"
              x:Class="NBLApp.Views.MainView">
-    <Grid ColumnDefinitions="Auto, *" RowDefinitions="Auto, *">
+	<Grid ColumnDefinitions="Auto, *" RowDefinitions="Auto, *">
         <Border Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" Width="80">
             <Border Background="#ffffff" Opacity="0.1" Width="1" HorizontalAlignment="Right"/>
         </Border>
@@ -33,13 +35,13 @@
         </Border>
         <ScrollViewer Grid.Row="0" Grid.Column="1" HorizontalScrollBarVisibility="Auto" >
 			<TabStrip Margin="20 -0.3" Padding="0 0" VerticalAlignment="Bottom">
-			    <TabStripItem>ГЛАВНАЯ</TabStripItem>
-				<TabStripItem>ШТАБ</TabStripItem>
-				<TabStripItem>СООБЩЕСТВО</TabStripItem>
-				<TabStripItem>ПОДДЕРЖКА</TabStripItem>
-				<TabStripItem>КАРТЫ</TabStripItem>
-				<TabStripItem>ТАБЛИЦА ЛИДЕРОВ</TabStripItem>
-				<TabStripItem>БАНЛИСТ</TabStripItem>
+				<TabStripItem Content="{Binding MainText}"/>
+				<TabStripItem Content="{Binding HeadquartersText}"/>
+				<TabStripItem Content="{Binding CommunityText}"/>
+				<TabStripItem Content="{Binding SupportText}"/>
+				<TabStripItem Content="{Binding MapsText}"/>
+				<TabStripItem Content="{Binding LeaderboardText}"/>
+				<TabStripItem Content="{Binding BanlistText}"/>
                 <TabStrip.Styles>
                     <Style Selector="TabStripItem">
                         <Setter Property="Height" Value="50"/>
@@ -61,27 +63,27 @@
         <Grid Grid.Row="1" Grid.Column="1" RowDefinitions="*, Auto" Margin="40 20">
             <ScrollViewer Grid.Row="1" Name="GameControlsPanel" HorizontalScrollBarVisibility="Auto">
                 <Grid ColumnDefinitions="Auto, Auto, *, Auto, Auto, Auto" RowDefinitions="Auto, Auto" RowSpacing="20" ColumnSpacing="40">
-                    <Button Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" Name="Button_MainAction" Click="Button_MainAction_OnClick" Background="Transparent" BorderBrush="#ffffff" CornerRadius="0" Height="70" Width="250" Foreground="#ffffff">ЗАПУСТИТЬ BF2142</Button>
-                    <TextBlock Grid.Column="1" Grid.Row="0" Text="НАСТРОЙКИ:" Classes="H7" Theme="{StaticResource TitleTextBlock}"/>
+					<Button Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" Name="Button_MainAction" Click="Button_MainAction_OnClick" Background="Transparent" BorderBrush="#ffffff" CornerRadius="0" Height="70" Width="250" Foreground="#ffffff" Content="{Binding LaunchGameText}"/>
+                    <TextBlock Grid.Column="1" Grid.Row="0" Text="{Binding SettingsText}" Classes="H7" Theme="{StaticResource TitleTextBlock}"/>
                     <StackPanel Grid.Column="1" Grid.Row="1" Orientation="Horizontal">
                         <StackPanel Orientation="Horizontal" Spacing="10">
-                            <TextBlock Text="Платформа:" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding PlatformText}" VerticalAlignment="Center"/>
                             <ComboBox Name="ComboBoxClients"  SelectionChanged="ComboBoxClients_OnSelectionChanged" SelectedIndex="0" VerticalAlignment="Center" Background="Transparent">
                                 <ComboBoxItem Content="Stellar"/>
 								<ComboBoxItem Content="BallerBude"/>
                             </ComboBox>
-                            <TextBlock Text="Мод:" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding ModText}" VerticalAlignment="Center"/>
                             <ComboBox SelectedIndex="0" VerticalAlignment="Center" Background="Transparent">
                                 <ComboBoxItem Content="Vanila"/>
                             </ComboBox>
                             <Button Name="ButtonParams" Click="ButtonParams_OnClick" Content="Параметры" Background="Transparent" Foreground="AliceBlue" VerticalAlignment="Center"/>
                         </StackPanel>
                     </StackPanel>
-                    <TextBlock Grid.Column="3" Grid.Row="0" Text="ИГРОКИ"/>
+                    <TextBlock Grid.Column="3" Grid.Row="0" Text="{Binding PlayersText}"/>
                     <TextBlock Grid.Column="3" Grid.Row="1" Text="-" TextAlignment="Center"/>
-                    <TextBlock Grid.Column="4" Grid.Row="0" Text="ПИНГ"/>
+                    <TextBlock Grid.Column="4" Grid.Row="0" Text="{Binding PingText}"/>
                     <TextBlock Grid.Column="4" Grid.Row="1" Text="-" TextAlignment="Center"/>
-                    <TextBlock Grid.Column="5" Grid.Row="0" Text="ДОСТУП К ПЛАТФОРМЕ"/>
+                    <TextBlock Grid.Column="5" Grid.Row="0" Text="{Binding PlatformAccessText}"/>
                     <TextBlock Grid.Column="5" Grid.Row="1" Text="-" TextAlignment="Center"/>
                 </Grid>                      
             </ScrollViewer>

@@ -76,7 +76,7 @@ public class Configurator
     }
     public void CheckSection(string sectionName)
     {
-        if (!this.HasSection(sectionName)) throw new Exception($"Section '{sectionName}' does not exist");
+        if (!this.HasSection(sectionName))  throw new Exception($"Section '{sectionName}' does not exist");
     }
     public void CheckOption(string sectionName, string optionName)
     {

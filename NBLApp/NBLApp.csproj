@@ -24,9 +24,19 @@
         <PackageReference Include="Semi.Avalonia" Version="12.1.0.1" />
     </ItemGroup>
 	<ItemGroup>
+		<EmbeddedResource Include="Assets\FilesChange\BF2142.exe" />
+		<EmbeddedResource Include="Assets\FilesChange\RendDX9.dll" />
+		<EmbeddedResource Include="Assets\FilesChange\RendDX9_ori.dll" />
+	</ItemGroup>
+	<ItemGroup>
 		<AvaloniaResource Include="Assets\**" />
 	</ItemGroup>
     <ItemGroup>
       <ProjectReference Include="..\NBL\NBL.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+      <EmbeddedResource Update="Localization\Locale.resx">
+        <Generator></Generator>
+      </EmbeddedResource>
     </ItemGroup>
 </Project>

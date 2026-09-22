@@ -41,7 +41,6 @@
                             FontSize="12"
                             IsVisible="False"
                             TextWrapping="Wrap"/>
-						<!-- Разрешение и частота -->
 						<Grid
                             ColumnDefinitions="*,220"
                             RowDefinitions="Auto,Auto"
@@ -66,7 +65,6 @@
                                 Grid.Row="1"
                                 Grid.Column="1"/>
 						</Grid>
-						<!-- Качество -->
 						<Grid
                             ColumnDefinitions="*,220"
                             RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
@@ -162,9 +160,203 @@
 					</StackPanel>
 					<StackPanel Spacing="12">
 						<TextBlock
-                            Text="АУДИО"
-                            Classes="H7"
-                            Theme="{StaticResource TitleTextBlock}"/>
+							Text="АУДИО"
+							Classes="H7"
+							Theme="{StaticResource TitleTextBlock}"/>
+						<TextBlock
+							Name="TextBlockAudioSettingsStatus"
+							Text="Аккаунт игры не найден. Настройки аудио недоступны."
+							Foreground="Red"
+							FontWeight="Bold"
+							Opacity="0.6"
+							FontSize="12"
+							IsVisible="False"
+							TextWrapping="Wrap"/>
+
+						<Grid
+							ColumnDefinitions="*,220"
+							RowDefinitions="Auto,Auto,Auto,Auto"
+							RowSpacing="8">
+
+							<TextBlock
+								Grid.Row="0"
+								Text="Громкость эффектов"
+								VerticalAlignment="Center"/>
+
+							<Grid
+								Grid.Row="0"
+								Grid.Column="1"
+								ColumnDefinitions="*,45"
+								ColumnSpacing="8">
+
+								<Slider
+									Name="SliderEffectsVolume"
+									Grid.Column="0"
+									Minimum="0"
+									Maximum="1"
+									TickFrequency="0.01"
+									IsSnapToTickEnabled="True"
+									ValueChanged="SliderEffectsVolume_OnValueChanged"/>
+
+								<TextBlock
+									Name="TextBlockEffectsVolume"
+									Grid.Column="1"
+									Text="0%"
+									VerticalAlignment="Center"
+									HorizontalAlignment="Right"/>
+							</Grid>
+
+							<TextBlock
+								Grid.Row="1"
+								Text="Громкость музыки"
+								VerticalAlignment="Center"/>
+
+							<Grid
+								Grid.Row="1"
+								Grid.Column="1"
+								ColumnDefinitions="*,45"
+								ColumnSpacing="8">
+
+								<Slider
+									Name="SliderMusicVolume"
+									Grid.Column="0"
+									Minimum="0"
+									Maximum="1"
+									TickFrequency="0.01"
+									IsSnapToTickEnabled="True"
+									ValueChanged="SliderMusicVolume_OnValueChanged"/>
+
+								<TextBlock
+									Name="TextBlockMusicVolume"
+									Grid.Column="1"
+									Text="0%"
+									VerticalAlignment="Center"
+									HorizontalAlignment="Right"/>
+							</Grid>
+
+							<TextBlock
+								Grid.Row="2"
+								Text="Громкость голоса"
+								VerticalAlignment="Center"/>
+
+							<Grid
+								Grid.Row="2"
+								Grid.Column="1"
+								ColumnDefinitions="*,45"
+								ColumnSpacing="8">
+
+								<Slider
+									Name="SliderHelpVoiceVolume"
+									Grid.Column="0"
+									Minimum="0"
+									Maximum="1"
+									TickFrequency="0.01"
+									IsSnapToTickEnabled="True"
+									ValueChanged="SliderHelpVoiceVolume_OnValueChanged"/>
+
+								<TextBlock
+									Name="TextBlockHelpVoiceVolume"
+									Grid.Column="1"
+									Text="0%"
+									VerticalAlignment="Center"
+									HorizontalAlignment="Right"/>
+							</Grid>
+
+							<TextBlock
+								Grid.Row="3"
+								Text="Качество звука"
+								VerticalAlignment="Center"/>
+
+							<ComboBox
+								Name="ComboBoxSoundQuality"
+								Grid.Row="3"
+								Grid.Column="1"/>
+						</Grid>
+
+						<Grid
+    ColumnDefinitions="*,220"
+    RowDefinitions="Auto,Auto,Auto,Auto"
+    RowSpacing="8">
+
+							<TextBlock
+								Grid.Row="0"
+								Text="Голосовой чат"/>
+
+							<CheckBox
+								Name="CheckBoxVoipEnabled"
+								Grid.Row="0"
+								Grid.Column="1"
+								Content="Включён"/>
+
+							<TextBlock
+								Grid.Row="1"
+								Text="Громкость голосового чата"/>
+
+							<Grid
+								Grid.Row="1"
+								Grid.Column="1"
+								ColumnDefinitions="*,45"
+								ColumnSpacing="8">
+
+								<Slider
+									Name="SliderVoipPlaybackVolume"
+									Grid.Column="0"
+									Minimum="0"
+									Maximum="1"
+									TickFrequency="0.01"
+									IsSnapToTickEnabled="True"
+									ValueChanged="SliderVoipPlaybackVolume_OnValueChanged"/>
+
+								<TextBlock
+									Name="TextBlockVoipPlaybackVolume"
+									Grid.Column="1"
+									Text="0%"
+									VerticalAlignment="Center"
+									HorizontalAlignment="Right"/>
+							</Grid>
+
+							<TextBlock
+								Grid.Row="2"
+								Text="Громкость микрофона"/>
+
+							<Grid
+								Grid.Row="2"
+								Grid.Column="1"
+								ColumnDefinitions="*,45"
+								ColumnSpacing="8">
+
+								<Slider
+									Name="SliderVoipCaptureVolume"
+									Grid.Column="0"
+									Minimum="0"
+									Maximum="1"
+									TickFrequency="0.01"
+									IsSnapToTickEnabled="True"
+									ValueChanged="SliderVoipCaptureVolume_OnValueChanged"/>
+
+								<TextBlock
+									Name="TextBlockVoipCaptureVolume"
+									Grid.Column="1"
+									Text="0%"
+									VerticalAlignment="Center"
+									HorizontalAlignment="Right"/>
+							</Grid>
+
+							<TextBlock
+								Grid.Row="3"
+								Text="Push-to-talk"/>
+
+							<CheckBox
+								Name="CheckBoxVoipPushToTalk"
+								Grid.Row="3"
+								Grid.Column="1"
+								Content="Включён"/>
+						</Grid>
+
+						<CheckBox
+							Name="CheckBoxVoipBoost"
+							Content="Усиление микрофона"/>
+
 					</StackPanel>
 				</StackPanel>
 			</ScrollViewer>

@@ -1,10 +1,14 @@
+```yaml
 name: Build NetBat2142 Launcher
 
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -19,17 +23,71 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Get version
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}" -replace '^v', ''
+          echo "VERSION=$version" >> $env:GITHUB_ENV
+
       - name: Restore
         run: dotnet restore NBLApp/NBLApp.csproj
-
-      - name: Build
-        run: dotnet build NBLApp/NBLApp.csproj -c Release --no-restore
 
       - name: Publish
         run: dotnet publish NBLApp/NBLApp.csproj -c Release -r win-x64 --self-contained true --output publish
 
-      - name: Upload build
-        uses: actions/upload-artifact@v4
-        with:
-          name: NetBat2142-Launcher
-          path: publish/
+      - name: Create ZIP
+        shell: pwsh
+        run: |
+          Compress-Archive -Path publish\* -DestinationPath "NetBat2142-$env:VERSION.zip"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          gh release create "v$env:VERSION" `
+            "NetBat2142-$env:VERSION.zip" `
+            --title "NetBat2142 v$env:VERSION" `
+            --generate-notes
+
+      - name: Update update.xml
+        shell: pwsh
+        run: |
+          $version = $env:VERSION
+          $repo = "${{ github.repository }}"
+          $tag = "v$version"
+          $zip = "NetBat2142-$version.zip"
+
+          $downloadUrl = "https://github.com/$repo/releases/download/$tag/$zip"
+          $changelogUrl = "https://github.com/$repo/releases/tag/$tag"
+
+          $xml = @"
+          <?xml version="1.0" encoding="UTF-8"?>
+          <item>
+            <version>$version.0</version>
+            <url>$downloadUrl</url>
+            <changelog>$changelogUrl</changelog>
+            <mandatory>false</mandatory>
+          </item>
+          "@
+
+          Set-Content -Path update.xml -Value $xml -Encoding UTF8
+
+      - name: Commit update.xml
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add update.xml
+
+          if (git diff --cached --quiet) {
+            Write-Host "update.xml is already up to date."
+            exit 0
+          }
+
+          git commit -m "Update updater manifest to v$env:VERSION"
+          git push origin HEAD:main
+```
