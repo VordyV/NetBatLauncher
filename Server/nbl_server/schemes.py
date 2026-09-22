@@ -38,3 +38,11 @@ class ResponseFile(BaseModel):
 class ResponseGameFilesManifest(BaseModel):
 	ident: str
 	files: list[ResponseFile]
+
+class ResponseGameFilesUploadProcess(BaseModel):
+	task_ident: str
+
+class ResponseStorageTask(ResponseGameFilesUploadProcess):
+	status: str
+	error: str | None
+	exception: str | None
