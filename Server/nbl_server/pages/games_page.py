@@ -260,8 +260,8 @@ class GamesFilesPage(Page):
         try:
             token = await self.data.get_token()
             otac = await APIClient.upload_game_files(access_token=token, gameid=self._game_id, filename="link")
-            game = await APIClient.upload_game_files_via_link(otac=otac.otac, link=self._ui_textfield.value.strip())
-            print("ok")
+            task = await APIClient.upload_game_files_via_link(otac=otac.otac, link=self._ui_textfield.value.strip())
+            self.data.go_route(f"/storage/tasks/{task.task_ident}")
         except ForbiddenError as e:
             self.page.show_dialog(ft.SnackBar(ft.Text(e.detail)))
         except NotFoundError as e:
