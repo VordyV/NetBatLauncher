@@ -18,7 +18,9 @@ from .schemes import (
 	RequestGameUpdate,
 	ResponseGameFilesUpload,
 	ResponseFile,
-	ResponseGameFilesManifest
+	ResponseGameFilesManifest,
+	ResponseGameFilesUploadProcess,
+	ResponseStorageTask
 )
 import urllib.parse
 import re
@@ -203,7 +205,7 @@ async def games_files_upload(ctx: CtxField, gameid: GameIdField, filename: FileN
 	return ResponseGameFilesUpload(otac=otac)
 
 @router.put("/games/files/upload", dependencies=[])
-async def games_files_upload(request: Request, otac: OTACField, mode: str = "content", link: str = None):
+async def games_files_upload(request: Request, otac: OTACField, mode: str = "content", link: str = None) -> ResponseGameFilesUploadProcess:
 	core = request.app.state.core
 	acc_gid_fn = core.get_token_one_time_code(otac)
 	if not acc_gid_fn: raise HTTPException(status_code=400, detail="Invalid or expired code")
@@ -223,9 +225,21 @@ async def games_files_upload(request: Request, otac: OTACField, mode: str = "con
 	elif mode == "link":
 		if not link: raise HTTPException(status_code=400, detail="The link parameter must not be empty when in link mode")
 
-		await storage.add_files_via_link(link)
-
+		task_id = await storage.add_files_via_link(link)
+		return ResponseGameFilesUploadProcess(task_ident=task_id)
 	else: raise HTTPException(status_code=400, detail="Mode is incorrect")
+
+@router.get("/storage/tasks")
+async def storage_tasks(ctx: CtxField, taskid: str):
+	storage = ctx.core.get_storage()
+	task = storage.get_task(taskid)
+	if not task: raise HTTPException(status_code=404, detail=f"Task '{taskid}' not found")
+	return ResponseStorageTask(
+		task_ident=task.ident,
+		status=task.status,
+		error=str(task.error),
+		exception=task.error.__traceback__ if task.error else None
+	)
 
 @router.get("/storage/download")
 async def storage_download(): pass
