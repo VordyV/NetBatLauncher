@@ -9,7 +9,9 @@ from .schemes import (
 	RequestGameUpdate,
 	ResponseGamesReadAll,
 	ResponseGamesRead,
-	ResponseGameFilesUpload
+	ResponseGameFilesUpload,
+	ResponseStorageTask,
+	ResponseGameFilesUploadProcess
 )
 import httpx
 
@@ -306,9 +308,23 @@ class APIClient:
 		return ResponseGameFilesUpload.model_validate(data)
 
 	@classmethod
-	async def upload_game_files_via_link(cls, otac: str, link: str):
+	async def upload_game_files_via_link(cls, otac: str, link: str) -> ResponseGameFilesUploadProcess:
 		data = await cls._request(
 			"PUT",
 			"/api/games/files/upload",
 			params={"mode": "link", "link": link, "otac": otac},
 		)
+
+		return ResponseGameFilesUploadProcess.model_validate(data)
+
+	@classmethod
+	async def get_storage_task(cls, access_token: str, task_id: str):
+		data = await cls._request(
+			"GET",
+			"/api/storage/tasks",
+			access_token=access_token,
+			params={"taskid": task_id},
+		)
+
+		print(data)
+		return ResponseStorageTask.model_validate(data)
