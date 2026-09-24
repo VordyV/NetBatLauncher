@@ -38,8 +38,6 @@ public static class GameLanguageService
         string currentLanguage =
             GetLanguage();
 
-        Console.WriteLine(
-            $"Game language: {currentLanguage} -> {language}");
 
         if (string.Equals(
             currentLanguage,
@@ -66,8 +64,6 @@ public static class GameLanguageService
             startInfo.ArgumentList.Add(
                 language);
 
-            Console.WriteLine(
-                "Starting elevated NetBat2142...");
 
             using Process? process =
                 Process.Start(startInfo);
@@ -77,15 +73,11 @@ public static class GameLanguageService
 
             process.WaitForExit();
 
-            Console.WriteLine(
-                $"Elevated process exit code: {process.ExitCode}");
 
             return process.ExitCode == 0;
         }
-        catch (Exception exception)
+        catch
         {
-            Console.WriteLine(
-                $"GameLanguageService error: {exception}");
 
             return false;
         }
@@ -136,10 +128,8 @@ public static class GameLanguageService
 
             return 0;
         }
-        catch (Exception exception)
+        catch
         {
-            Console.WriteLine(
-                $"Failed to set game language: {exception}");
 
             return 1;
         }
