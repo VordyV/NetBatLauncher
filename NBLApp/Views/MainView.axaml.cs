@@ -40,6 +40,7 @@ public partial class MainView : View
     public string InstallGameText => Locale.Get("InstallGame");
     public string GameRunningText => Locale.Get("GameRunning");
     public string StoppingText => Locale.Get("Stopping");
+    public string LaunchpadText => Locale.Get("Launchpad");
     private void Locale_LanguageChanged(
     object? sender,
     EventArgs e)

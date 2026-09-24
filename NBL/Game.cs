@@ -21,7 +21,9 @@ public class Game
         new();
     public event Func<GameStatus, Task>? OnChangeStatus;
     protected Launcher Launcher;
-    protected Configurator Registry;
+    protected Configurator RegistryInternal;
+
+    public Configurator Registry => this.RegistryInternal;
     private Process? _gameProcess;
     public Game(
         Launcher launcher,
@@ -33,7 +35,7 @@ public class Game
         ILaunchParam[] launchParams)
     {
         this.Launcher = launcher;
-        this.Registry = registry;
+        this.RegistryInternal = registry;
         this.Id = id;
         this.Name = name;
         this.ShortName = shortName;
@@ -44,6 +46,10 @@ public class Game
                 param.Id,
                 param);
         }
+    }
+    public Configurator GetRegistry()
+    {
+        return this.Registry;
     }
     public async Task<bool> CheckInstall()
     {

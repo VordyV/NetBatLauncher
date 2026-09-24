@@ -1,5 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.11.12217.175 insiders
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NBLApp", "NBLApp\NBLApp.csproj", "{DA7D427D-B783-44E1-B0CA-9CF2ADD323BE}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NBL", "NBL\NBL.csproj", "{EEE7BCC7-1799-4EB8-BC3A-43B2279B1BF1}"
@@ -24,5 +27,11 @@ Global
 		{B1A12957-9E73-446C-8015-70FFFB8F57F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B1A12957-9E73-446C-8015-70FFFB8F57F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B1A12957-9E73-446C-8015-70FFFB8F57F0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {9EE602CC-DBBD-4591-A624-BCAB6BC9F57B}
 	EndGlobalSection
 EndGlobal

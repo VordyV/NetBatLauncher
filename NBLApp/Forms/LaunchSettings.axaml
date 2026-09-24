@@ -8,8 +8,8 @@
              xmlns:c="clr-namespace:NBLApp.Controls"
              x:Class="NBLApp.Forms.LaunchSettings">
 	<c:Form
-        Title="Настройки"
-        SubTitle="Параметры запуска Battlefield 2142"
+        Title="ПАРАМЕТРЫ ЗАПУСКА"
+        SubTitle="Дополнительные свойства для игры"
         Width="600">
 		<c:Form.Content>
 			<ScrollViewer
@@ -17,10 +17,6 @@
                 VerticalScrollBarVisibility="Auto">
 				<StackPanel Spacing="25">
 					<StackPanel Spacing="10">
-						<TextBlock
-                            Text="ПАРАМЕТРЫ ЗАПУСКА"
-                            Classes="H7"
-                            Theme="{StaticResource TitleTextBlock}"/>
 						<TextBlock>
 							Режим окна
 						</TextBlock>

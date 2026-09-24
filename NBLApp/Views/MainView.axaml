@@ -64,19 +64,18 @@
             <ScrollViewer Grid.Row="1" Name="GameControlsPanel" HorizontalScrollBarVisibility="Auto">
                 <Grid ColumnDefinitions="Auto, Auto, *, Auto, Auto, Auto" RowDefinitions="Auto, Auto" RowSpacing="20" ColumnSpacing="40">
 					<Button Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" Name="Button_MainAction" Click="Button_MainAction_OnClick" Background="Transparent" BorderBrush="#ffffff" CornerRadius="0" Height="70" Width="250" Foreground="#ffffff" Content="{Binding LaunchGameText}"/>
-                    <TextBlock Grid.Column="1" Grid.Row="0" Text="{Binding SettingsText}" Classes="H7" Theme="{StaticResource TitleTextBlock}"/>
+                    <TextBlock Grid.Column="1" Grid.Row="0" Text="{Binding LaunchpadText}" Classes="H7" Theme="{StaticResource TitleTextBlock}"/>
                     <StackPanel Grid.Column="1" Grid.Row="1" Orientation="Horizontal">
                         <StackPanel Orientation="Horizontal" Spacing="10">
                             <TextBlock Text="{Binding PlatformText}" VerticalAlignment="Center"/>
                             <ComboBox Name="ComboBoxClients"  SelectionChanged="ComboBoxClients_OnSelectionChanged" SelectedIndex="0" VerticalAlignment="Center" Background="Transparent">
-                                <ComboBoxItem Content="Stellar"/>
 								<ComboBoxItem Content="BallerBude"/>
                             </ComboBox>
                             <TextBlock Text="{Binding ModText}" VerticalAlignment="Center"/>
                             <ComboBox SelectedIndex="0" VerticalAlignment="Center" Background="Transparent">
                                 <ComboBoxItem Content="Vanila"/>
                             </ComboBox>
-                            <Button Name="ButtonParams" Click="ButtonParams_OnClick" Content="Параметры" Background="Transparent" Foreground="AliceBlue" VerticalAlignment="Center"/>
+                            <Button Name="ButtonParams" Click="ButtonParams_OnClick" Content="{Binding ParametersText}" Background="Transparent" Foreground="AliceBlue" VerticalAlignment="Center"/>
                         </StackPanel>
                     </StackPanel>
                     <TextBlock Grid.Column="3" Grid.Row="0" Text="{Binding PlayersText}"/>

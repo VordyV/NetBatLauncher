@@ -121,61 +121,58 @@
     <value>NetBat2142 Launcher</value>
   </data>
   <data name="Settings" xml:space="preserve">
-    <value>Launchpad</value>
+    <value>SETTINGS</value>
   </data>
   <data name="Parameters" xml:space="preserve">
     <value>Parameters</value>
   </data>
   <data name="Main" xml:space="preserve">
-    <value>Main</value>
+    <value>MAIN</value>
   </data>
   <data name="Headquarters" xml:space="preserve">
-    <value>Headquarters</value>
+    <value>HEADQUARTERS</value>
   </data>
   <data name="Community" xml:space="preserve">
-    <value>Community</value>
+    <value>COMMUNITY</value>
   </data>
   <data name="Support" xml:space="preserve">
-    <value>Support</value>
+    <value>SUPPORT</value>
   </data>
   <data name="Maps" xml:space="preserve">
-    <value>Maps</value>
+    <value>MAPS</value>
   </data>
   <data name="Leaderboard" xml:space="preserve">
-    <value>Leaderboard</value>
+    <value>LEADERBOARD</value>
   </data>
   <data name="Banlist" xml:space="preserve">
-    <value>Banlist</value>
+    <value>BANLIST</value>
   </data>
   <data name="LaunchGame" xml:space="preserve">
-    <value>Launch game</value>
+    <value>LAUNCH GAME</value>
   </data>
   <data name="InstallGame" xml:space="preserve">
-    <value>Install Game</value>
+    <value>INSTALL GAME</value>
   </data>
   <data name="GameRunning" xml:space="preserve">
-    <value>Game Running</value>
+    <value>GAME RUNNING</value>
   </data>
   <data name="Stopping" xml:space="preserve">
-    <value>Stopping</value>
+    <value>STOPPING</value>
   </data>
   <data name="Platform" xml:space="preserve">
-    <value>Platform</value>
+    <value>Platform:</value>
   </data>
   <data name="Mod" xml:space="preserve">
-    <value>Mod</value>
+    <value>Mod:</value>
   </data>
   <data name="Players" xml:space="preserve">
-    <value>Players</value>
+    <value>PLAYERS</value>
   </data>
   <data name="Ping" xml:space="preserve">
-    <value>Ping</value>
+    <value>PING</value>
   </data>
   <data name="PlatformAccess" xml:space="preserve">
-    <value>Platform Access</value>
-  </data>
-  <data name="Vanilla" xml:space="preserve">
-    <value>Vanilla</value>
+    <value>PLATFORM ACCESS</value>
   </data>
   <data name="GameLaunchFailed" xml:space="preserve">
     <value>Failed to launch the game</value>
@@ -185,5 +182,131 @@
   </data>
   <data name="GameClientNotInstalled" xml:space="preserve">
     <value>Game client is not installed</value>
+  </data>
+  <data name="LanguageLauncher" xml:space="preserve">
+    <value>Language launcher</value>
+  </data>
+  <data name="Auto" xml:space="preserve">
+    <value>Auto</value>
+  </data>
+  <data name="Russian" xml:space="preserve">
+    <value>Russian</value>
+  </data>
+  <data name="English" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="LauncherSettings" xml:space="preserve">
+    <value>LAUNCHER</value>
+  </data>
+  <data name="VideoSettings" xml:space="preserve">
+    <value>VIDEO</value>
+  </data>
+  <data name="Resolution" xml:space="preserve">
+    <value>Resolution</value>
+  </data>
+  <data name="RefreshRate" xml:space="preserve">
+    <value>Refresh rate</value>
+  </data>
+  <data name="Terrain" xml:space="preserve">
+    <value>Terrain</value>
+  </data>
+  <data name="Geometry" xml:space="preserve">
+    <value>Geometry</value>
+  </data>
+  <data name="Lighting" xml:space="preserve">
+    <value>Lighting</value>
+  </data>
+  <data name="DynamicLighting" xml:space="preserve">
+    <value>Dynamic lighting</value>
+  </data>
+  <data name="DynamicShadows" xml:space="preserve">
+    <value>Dynamic shadows</value>
+  </data>
+  <data name="Effects" xml:space="preserve">
+    <value>Effects</value>
+  </data>
+  <data name="Textures" xml:space="preserve">
+    <value>Textures</value>
+  </data>
+  <data name="TextureFiltering" xml:space="preserve">
+    <value>Texture filtering</value>
+  </data>
+  <data name="Antialiasing" xml:space="preserve">
+    <value>Antialiasing</value>
+  </data>
+  <data name="ViewDistance" xml:space="preserve">
+    <value>View distance</value>
+  </data>
+  <data name="Bloom" xml:space="preserve">
+    <value>Bloom</value>
+  </data>
+  <data name="AudioSettings" xml:space="preserve">
+    <value>AUDIO</value>
+  </data>
+  <data name="EffectsVolume" xml:space="preserve">
+    <value>Effects volume</value>
+  </data>
+  <data name="MusicVolume" xml:space="preserve">
+    <value>Music volume</value>
+  </data>
+  <data name="HelpVoiceVolume" xml:space="preserve">
+    <value>Help voice volume</value>
+  </data>
+  <data name="SoundQuality" xml:space="preserve">
+    <value>Sound quality</value>
+  </data>
+  <data name="Voip" xml:space="preserve">
+    <value>Voice chat</value>
+  </data>
+  <data name="VoipPlaybackVolume" xml:space="preserve">
+    <value>Playback volume</value>
+  </data>
+  <data name="VoipCaptureVolume" xml:space="preserve">
+    <value>Microphone volume</value>
+  </data>
+  <data name="VoipPushToTalk" xml:space="preserve">
+    <value>Push to Talk</value>
+  </data>
+  <data name="VoipBoost" xml:space="preserve">
+    <value>Microphone boost</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="SettingsUnavailable" xml:space="preserve">
+    <value>Settings unavailable</value>
+  </data>
+  <data name="Low" xml:space="preserve">
+    <value>Low</value>
+  </data>
+  <data name="Medium" xml:space="preserve">
+    <value>Medium</value>
+  </data>
+  <data name="High" xml:space="preserve">
+    <value>High</value>
+  </data>
+  <data name="VeryHigh" xml:space="preserve">
+    <value>Very high</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="Launchpad" xml:space="preserve">
+    <value>LAUNCHPAD</value>
+  </data>
+  <data name="Graphics" xml:space="preserve">
+    <value>Graphics</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="ControlSettings" xml:space="preserve">
+    <value>CONTROLS</value>
+  </data>
+  <data name="GameLanguage" xml:space="preserve">
+    <value>Game language</value>
   </data>
 </root>

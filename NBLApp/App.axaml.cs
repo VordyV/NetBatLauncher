@@ -27,6 +27,8 @@ public partial class App : Application
         this.Launcher =
             new Launcher(pathConfig: configPath);
 
+        this.LoadLanguage();
+
         AvaloniaXamlLoader.Load(this);
 
         Console.WriteLine(Localization.Locale.Get("LauncherTitle"));
@@ -59,12 +61,31 @@ public partial class App : Application
     }
     public override void OnFrameworkInitializationCompleted()
     {
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        if (ApplicationLifetime
+            is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = new MainWindow(this.Launcher);
+            desktop.MainWindow =
+                new MainWindow(
+                    this.Launcher);
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+    private void LoadLanguage()
+    {
+        this.Launcher.Registry.ReadSync(createMissing: true);
 
+        if (!this.Launcher.Registry.HasSection("launcher"))
+        {
+            this.Launcher.Registry.AddSection("launcher");
+        }
+
+        string language =
+            this.Launcher.Registry.Get(
+                "launcher",
+                "language",
+                "auto");
+
+        Localization.Locale.SetLanguage(language);
     }
 }

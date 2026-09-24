@@ -27,7 +27,6 @@ public partial class MainWindow : Window
 
     public MainWindow(Launcher launcher)
     {
-        Locale.SetLanguage("ru-RU");
 
         this.Loaded += async (sender, args) => await this.OnLoaded();
 

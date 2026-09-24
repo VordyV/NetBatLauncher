@@ -3,6 +3,7 @@ using Avalonia.Interactivity;
 using NBL;
 using NBL.Models;
 using NBL.Services;
+using NBLApp.Localization;
 using Irihi.Avalonia.Shared.Contracts;
 using System;
 using System.Collections.Generic;
@@ -20,16 +21,211 @@ public partial class SettingsGear : UserControl
     private bool AudioSettingsAvailable;
 
     protected Game Game;
+   
+    public string LauncherSettingsText =>
+        Locale.Get("LauncherSettings");
+
+    public string LanguageLauncherText =>
+        Locale.Get("LanguageLauncher");
+
+    public string AutomaticText =>
+        Locale.Get("Auto");
+
+    public string RussianText =>
+        Locale.Get("Russian");
+
+    public string EnglishText =>
+        Locale.Get("English");
+
+    public string VideoSettingsText =>
+        Locale.Get("VideoSettings");
+
+    public string ResolutionText =>
+        Locale.Get("Resolution");
+
+    public string RefreshRateText =>
+        Locale.Get("RefreshRate");
+
+    public string TerrainText =>
+        Locale.Get("Terrain");
+
+    public string GeometryText =>
+        Locale.Get("Geometry");
+
+    public string LightingText =>
+        Locale.Get("Lighting");
+
+    public string DynamicLightingText =>
+        Locale.Get("DynamicLighting");
+
+    public string DynamicShadowsText =>
+        Locale.Get("DynamicShadows");
+
+    public string EffectsText =>
+        Locale.Get("Effects");
+
+    public string TexturesText =>
+        Locale.Get("Textures");
+
+    public string TextureFilteringText =>
+        Locale.Get("TextureFiltering");
+
+    public string AntialiasingText =>
+        Locale.Get("Antialiasing");
+
+    public string ViewDistanceText =>
+        Locale.Get("ViewDistance");
+
+    public string BloomText =>
+        Locale.Get("Bloom");
+
+    public string AudioSettingsText =>
+        Locale.Get("AudioSettings");
+
+    public string EffectsVolumeText =>
+        Locale.Get("EffectsVolume");
+
+    public string MusicVolumeText =>
+        Locale.Get("MusicVolume");
+
+    public string HelpVoiceVolumeText =>
+        Locale.Get("HelpVoiceVolume");
+
+    public string SoundQualityText =>
+        Locale.Get("SoundQuality");
+
+    public string VoipText =>
+        Locale.Get("Voip");
+
+    public string VoipPlaybackVolumeText =>
+        Locale.Get("VoipPlaybackVolume");
+
+    public string VoipCaptureVolumeText =>
+        Locale.Get("VoipCaptureVolume");
+
+    public string VoipPushToTalkText =>
+        Locale.Get("VoipPushToTalk");
+
+    public string VoipBoostText =>
+        Locale.Get("VoipBoost");
+
+    public string SaveText =>
+        Locale.Get("Save");
+
+    public string CancelText =>
+        Locale.Get("Cancel");
+
+    public string SettingsUnavailableText =>
+        Locale.Get("SettingsUnavailable");
+
+    public string SettingsText =>
+        Locale.Get("Settings");
+
+    public string GraphicsText =>
+        Locale.Get("Graphics");
+
+    public string AudioText =>
+        Locale.Get("Audio");
+
+    public string EnabledText =>
+        Locale.Get("Enabled");
+    public string ControlSettingsText =>
+        Locale.Get("ControlSettings");
+    public string GameLanguageText =>
+        Locale.Get("GameLanguage");
+
     public SettingsGear(Game game)
     {
         this.Game = game;
+
         InitializeComponent();
+
+        this.LoadLanguageSettings();
+
         this.DataContext =
-            this;
+     this;
+
         this.DisplayModeService =
             new DisplayModeService();
+
         this.LoadVideoSettings();
         this.LoadAudioSettings();
+        this.LoadGameLanguage();
+    }
+    private void Locale_LanguageChanged(
+        object? sender,
+        EventArgs e)
+    {
+    }
+    private void LoadLanguageSettings()
+    {
+        Configurator registry =
+            this.Game.GetRegistry();
+
+        if (!registry.HasSection("launcher"))
+        {
+            registry.AddSection("launcher");
+        }
+
+        string language =
+            registry.Get(
+                "launcher",
+                "language",
+                "auto");
+
+        this.ComboBoxLanguage.SelectedIndex =
+            language switch
+            {
+                "ru-RU" => 1,
+                "en-US" => 2,
+                _ => 0
+            };
+    }
+
+    private void SaveLanguageSettings()
+    {
+        string language =
+            this.ComboBoxLanguage.SelectedIndex switch
+            {
+                1 => "ru-RU",
+                2 => "en-US",
+                _ => "auto"
+            };
+
+        Configurator registry =
+            this.Game.GetRegistry();
+
+        if (!registry.HasSection("launcher"))
+        {
+            registry.AddSection("launcher");
+        }
+
+        registry.Set(
+            "launcher",
+            "language",
+            language);
+
+        Locale.SetLanguage(language);
+    }
+    private void LoadGameLanguage()
+    {
+        string language =
+            GameLanguageService.GetLanguage();
+
+        GameLanguageComboBox.SelectedIndex =
+            language == "Russian" ? 1 : 0;
+    }
+    private void SaveGameLanguage()
+    {
+        string language =
+            this.GameLanguageComboBox.SelectedIndex switch
+            {
+                1 => "Russian",
+                _ => "English"
+            };
+
+        GameLanguageService.SetLanguage(
+            language);
     }
     private void DisableVideoSettings()
     {
@@ -110,7 +306,7 @@ public partial class SettingsGear : UserControl
             this.ComboBoxAntialiasing.ItemsSource =
                 new[]
                 {
-                    "Выключено",
+                    Locale.Get("Off"),
                     "2x",
                     "4x",
                     "8x"
@@ -188,13 +384,13 @@ public partial class SettingsGear : UserControl
         int value)
     {
         comboBox.ItemsSource =
-            new[]
-            {
-                "Низкое",
-                "Среднее",
-                "Высокое",
-                "Очень высокое"
-            };
+    new[]
+    {
+        Locale.Get("Low"),
+        Locale.Get("Medium"),
+        Locale.Get("High"),
+        Locale.Get("VeryHigh")
+    };
         comboBox.SelectedIndex =
             Math.Clamp(
                 value,
@@ -274,11 +470,13 @@ public partial class SettingsGear : UserControl
         this.LoadRefreshRates();
     }
     private void ButtonSave_OnClick(
-        object? sender,
-        RoutedEventArgs e)
+     object? sender,
+     RoutedEventArgs e)
     {
         try
         {
+            this.SaveLanguageSettings();
+            this.SaveGameLanguage();
             this.SaveVideoSettings();
             this.SaveAudioSettings();
         }
@@ -286,6 +484,7 @@ public partial class SettingsGear : UserControl
         {
             Console.WriteLine(exception);
         }
+
         if (this.DataContext
             is IDialogContext ctx)
         {
@@ -343,13 +542,20 @@ public partial class SettingsGear : UserControl
             this.ComboBoxSoundQuality.ItemsSource =
                 new[]
                 {
-                "Low",
-                "Medium",
-                "High"
+        Locale.Get("Low"),
+        Locale.Get("Medium"),
+        Locale.Get("High"),
+        Locale.Get("VeryHigh")
                 };
 
-            this.ComboBoxSoundQuality.SelectedItem =
-                this.AudioSettings.SoundQuality;
+            this.ComboBoxSoundQuality.SelectedIndex =
+                this.AudioSettings.SoundQuality switch
+                {
+                    "Medium" => 1,
+                    "High" => 2,
+                    "VeryHigh" => 3,
+                    _ => 0
+                };
 
             this.CheckBoxVoipEnabled.IsChecked =
                 this.AudioSettings.VoipEnabled;
@@ -395,12 +601,14 @@ public partial class SettingsGear : UserControl
         this.AudioSettings.HelpVoiceVolume =
             (float)this.SliderHelpVoiceVolume.Value;
 
-        if (this.ComboBoxSoundQuality.SelectedItem
-            is string soundQuality)
-        {
-            this.AudioSettings.SoundQuality =
-                soundQuality;
-        }
+        this.AudioSettings.SoundQuality =
+            this.ComboBoxSoundQuality.SelectedIndex switch
+            {
+                1 => "Medium",
+                2 => "High",
+                3 => "VeryHigh",
+                _ => "Low"
+            };
 
         this.AudioSettings.VoipEnabled =
             this.CheckBoxVoipEnabled.IsChecked == true;

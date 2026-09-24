@@ -121,7 +121,7 @@
     <value>NetBat2142 Launcher</value>
   </data>
   <data name="Settings" xml:space="preserve">
-    <value>ПАНЕЛЬ ЗАПУСКА</value>
+    <value>НАСТРОЙКИ</value>
   </data>
   <data name="Parameters" xml:space="preserve">
     <value>Параметры</value>
@@ -174,9 +174,6 @@
   <data name="PlatformAccess" xml:space="preserve">
     <value>ДОСТУП К ПЛАТФОРМЕ</value>
   </data>
-  <data name="Vanilla" xml:space="preserve">
-    <value>Vanilla</value>
-  </data>
   <data name="GameLaunchFailed" xml:space="preserve">
     <value>Ошибка загрузки игры</value>
   </data>
@@ -185,5 +182,131 @@
   </data>
   <data name="GameClientNotInstalled" xml:space="preserve">
     <value>Игра не установлена</value>
+  </data>
+  <data name="LanguageLauncher" xml:space="preserve">
+    <value>Язык лаунчера</value>
+  </data>
+  <data name="Auto" xml:space="preserve">
+    <value>Авто</value>
+  </data>
+  <data name="Russian" xml:space="preserve">
+    <value>Русский</value>
+  </data>
+  <data name="English" xml:space="preserve">
+    <value>Английский</value>
+  </data>
+  <data name="LauncherSettings" xml:space="preserve">
+    <value>ЛАУНЧЕР</value>
+  </data>
+  <data name="VideoSettings" xml:space="preserve">
+    <value>ВИДЕО</value>
+  </data>
+  <data name="Resolution" xml:space="preserve">
+    <value>Разрешение</value>
+  </data>
+  <data name="RefreshRate" xml:space="preserve">
+    <value>Частота кадров</value>
+  </data>
+  <data name="Terrain" xml:space="preserve">
+    <value>Ландшафт</value>
+  </data>
+  <data name="Geometry" xml:space="preserve">
+    <value>Геометрия</value>
+  </data>
+  <data name="Lighting" xml:space="preserve">
+    <value>Освещение</value>
+  </data>
+  <data name="DynamicLighting" xml:space="preserve">
+    <value>Динамическое освещение</value>
+  </data>
+  <data name="DynamicShadows" xml:space="preserve">
+    <value>Динамические тени</value>
+  </data>
+  <data name="Effects" xml:space="preserve">
+    <value>Эффекты</value>
+  </data>
+  <data name="Textures" xml:space="preserve">
+    <value>Текстуры</value>
+  </data>
+  <data name="TextureFiltering" xml:space="preserve">
+    <value>Фильтрация текстур</value>
+  </data>
+  <data name="Antialiasing" xml:space="preserve">
+    <value>Сглаживание</value>
+  </data>
+  <data name="ViewDistance" xml:space="preserve">
+    <value>Дальность прорисовки</value>
+  </data>
+  <data name="Bloom" xml:space="preserve">
+    <value>Свечение</value>
+  </data>
+  <data name="AudioSettings" xml:space="preserve">
+    <value>АУДИО</value>
+  </data>
+  <data name="EffectsVolume" xml:space="preserve">
+    <value>Громкость эффектов</value>
+  </data>
+  <data name="MusicVolume" xml:space="preserve">
+    <value>Громкость музыки</value>
+  </data>
+  <data name="HelpVoiceVolume" xml:space="preserve">
+    <value>Громкость голосового помощника</value>
+  </data>
+  <data name="SoundQuality" xml:space="preserve">
+    <value>Качество звука</value>
+  </data>
+  <data name="Voip" xml:space="preserve">
+    <value>Голосовой чат</value>
+  </data>
+  <data name="VoipPlaybackVolume" xml:space="preserve">
+    <value>Громкость воспроизведения</value>
+  </data>
+  <data name="VoipCaptureVolume" xml:space="preserve">
+    <value>Громкость микрофона</value>
+  </data>
+  <data name="VoipPushToTalk" xml:space="preserve">
+    <value>Нажатие для разговора</value>
+  </data>
+  <data name="VoipBoost" xml:space="preserve">
+    <value>Усиление микрофона</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Сохранить</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="SettingsUnavailable" xml:space="preserve">
+    <value>Настройки недоступны</value>
+  </data>
+  <data name="Low" xml:space="preserve">
+    <value>Низкое</value>
+  </data>
+  <data name="Medium" xml:space="preserve">
+    <value>Среднее</value>
+  </data>
+  <data name="High" xml:space="preserve">
+    <value>Высокое</value>
+  </data>
+  <data name="VeryHigh" xml:space="preserve">
+    <value>Очень высокое</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>Выключено</value>
+  </data>
+  <data name="Launchpad" xml:space="preserve">
+    <value>ПАНЕЛЬ ЗАПУСКА</value>
+  </data>
+  <data name="Graphics" xml:space="preserve">
+    <value>Графика</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>Включено</value>
+  </data>
+  <data name="ControlSettings" xml:space="preserve">
+    <value>УПРАВЛЕНИЕ</value>
+  </data>
+  <data name="GameLanguage" xml:space="preserve">
+    <value>Язык игры</value>
   </data>
 </root>

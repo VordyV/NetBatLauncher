@@ -31,9 +31,9 @@
 	<ItemGroup>
 		<AvaloniaResource Include="Assets\**" />
 	</ItemGroup>
-    <ItemGroup>
-      <ProjectReference Include="..\NBL\NBL.csproj" />
-    </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\NBL\NBL.csproj" />
+	</ItemGroup>
     <ItemGroup>
       <EmbeddedResource Update="Localization\Locale.resx">
         <Generator></Generator>
