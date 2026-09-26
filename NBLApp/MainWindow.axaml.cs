@@ -1,3 +1,4 @@
+using System;
 using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
 using Avalonia.Input;
@@ -17,6 +18,7 @@ public partial class MainWindow : Window
     protected Launcher Launcher;
     protected ViewPresenter<Launcher> ViewPresenter;
     protected WindowNotificationManager NotificationManager;
+    
     public MainWindow()
     {
         InitializeComponent();
@@ -37,6 +39,7 @@ public partial class MainWindow : Window
         this.MainContent.Content = this.ViewPresenter.Content;
         this.ViewPresenter.LoadView("main", this.Launcher.GetGames()[0]);
     }
+
     private async Task OnLoaded()
     {
         await this.Launcher.Registry.Read(createMissing: true);

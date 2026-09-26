@@ -1,7 +1,7 @@
 import traceback
-
-from .models import FileModel
-from enum import Enum
+from .storage_task_status import StorageTaskStatus
+from .models import FileModel, FileManifestModel, StorageTaskModel
+from enum import IntEnum
 import os
 import aiofiles
 from zipfile import ZipFile
@@ -10,8 +10,9 @@ import asyncio
 import shutil
 from pathlib import Path
 import httpx
+import hashlib
 
-class StorageObjectType(Enum):
+class StorageObjectType(IntEnum):
 	path = 0
 	url = 1
 
@@ -21,23 +22,13 @@ class StorageObject:
 		self.type = type
 		self.value = value
 
-class StorageTaskStatus(Enum):
-	Pending = 0
-	Downloading = 1
-	IntegrityCheck = 2
-	Extraction = 3
-	UploadStorage = 4
-	Done = 5
-	Cancelled = 6
-	Error = 7
-
 class StorageTask:
 
 	def __init__(self, ident: str, task: asyncio.Task):
 		self.ident = ident
 		self.task = task
 		self.status: StorageTaskStatus = StorageTaskStatus.Pending
-		self.error: Exception | None = None
+		self.progress: float = 0.0
 
 class Storage:
 
@@ -56,6 +47,7 @@ class Storage:
 
 	@classmethod
 	async def add_files(cls, archive_data: bytes): # archive_data accepts the bytes of the zip archive file
+		raise NotImplementedError()
 		uuid = os.urandom(16).hex()
 		dir = os.path.join(os.getenv("TEMP_STORAGE_PATH"), uuid)
 		path = os.path.join(dir, "temp.zip")
@@ -83,6 +75,55 @@ class Storage:
 				#shutil.rmtree(dir)
 
 	@classmethod
+	async def sha256_file(cls, filepath: str, chunk_size: int = 1024 * 1024) -> str:
+
+		def func():
+
+			h = hashlib.sha256()
+			with open(filepath, "rb") as f:
+				while chunk := f.read(chunk_size):
+					h.update(chunk)
+			return h.hexdigest()
+
+		return await asyncio.to_thread(func)
+
+	@classmethod
+	async def add_files_via_path(cls, path: str) -> str:
+		uuid = os.urandom(16).hex()
+
+		async def func():
+			try:
+				if not Path(path).is_dir(): raise Exception(f"There is no folder '{path}' at this path")
+
+				storage_task.status = StorageTaskStatus.UploadStorage
+				await storage_task.save()
+
+				added_files = []
+				for fp in Path(path).rglob('*'):
+					if not fp.is_file(): continue
+					async with aiofiles.open(str(fp.resolve()), mode='rb') as f:
+						added_files.append(await cls.add(await f.read(), fp.name, str(fp.relative_to(path).as_posix()), manifest))
+
+				storage_task.status = StorageTaskStatus.Done
+				await storage_task.save()
+			except asyncio.CancelledError as e:
+				storage_task.error = str(e)
+				storage_task.status = StorageTaskStatus.Cancelled
+				await storage_task.save()
+			except Exception as e:
+				storage_task.error = str(e)
+				storage_task.status = StorageTaskStatus.Error
+				storage_task.traceback = traceback.format_exc()
+				await storage_task.save()
+
+		manifest = await FileManifestModel.create(ident=uuid)
+		storage_task = await StorageTaskModel.create(ident=uuid, status=StorageTaskStatus.Pending)
+		task = asyncio.create_task(func())
+		cls._tasks[uuid] = StorageTask(ident=uuid, task=task)
+
+		return uuid
+
+	@classmethod
 	async def add_files_via_link(cls, url: str) -> str:
 		uuid = os.urandom(16).hex()
 
@@ -95,7 +136,8 @@ class Storage:
 			try:
 				os.makedirs(dir, exist_ok=True)
 
-				cls._tasks[uuid].status = StorageTaskStatus.Downloading
+				storage_task.status = StorageTaskStatus.Downloading
+				await storage_task.save()
 
 				async with httpx.AsyncClient(timeout=None) as client:
 					async with client.stream("GET", url) as response:
@@ -106,63 +148,65 @@ class Storage:
 							async for chunk in response.aiter_bytes(chunk_size=8192):
 								downloaded += len(chunk)
 								await file.write(chunk)
-								percent = downloaded / total * 100
-								print(f"\r{percent:6.2f}%  ({downloaded}/{total} b)", end="", flush=True)
+								cls._tasks[uuid].progress = f"{(downloaded / total):.3f}"
 
-				cls._tasks[uuid].status = StorageTaskStatus.IntegrityCheck
+				storage_task.status = StorageTaskStatus.IntegrityCheck
+				await storage_task.save()
 
 				if not zipfile.is_zipfile(path):
 					raise Exception("This is not a ZIP archive or the file is corrupted")
 
-				cls._tasks[uuid].status = StorageTaskStatus.Extraction
+				storage_task.status = StorageTaskStatus.Extraction
+				await storage_task.save()
 
 				await asyncio.to_thread(cls._extract, path, os.path.join(dir, zip_files))
 
-				cls._tasks[uuid].status = StorageTaskStatus.UploadStorage
-				for file in Path(zip_files).rglob('*'):
-					if not file.is_file(): continue
-					async with aiofiles.open(str(file.resolve()), mode='rb') as file:
-						await cls.add(await file.read())
+				storage_task.status = StorageTaskStatus.UploadStorage
+				await storage_task.save()
 
-				cls._tasks[uuid].status = StorageTaskStatus.Done
+				added_files = []
+				for fp in Path(zip_files).rglob('*'):
+					if not fp.is_file(): continue
+					async with aiofiles.open(str(fp.resolve()), mode='rb') as f:
+						added_files.append(await cls.add(await f.read(), fp.name, str(fp.relative_to(zip_files).as_posix()), manifest))
+
+				storage_task.status = StorageTaskStatus.Done
+				await storage_task.save()
 			except asyncio.CancelledError as e:
-				cls._tasks[uuid].error = e
-				cls._tasks[uuid].status = StorageTaskStatus.Cancelled
+				storage_task.error = str(e)
+				storage_task.status = StorageTaskStatus.Cancelled
+				await storage_task.save()
 			except Exception as e:
-				cls._tasks[uuid].error = e
-				cls._tasks[uuid].status = StorageTaskStatus.Error
+				storage_task.error = str(e)
+				storage_task.status = StorageTaskStatus.Error
+				storage_task.traceback = traceback.format_exc()
+				await storage_task.save()
 			finally:
 				if os.path.isdir(dir):
 					shutil.rmtree(dir)
 
+		manifest = await FileManifestModel.create(ident=uuid)
+		storage_task = await StorageTaskModel.create(ident=uuid, status=StorageTaskStatus.Pending)
 		task = asyncio.create_task(func())
 		cls._tasks[uuid] = StorageTask(ident=uuid, task=task)
 
 		return uuid
 
 	@classmethod
-	async def add(cls, data: bytes | str) -> str:  # str -> uuid
-		uuid = os.urandom(16).hex()
+	async def add(cls, data: bytes | str, filename: str, local_path: str | None, manifest: FileManifestModel | None) -> FileModel:  # str -> uuid
+		uuid = os.urandom(24).hex()
 		try:
 			url = await cls.on_add(data, uuid)
-			await FileModel.create(ident=uuid, storage=cls.name, path=url, checksum_sha256="1")
+			return await FileModel.create(ident=uuid, storage=cls.name, path=url, checksum_sha256=await cls.sha256_file(url), manifest=manifest, filename=filename, local_path=local_path)
 		except Exception as e:
 			await cls.on_remove(uuid)
-			raise
-
-		return uuid
+			raise Exception(f"File 1 could not be added to storage: {e}")
 
 	@classmethod
-	async def get_url(cls, uuid: str) -> StorageObject | None: # str -> url
-		file = await FileModel.get_or_none(uuid=uuid)
-		if not file: return None
-		return StorageObject(type=cls.object_type, value=file.path)
+	async def remove(cls, ident: str) -> bool:
+		file = await FileModel.get_or_none(ident=ident)
 
-	@classmethod
-	async def remove(cls, uuid: str) -> bool:
-		file = await FileModel.get_or_none(uuid=uuid)
-
-		if file and await cls.on_remove(uuid):
+		if file and await cls.on_remove(ident):
 			await file.delete()
 			return True
 
@@ -187,8 +231,8 @@ class LocalStorage(Storage):
 		return path
 
 	@classmethod
-	async def on_remove(cls, uuid: str) -> bool:
-		path = os.path.join(cls.dir, uuid)
+	async def on_remove(cls, ident: str) -> bool:
+		path = os.path.join(cls.dir, ident)
 		if not os.path.exists(path): return False
 		os.remove(path)
 		return True

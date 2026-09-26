@@ -18,6 +18,7 @@ public class Launcher
         ".statesnapshot";
     public Configurator Registry { get; }
     protected Dictionary<string, Game> Games;
+    
     public Launcher(string pathConfig)
     {
         this.Games = new();
