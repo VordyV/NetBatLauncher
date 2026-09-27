@@ -12,14 +12,18 @@ from .storage import LocalStorage, Storage
 from .models import GameModel, FileManifestModel, FileModel, StorageTaskModel, StorageTaskStatus, GameClientModel, GameServerModel
 from .views import router
 from .schemes import GameServerData
+from .middlewares import LogMiddleware
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from slugify import slugify
+import nbl_server
 
 class NetBatLauncherServer:
 
 	def __init__(self, address: str, port: int, log_level: str ="info", storage: str = "local"):
 		self.__address = address
 		self.__port = port
-		self.__fp_app = FastAPI(lifespan=self._fa_lifespan)
+		self.__fp_app = FastAPI(lifespan=self._fa_lifespan, openapi_url="/openapi.json" if nbl_server.__debug_mode__ else None, docs_url="/docs" if nbl_server.__debug_mode__ else None, redoc_url="/redoc" if nbl_server.__debug_mode__ else None, version=nbl_server.__version__, title="NBL Server", description="API server for the Net Bat Launcher")
 		self.__http_server = uvicorn.Server(uvicorn.Config(self.__fp_app, port=self.__port, host=self.__address, log_level=log_level))
 		self.__event_stop = asyncio.Event()
 		self.__shell = AsyncSimpleShell()
@@ -30,6 +34,8 @@ class NetBatLauncherServer:
 		self.__game_servers: dict[str, GameServerData] = {}
 
 		self.__fp_app.include_router(router)
+		self.__fp_app.add_middleware(TrustedHostMiddleware)
+		self.__fp_app.add_middleware(LogMiddleware)
 
 		self.__storage = self.__storages.get(storage)
 		if not self.__storage: raise Exception(f"Storage '{storage}' does not exist")
@@ -51,14 +57,27 @@ class NetBatLauncherServer:
 	@property
 	def storage(self) -> Storage: return self.__storage
 
+	async def _get_game(self, gameid: str) -> GameModel:
+		game = await GameModel.get_or_none(ident=gameid)
+		if not game: raise Exception(f"Game '{gameid}' does not exist")
+		return game
+
+	async def _get_game_client(self, gameid: str, clientid: str) -> GameClientModel:
+		try:
+			return await GameClientModel.get(ident=clientid, game__ident=gameid)
+		except Exception:
+			raise Exception(f"Game client '{clientid}' does not exist")
+
+	async def _get_game_server(self, gameid: str, clientid: str, serverid: str) -> GameServerModel:
+		try:
+			return await GameServerModel.get(ident=serverid, client__ident=clientid, client__game__ident=gameid)
+		except Exception:
+			raise Exception(f"Game server '{serverid}' does not exist")
+
 	async def _cmd_game_server_list(self, gameid: str, clientid: str):
 		rows = ["id\tname\tshort name\tcreated at\tmodified\taddress\tquery port"]
 
-		game = await GameModel.get_or_none(ident=gameid)
-		if not game: raise Exception(f"Game '{gameid}' does not exist")
-
-		client = await GameClientModel.get_or_none(ident=clientid, game=game)
-		if not client: raise Exception(f"Game client '{clientid}' does not exist")
+		client = await self._get_game_client(gameid, clientid)
 
 		for server in await GameServerModel.filter(client=client).all():
 			rows.append(f"{server.ident}\t{server.name}\t{server.created_at}\t{server.modified}\t{server.address}\t{server.query_port}")
@@ -67,36 +86,31 @@ class NetBatLauncherServer:
 			return "No servers"
 		return "\n".join(rows)
 
-	async def _cmd_add_game_server(self,  clientid: str, serverid: str, address: str, query_port: int, name: str):
-		client = await GameClientModel.get_or_none(ident=clientid)
-		if not client: raise Exception(f"Game client '{clientid}' does not exist")
+	async def _cmd_add_game_server(self, gameid: str, clientid: str, serverid: str, address: str, query_port: int, name: str):
+		serverid = slugify(serverid)
+		client = await self._get_game_client(gameid, clientid)
 
 		if await GameServerModel.filter(ident=serverid).exists(): raise Exception(f"A game server '{serverid}' already exists")
 
 		await GameServerModel.create(ident=serverid, address=address, query_port=query_port, name=name, client=client)
 		return f"Game server '{serverid}' added"
 
-	async def _cmd_rem_game_server(self, serverid: str):
-
-		gs = await GameServerModel.get_or_none(ident=serverid)
+	async def _cmd_rem_game_server(self, gameid: str, clientid: str, serverid: str):
+		gs = await self._get_game_server(gameid, clientid, serverid)
 		if not gs: raise Exception(f"Game server '{serverid}' does not exist")
-
 		await gs.delete()
+		return f"Game server '{serverid}' deleted"
 
 	async def _cmd_game_client_add(self, gameid: str, clientid: str, name: str, shortname: str, msaddress: str = None, msenckey: str = None):
-		game = await GameModel.get_or_none(ident=gameid)
-		if not game: raise Exception(f"Game '{gameid}' does not exist")
+		clientid = slugify(clientid)
+		game = await self._get_game(gameid)
 
 		if await GameClientModel.filter(ident=clientid, game=game).exists(): raise Exception(f"A game client with id '{clientid}' already exists")
 		await GameClientModel.create(ident=clientid, game=game, name=name, short_name=shortname, master_server_address=msaddress, master_server_enctypex_key=msenckey)
 		return f"Game client '{clientid}' added"
 
 	async def _cmd_game_client_remove(self, gameid: str, clientid: str):
-		game = await GameModel.get_or_none(ident=gameid)
-		if not game: raise Exception(f"Game '{gameid}' does not exist")
-
-		client = await GameClientModel.get_or_none(ident=clientid)
-		if not client: raise Exception(f"Game client '{clientid}' does not exist")
+		client = await self._get_game_client(gameid, clientid)
 
 		await client.delete()
 		return f"Game client '{clientid}' deleted"
@@ -104,8 +118,7 @@ class NetBatLauncherServer:
 	async def _cmd_game_clients_list(self, gameid: str):
 		rows = ["id\tname\tshort name\tcreated at\tmodified\tfiles\tms address"]
 
-		game = await GameModel.get_or_none(ident=gameid)
-		if not game: raise Exception(f"Game '{gameid}' does not exist")
+		game = await self._get_game(gameid)
 
 		for client in await GameClientModel.filter(game=game).all():
 			rows.append(f"{client.ident}\t{client.name}\t{client.short_name}\t{client.created_at}\t{client.modified}\t{"yes" if client.file_manifest else "no"}\t{client.master_server_address}")
@@ -115,11 +128,7 @@ class NetBatLauncherServer:
 		return "\n".join(rows)
 
 	async def _cmd_game_client_upload_files(self, gameid: str, clientid: str, path: str):
-		game = await GameModel.get_or_none(ident=gameid)
-		if not game: raise Exception(f"Game '{gameid}' does not exist")
-
-		client = await GameClientModel.get_or_none(ident=clientid)
-		if not client: raise Exception(f"Game client '{clientid}' does not exist")
+		client = await self._get_game_client(gameid, clientid)
 
 		ident = await self.storage.add_files_via_path(path)
 
@@ -134,11 +143,7 @@ class NetBatLauncherServer:
 		return f"Manifest '{storage_task.ident}' created"
 
 	async def _cmd_game_client_remove_files(self, gameid: str, clientid: str):
-		game = await GameModel.get_or_none(ident=gameid)
-		if not game: raise Exception(f"Game '{gameid}' does not exist")
-
-		client = await GameClientModel.get_or_none(ident=clientid)
-		if not client: raise Exception(f"Game client '{gameid}' does not exist")
+		client = await self._get_game_client(gameid, clientid)
 
 		if not client.file_manifest: raise Exception(f"Game client '{clientid}' has no files")
 
@@ -155,16 +160,16 @@ class NetBatLauncherServer:
 		await manifest.delete()
 		return f"Manifest '{m_id}' deleted"
 
-	async def _cmd_game_add(self, ident: str, name: str, shortname: str):
-		if await GameModel.filter(ident=ident).exists(): raise Exception(f"A game with id '{ident}' already exists")
-		await GameModel.create(ident=ident, name=name, short_name=shortname)
-		return f"Game '{ident}' added"
+	async def _cmd_game_add(self, gameid: str, name: str, shortname: str):
+		gameid = slugify(gameid)
+		if await GameModel.filter(ident=gameid).exists(): raise Exception(f"A game with id '{gameid}' already exists")
+		await GameModel.create(ident=gameid, name=name, short_name=shortname)
+		return f"Game '{gameid}' added"
 
-	async def _cmd_game_remove(self, ident: str):
-		game = await GameModel.get_or_none(ident=ident)
-		if not game: raise Exception(f"Game '{ident}' does not exist")
+	async def _cmd_game_remove(self, gameid: str):
+		game = await self._get_game(gameid)
 		await game.delete()
-		return f"Game '{ident}' deleted"
+		return f"Game '{gameid}' deleted"
 
 	async def _cmd_game_list(self):
 		rows = ["id\tname\tshort name\tcreated at\tmodified\tfiles"]
@@ -177,8 +182,7 @@ class NetBatLauncherServer:
 		return "\n".join(rows)
 
 	async def _cmd_game_upload_files(self, gameid: str, path: str):
-		game = await GameModel.get_or_none(ident=gameid)
-		if not game: raise Exception(f"Game '{gameid}' does not exist")
+		game = await self._get_game(gameid)
 
 		ident = await self.storage.add_files_via_path(path)
 
@@ -192,9 +196,8 @@ class NetBatLauncherServer:
 		await game.save()
 		return f"Manifest '{storage_task.ident}' created"
 
-	async def _cmd_game_remove_files(self, gameid):
-		game = await GameModel.get_or_none(ident=gameid)
-		if not game: raise Exception(f"Game '{gameid}' does not exist")
+	async def _cmd_game_remove_files(self, gameid: str):
+		game = await self._get_game(gameid)
 		if not game.file_manifest: raise Exception(f"Game '{gameid}' has no files")
 
 		manifest = await FileManifestModel.get(id=game.file_manifest_id)
