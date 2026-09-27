@@ -6,7 +6,7 @@ from pydantic import Field
 from .models import GameModel, FileModel, FileManifestModel, GameClientModel, GameServerModel
 from .schemes import ResponseFile, ResponseGameFilesManifest
 from .storage import StorageObjectType
-from .schemes import GameServerData, GameServers
+from .schemes import GameServerData, GameServers, GameClient, GameClients, Games, Game
 
 router = APIRouter(prefix="/api")
 
@@ -35,7 +35,7 @@ GameClientIdField = Annotated[str, Field(max_length=64)]
 GameField = Annotated[GameModel, Depends(game)]
 GameClientField = Annotated[GameClientModel, Depends(game_client)]
 
-@router.get("/games/files/manifest")
+@router.get("/games/files/manifest", description="Get the list of game files and links to download them")
 async def games_files_manifest(ctx: CtxField, game: GameField) -> ResponseGameFilesManifest:
 
 	if not game.file_manifest: return Response(status_code=204)
@@ -53,7 +53,7 @@ async def games_files_manifest(ctx: CtxField, game: GameField) -> ResponseGameFi
 		ident=manifest.ident,
 	)
 
-@router.get("/games/clients/files/manifest")
+@router.get("/games/clients/files/manifest", description="Get the list of game client files and links to download them")
 async def games_files_manifest(ctx: CtxField, game: GameField, client: GameClientField) -> ResponseGameFilesManifest:
 
 	if not client.file_manifest: return Response(status_code=204)
@@ -71,7 +71,7 @@ async def games_files_manifest(ctx: CtxField, game: GameField, client: GameClien
 		ident=manifest.ident,
 	)
 
-@router.get("/storage/download/{file_id}", name="storage_download")
+@router.get("/storage/download/{file_id}", name="storage_download", description="Download a file by its id")
 async def storage_download(request: Request, file_id: str):
 	file = await FileModel.get_or_none(ident=file_id)
 	if not file: raise Response(status_code=204)
@@ -85,7 +85,7 @@ async def storage_download(request: Request, file_id: str):
             filename=file.filename,
         )
 
-@router.get("/games/servers")
+@router.get("/games/servers", description="Get the list of game servers for the game client")
 async def games_servers(request: Request, game: GameField) -> GameServers:
 
 	result = []
@@ -93,3 +93,21 @@ async def games_servers(request: Request, game: GameField) -> GameServers:
 		for server in await GameServerModel.filter(client=client).all():
 			result.append(GameServerData(address=server.address, query_port=server.query_port, name=server.name))
 	return GameServers(servers=result)
+
+@router.get("/games/clients", description="Get the list of clients for the game")
+async def games_clients(request: Request, game: GameField) -> GameClients:
+
+	result = []
+	for client in await GameClientModel.filter(game=game).all():
+		result.append(GameClient(ident=client.ident, name=client.name, short_name=client.short_name, files=bool(client.file_manifest)))
+
+	return GameClients(clients=result, gameid=game.ident)
+
+@router.get("/games", description="Get the list of games")
+async def games(request: Request) -> Games:
+
+	result = []
+	for client in await GameModel.filter().all():
+		result.append(Game(ident=client.ident, name=client.name, short_name=client.short_name, files=bool(client.file_manifest)))
+
+	return Games(games=result)
