@@ -16,3 +16,22 @@ class GameServerData(BaseModel):
 
 class GameServers(BaseModel):
 	servers: list[GameServerData] = []
+
+class GameClient(BaseModel):
+	ident: str
+	name: str
+	short_name: str
+	files: bool
+
+class GameClients(BaseModel):
+	gameid: str
+	clients: list[GameClient] = []
+
+class Game(BaseModel):
+	ident: str
+	name: str
+	short_name: str
+	files: bool
+
+class Games(BaseModel):
+	games: list[Game] = []
