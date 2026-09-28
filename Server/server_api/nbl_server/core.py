@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.responses import Response
 import uvicorn
 import asyncio
 from prompt_toolkit.patch_stdout import patch_stdout
@@ -17,6 +18,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from slugify import slugify
 import nbl_server
+import os
 
 class NetBatLauncherServer:
 
@@ -36,23 +38,28 @@ class NetBatLauncherServer:
 		self.__fp_app.include_router(router)
 		self.__fp_app.add_middleware(TrustedHostMiddleware)
 		self.__fp_app.add_middleware(LogMiddleware)
+		self.__fp_app.add_exception_handler(404, self._exc_404)
 
 		self.__storage = self.__storages.get(storage)
 		if not self.__storage: raise Exception(f"Storage '{storage}' does not exist")
 
-		self.__shell.register("game.add", self._cmd_game_add)
-		self.__shell.register("game.rem", self._cmd_game_remove)
-		self.__shell.register("game.list", self._cmd_game_list)
-		self.__shell.register("game.files.upload", self._cmd_game_upload_files)
-		self.__shell.register("game.files.rem", self._cmd_game_remove_files)
-		self.__shell.register("client.add", self._cmd_game_client_add)
-		self.__shell.register("client.rem", self._cmd_game_client_remove)
-		self.__shell.register("client.list", self._cmd_game_clients_list)
-		self.__shell.register("client.files.upload", self._cmd_game_client_upload_files)
-		self.__shell.register("client.files.rem", self._cmd_game_client_remove_files)
-		self.__shell.register("gs.add", self._cmd_add_game_server)
-		self.__shell.register("gs.rem", self._cmd_rem_game_server)
-		self.__shell.register("gs.list", self._cmd_game_server_list)
+		self.__shell.register("game.add", self._cmd_game_add, desc="Add a new game")
+		self.__shell.register("game.rem", self._cmd_game_remove, desc="Delete a game")
+		self.__shell.register("game.list", self._cmd_game_list, desc="Get the list of all games")
+		self.__shell.register("game.files.upload", self._cmd_game_upload_files, desc="Upload game files")
+		self.__shell.register("game.files.rem", self._cmd_game_remove_files, desc="Delete game files")
+		self.__shell.register("client.add", self._cmd_game_client_add, desc="Add a new game client")
+		self.__shell.register("client.rem", self._cmd_game_client_remove, desc="Delete a game client")
+		self.__shell.register("client.list", self._cmd_game_clients_list, desc="Get the list of all game clients")
+		self.__shell.register("client.files.upload", self._cmd_game_client_upload_files, desc="Upload game client files")
+		self.__shell.register("client.files.rem", self._cmd_game_client_remove_files, desc="Delete game client files")
+		self.__shell.register("gs.add", self._cmd_add_game_server, desc="Add a game server to a game client")
+		self.__shell.register("gs.rem", self._cmd_rem_game_server, desc="Delete a game server of a game client")
+		self.__shell.register("gs.list", self._cmd_game_server_list, desc="Get the list of game servers of a game client")
+		self.__shell.register("help", self._on_cmd_help, desc="Get information about all commands")
+
+	async def _exc_404(self, request, exc):
+		return Response(status_code=404)
 
 	@property
 	def storage(self) -> Storage: return self.__storage
@@ -73,6 +80,9 @@ class NetBatLauncherServer:
 			return await GameServerModel.get(ident=serverid, client__ident=clientid, client__game__ident=gameid)
 		except Exception:
 			raise Exception(f"Game server '{serverid}' does not exist")
+
+	async def _on_cmd_help(self):
+		return self.__shell.beautiful_help
 
 	async def _cmd_game_server_list(self, gameid: str, clientid: str):
 		rows = ["id\tname\tshort name\tcreated at\tmodified\taddress\tquery port"]
@@ -223,7 +233,7 @@ class NetBatLauncherServer:
 	@asynccontextmanager
 	async def _fa_lifespan(self, app: FastAPI):
 		app.state.core = self
-		await RegisterTortoise(db_url='sqlite://db.sqlite3', modules={'models': ['nbl_server.models']})
+		await RegisterTortoise(db_url=os.getenv("DB_URL", "sqlite://db.sqlite3"), modules={'models': ['nbl_server.models']})
 		await Tortoise.generate_schemas(safe=True)
 		self.__scheduler.start()
 		yield
