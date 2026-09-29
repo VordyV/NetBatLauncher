@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NBL", "NBL\NBL.csproj", "{E
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test", "Test\Test.csproj", "{B1A12957-9E73-446C-8015-70FFFB8F57F0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NBLHelperApp", "NBLHelperApp\NBLHelperApp.csproj", "{79E17D37-3C29-4D92-87C0-1C694966458A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{B1A12957-9E73-446C-8015-70FFFB8F57F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B1A12957-9E73-446C-8015-70FFFB8F57F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B1A12957-9E73-446C-8015-70FFFB8F57F0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{79E17D37-3C29-4D92-87C0-1C694966458A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{79E17D37-3C29-4D92-87C0-1C694966458A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{79E17D37-3C29-4D92-87C0-1C694966458A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{79E17D37-3C29-4D92-87C0-1C694966458A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

@@ -1,0 +1,71 @@
+services:
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx-server
+    restart: unless-stopped
+    networks:
+      - appnet
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nblserverapi.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - nblserverapi
+
+  mysql:
+    image: mysql:oraclelinux9
+    container_name: mysql
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - dbnet
+    env_file:
+      - .env
+
+  nblserverapi:
+    build: ./server_api
+    image: nblserverapi
+    container_name: nblsapi
+    stdin_open: true
+    restart: unless-stopped
+    tty: true
+    environment:
+      - ADDRESS=${NBL_SERV_API_ADDR}
+      - PORT=${NBL_SERV_API_PORT}
+      - LOG_LEVEL=${NBL_SERV_API_LOG_LEVEL}
+      - TEMP_STORAGE_PATH=${NBL_SERV_API_TEMP_STORAGE_PATH}
+      - LOCAL_STORAGE=${NBL_SERV_API_LOCAL_STORAGE}
+      - DEBUG=${NBL_SERV_API_DEBUG}
+      - DB_URL=mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE}
+    links:
+      - "mysql:db"
+    networks:
+      - dbnet
+      - appnet
+    volumes:
+      - nbl-storage:/app/storage
+      - nbl-temp:/app/temp
+      - nbl-logs:/app/logs
+    depends_on:
+      - mysql
+    env_file:
+      - .env
+
+networks:
+  dbnet:
+    driver: bridge
+  appnet:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  nbl-storage:
+  nbl-temp:
+  nbl-logs:
