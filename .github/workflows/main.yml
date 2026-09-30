@@ -47,7 +47,7 @@ jobs:
       - name: Download proxy
         uses: actions/download-artifact@v4
         with:
-          name: launcher
+          name: build-launcher
           path: release
 
       - name: Create/Update GitHub Release
