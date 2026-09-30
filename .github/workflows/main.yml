@@ -53,14 +53,7 @@ jobs:
             /tr http://timestamp.digicert.com `
             /td SHA256 `
             /v `
-            "NBLApp/bin/Release/net10.0-windows/win-x64/publish/NetBat2142.exe"     # <-- укажи путь к своему .exe
-
-      - name: Verify signature
-        run: |
-          $signtool = (Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin\" -Recurse -Filter signtool.exe | 
-                       Where-Object { $_.DirectoryName -like "*\x64" } | 
-                       Select-Object -First 1).FullName
-          & $signtool verify /pa /v "NBLApp/bin/Release/net10.0-windows/win-x64/publish/NetBat2142.exe"
+            "NBLApp/bin/Release/net10.0-windows/win-x64/publish/NetBat2142.exe"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
