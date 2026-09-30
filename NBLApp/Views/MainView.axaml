@@ -69,7 +69,7 @@
                         <StackPanel Orientation="Horizontal" Spacing="10">
                             <TextBlock Text="{Binding PlatformText}" VerticalAlignment="Center"/>
                             <ComboBox Name="ComboBoxClients"  SelectionChanged="ComboBoxClients_OnSelectionChanged" SelectedIndex="0" VerticalAlignment="Center" Background="Transparent">
-								<ComboBoxItem Content="BallerBude"/>
+								<ComboBoxItem Content="Respy"/>
                             </ComboBox>
                             <TextBlock Text="{Binding ModText}" VerticalAlignment="Center"/>
                             <ComboBox SelectedIndex="0" VerticalAlignment="Center" Background="Transparent">

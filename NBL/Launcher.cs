@@ -7,9 +7,9 @@ public class Launcher
     public static string[] InvalidClientFileExtensions { get; } =
         new[] { ".lnk" };
     public static string ClientId { get; } =
-        "Unknown";
+        "respy";
     public static string ClientName { get; } =
-        "Unknown";
+        "Respy";
     public static string ClientsDir { get; } =
         ".clients";
     public static string ClientManifestFilename { get; } =

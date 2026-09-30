@@ -1,9 +1,10 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
+using Irihi.Avalonia.Shared.Contracts;
 using NBL;
 using NBL.Services;
-using Irihi.Avalonia.Shared.Contracts;
+using NBLApp.Localization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,6 +23,25 @@ public partial class LaunchSettings : UserControl
         this.DataContext =
             this;
     }
+    public string TitleText =>
+        Locale.Get("LaunchSettingsTitle");
+    public string NoIntroText =>
+        Locale.Get("LaunchSettingsNoIntro");
+
+    public string IntroDisabledText =>
+        Locale.Get("LaunchSettingsIntroDisabled");
+
+    public string GameNotInstalledText =>
+        Locale.Get("LaunchSettingsGameNotInstalled");
+
+    public string CustomPlaceholderText =>
+        Locale.Get("LaunchSettingsCustomPlaceholder");
+
+    public string SaveText =>
+        Locale.Get("Save");
+
+    public string CancelText =>
+        Locale.Get("Cancel");
     public LaunchSettings(Game game)
     {
         this.Game =
@@ -47,8 +67,8 @@ public partial class LaunchSettings : UserControl
             this.CheckBoxNoIntro.IsChecked =
                 this.IntroVideoService.AreIntrosDisabled(
                     gamePath);
-            this.TextBlockNoIntroStatus.Text =
-                "Видео вступления будут отключены";
+            this.TextBlockNoIntroStatus.Text = " ";
+                //"Видео вступления будут отключены";
         }
         catch (GamePathNotSetException)
         {
@@ -188,7 +208,7 @@ public partial class LaunchSettings : UserControl
                     new TextBox
                     {
                         Watermark =
-                            "Ввод свойств вручную (например +nosound 1)",
+                            "...+nosound 1...+widescreen 1...",
                         Text =
                             value,
                         HorizontalAlignment =

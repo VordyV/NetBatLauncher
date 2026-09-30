@@ -8,6 +8,7 @@ using Irihi.Avalonia.Shared.Contracts;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 namespace NBLApp.Forms;
 public partial class SettingsGear : UserControl
 {
@@ -133,6 +134,8 @@ public partial class SettingsGear : UserControl
         Locale.Get("ControlSettings");
     public string GameLanguageText =>
         Locale.Get("GameLanguage");
+    public string GenerateKeyText =>
+        Locale.Get("GenerateKey");
 
     public SettingsGear(Game game)
     {
@@ -151,7 +154,14 @@ public partial class SettingsGear : UserControl
         this.LoadVideoSettings();
         this.LoadAudioSettings();
         this.LoadGameLanguage();
+        this.LoadGameKey();
     }
+    public string LauncherVersion =>
+    Assembly.GetExecutingAssembly()
+        .GetName()
+        .Version?
+        .ToString() ?? "Unknown";
+
     private void Locale_LanguageChanged(
         object? sender,
         EventArgs e)
@@ -215,6 +225,14 @@ public partial class SettingsGear : UserControl
         GameLanguageComboBox.SelectedIndex =
             language == "Russian" ? 1 : 0;
     }
+    private void LoadGameKey()
+    {
+        string? key =
+            GameKeyService.GetKey();
+
+        this.TextBoxGameKey.Text =
+            key ?? "";
+    }
     private void SaveGameLanguage()
     {
         string language =
@@ -226,6 +244,19 @@ public partial class SettingsGear : UserControl
 
         GameLanguageService.SetLanguage(
             language);
+    }
+    private void ButtonGenerateGameKey_OnClick(
+    object? sender,
+    RoutedEventArgs e)
+    {
+        bool result =
+            GameKeyService.GenerateAndSetKey();
+
+        if (result)
+        {
+            this.TextBoxGameKey.Text =
+                GameKeyService.GetKey() ?? "";
+        }
     }
     private void DisableVideoSettings()
     {
@@ -545,7 +576,6 @@ public partial class SettingsGear : UserControl
         Locale.Get("Low"),
         Locale.Get("Medium"),
         Locale.Get("High"),
-        Locale.Get("VeryHigh")
                 };
 
             this.ComboBoxSoundQuality.SelectedIndex =
@@ -553,7 +583,6 @@ public partial class SettingsGear : UserControl
                 {
                     "Medium" => 1,
                     "High" => 2,
-                    "VeryHigh" => 3,
                     _ => 0
                 };
 
@@ -606,7 +635,6 @@ public partial class SettingsGear : UserControl
             {
                 1 => "Medium",
                 2 => "High",
-                3 => "VeryHigh",
                 _ => "Low"
             };
 

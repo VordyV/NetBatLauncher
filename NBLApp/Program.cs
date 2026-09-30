@@ -7,11 +7,9 @@ namespace NBLApp;
 
 class Program
 {
-    /// private const string UpdateUrl = "https://netbat2142api"; жду API для обновлений
+    private const string UpdateUrl =
+        "https://raw.githubusercontent.com/VordyV/NetBatLauncher/master/update.xml";
 
-    // Initialization code. Don't use any Avalonia, third-party APIs or any
-    // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
-    // yet and stuff might break.
     [STAThread]
     public static void Main(string[] args)
     {
@@ -25,14 +23,25 @@ class Program
             Environment.Exit(result);
         }
 
+        if (args.Length > 0 &&
+            args[0] == "--set-game-key")
+        {
+            int result =
+                GameKeyService.HandleCommandLine(
+                    args);
+
+            Environment.Exit(result);
+        }
+
+        AutoUpdater.Start(UpdateUrl);
+
         BuildAvaloniaApp()
             .StartWithClassicDesktopLifetime(args);
     }
 
-    // Avalonia configuration, don't remove; also used by visual designer.
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .WithInterFont()
             .LogToTrace();
-};
+}

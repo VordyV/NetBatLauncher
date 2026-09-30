@@ -282,9 +282,6 @@
   <data name="Low" xml:space="preserve">
     <value>Low</value>
   </data>
-  <data name="Medium" xml:space="preserve">
-    <value>Medium</value>
-  </data>
   <data name="High" xml:space="preserve">
     <value>High</value>
   </data>
@@ -308,5 +305,26 @@
   </data>
   <data name="GameLanguage" xml:space="preserve">
     <value>Game language</value>
+  </data>
+  <data name="Medium" xml:space="preserve">
+    <value>Medium</value>
+  </data>
+  <data name="GenerateKey" xml:space="preserve">
+    <value>Generate</value>
+  </data>
+  <data name="LaunchSettingsTitle" xml:space="preserve">
+    <value>LAUNCH PARAMETERS</value>
+  </data>
+  <data name="LaunchSettingsNoIntro" xml:space="preserve">
+    <value>Disable intro</value>
+  </data>
+  <data name="LaunchSettingsIntroDisabled" xml:space="preserve">
+    <value>Intro videos will be disabled</value>
+  </data>
+  <data name="LaunchSettingsGameNotInstalled" xml:space="preserve">
+    <value>Game is not installed</value>
+  </data>
+  <data name="LaunchSettingsCustomPlaceholder" xml:space="preserve">
+    <value>Enter custom properties (e.g. +nosound 1)</value>
   </data>
 </root>

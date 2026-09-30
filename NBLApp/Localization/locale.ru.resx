@@ -282,9 +282,6 @@
   <data name="Low" xml:space="preserve">
     <value>Низкое</value>
   </data>
-  <data name="Medium" xml:space="preserve">
-    <value>Среднее</value>
-  </data>
   <data name="High" xml:space="preserve">
     <value>Высокое</value>
   </data>
@@ -308,5 +305,26 @@
   </data>
   <data name="GameLanguage" xml:space="preserve">
     <value>Язык игры</value>
+  </data>
+  <data name="Medium" xml:space="preserve">
+    <value>Среднее</value>
+  </data>
+  <data name="GenerateKey" xml:space="preserve">
+    <value>Сгенерировать</value>
+  </data>
+  <data name="LaunchSettingsTitle" xml:space="preserve">
+    <value>ПАРАМЕТРЫ ЗАПУСКА</value>
+  </data>
+  <data name="LaunchSettingsNoIntro" xml:space="preserve">
+    <value>Без интро</value>
+  </data>
+  <data name="LaunchSettingsIntroDisabled" xml:space="preserve">
+    <value>Видео вступления будут отключены</value>
+  </data>
+  <data name="LaunchSettingsGameNotInstalled" xml:space="preserve">
+    <value>Игра ещё не установлена</value>
+  </data>
+  <data name="LaunchSettingsCustomPlaceholder" xml:space="preserve">
+    <value>Ввод свойств вручную (например +nosound 1)</value>
   </data>
 </root>

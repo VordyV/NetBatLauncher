@@ -49,9 +49,9 @@ public partial class App : Application
             }},
             new LaunchOptionDict() {Id = "additional", Name = "Additional", Dictionary = new()
             {
-                {"Multi (Возможность запускать несколько процессов игры)", "+multi 1"},
-                {"LowPriority (Запуск с низким приоритетом)", "+lowPriority 1"},
-                {"NoSound (Отключение звука игры)", "+noSound 1"},
+                {"Multi", "+multi 1"},
+                {"LowPriority", "+lowPriority 1"},
+                {"NoSound", "+noSound 1"},
             }},
             new LaunchParamCustom() {Id = "customparam", Name = "CustomParam", FullFormat = true}
         };

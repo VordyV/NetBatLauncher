@@ -12,7 +12,6 @@
              x:Class="NBLApp.Forms.SettingsGear">
 	<c:Form
         Title="{Binding #SettingsGearControl.SettingsText}"
-		SubTitle="Работают только после первого входа в аккаунт!"
         Width="600"  Height="850">
 		<c:Form.Content>
 			<TabControl VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
@@ -28,10 +27,10 @@
 							Margin="0,15,0,15">
 
 							<StackPanel Spacing="12">
-
+								
 								<Grid
 									ColumnDefinitions="*,220"
-									RowDefinitions="Auto"
+									RowDefinitions="Auto,Auto,Auto"
 									RowSpacing="8">
 
 									<TextBlock
@@ -59,28 +58,68 @@
 											Content="{Binding #SettingsGearControl.EnglishText}"/>
 
 									</ComboBox>
-									
-								</Grid>
-								<TextBlock
+
+
+									<TextBlock
 										Grid.Row="1"
 										Grid.Column="0"
 										Text="{Binding #SettingsGearControl.GameLanguageText}"
 										VerticalAlignment="Center"/>
 
-								<ComboBox
-									Name="GameLanguageComboBox"
-									Grid.Row="1"
-									Grid.Column="1">
+									<ComboBox
+										Name="GameLanguageComboBox"
+										Grid.Row="1"
+										Grid.Column="1">
 
-									<ComboBoxItem
-										Content="{Binding #SettingsGearControl.EnglishText}"/>
+										<ComboBoxItem
+											Content="{Binding #SettingsGearControl.EnglishText}"/>
 
-									<ComboBoxItem
-										Content="{Binding #SettingsGearControl.RussianText}"/>
+										<ComboBoxItem
+											Content="{Binding #SettingsGearControl.RussianText}"/>
 
-								</ComboBox>
+									</ComboBox>
+
+								</Grid>
+								<TextBlock Grid.Row="2" Grid.Column="0" Text="Ключ игры" VerticalAlignment="Center"/>
+
+								<StackPanel
+									Grid.Row="2"
+									Grid.Column="1"
+									Spacing="8">
+
+									<TextBox
+										Name="TextBoxGameKey"
+										IsReadOnly="True"
+										HorizontalContentAlignment="Left"
+										VerticalContentAlignment="Center"/>
+
+									<Button
+										Name="ButtonGenerateGameKey"
+										Content="{Binding #SettingsGearControl.GenerateKeyText}"
+										HorizontalAlignment="Stretch"
+										Click="ButtonGenerateGameKey_OnClick"/>
+
+								</StackPanel>
+								<StackPanel
+										HorizontalAlignment="Center"
+										Margin="0,10,0,15"
+										Spacing="3">
+
+									<TextBlock
+										Text="NetBat2142 Launcher"
+										HorizontalAlignment="Center"
+										Opacity="0.7"/>
+
+									<TextBlock
+										Text="{Binding #SettingsGearControl.LauncherVersion}"
+										HorizontalAlignment="Center"
+										Opacity="0.5"
+										FontSize="12"/>
+
+								</StackPanel>
 
 							</StackPanel>
+							
 
 						</StackPanel>
 
@@ -539,7 +578,10 @@
                     Content="{Binding #SettingsGearControl.SaveText}"
                     Classes="Primary"
                     Theme="{StaticResource SolidButton}"/>
-			</StackPanel>
+				
+			</StackPanel>	
+			
 		</c:Form.ActionContent>
+		
 	</c:Form>
 </UserControl>

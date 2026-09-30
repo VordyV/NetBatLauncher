@@ -1,4 +1,3 @@
-```yaml
 name: Build NetBat2142 Launcher
 
 on:
@@ -33,12 +32,23 @@ jobs:
         run: dotnet restore NBLApp/NBLApp.csproj
 
       - name: Publish
-        run: dotnet publish NBLApp/NBLApp.csproj -c Release -r win-x64 --self-contained true --output publish
+        shell: pwsh
+        run: |
+          dotnet publish NBLApp/NBLApp.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:Version=$env:VERSION `
+            -p:AssemblyVersion=$env:VERSION.0 `
+            -p:FileVersion=$env:VERSION.0 `
+            --output publish
 
       - name: Create ZIP
         shell: pwsh
         run: |
-          Compress-Archive -Path publish\* -DestinationPath "NetBat2142-$env:VERSION.zip"
+          Compress-Archive `
+            -Path publish\* `
+            -DestinationPath "NetBat2142-$env:VERSION.zip"
 
       - name: Create GitHub Release
         env:
@@ -71,7 +81,10 @@ jobs:
           </item>
           "@
 
-          Set-Content -Path update.xml -Value $xml -Encoding UTF8
+          Set-Content `
+            -Path update.xml `
+            -Value $xml `
+            -Encoding UTF8
 
       - name: Commit update.xml
         shell: pwsh
@@ -89,5 +102,4 @@ jobs:
           }
 
           git commit -m "Update updater manifest to v$env:VERSION"
-          git push origin HEAD:main
-```
+          git push origin HEAD:master

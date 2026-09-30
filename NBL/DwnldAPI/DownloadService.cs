@@ -41,6 +41,7 @@ public class DownloadService
         return await response.Content.ReadAsStringAsync(
             cancellationToken);
     }
+
     public async Task DownloadFileAsync(
         string url,
         string filePath,
