@@ -23,7 +23,7 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Build
-        working-directory: BLApp
+        working-directory: NBLApp
         run: dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:AssemblyName="NetBat2142" -p:AssemblyTitle="NetBat2142" -p:Description="Game launcher for Battlefield 2142" -p:FileVersion="${{ github.event.release.tag_name }}.0" -p:InformationalVersion="${{ github.event.release.tag_name }}" -p:Version="${{ github.event.release.tag_name }}"
 
       - name: Upload build artifact
@@ -31,7 +31,7 @@ jobs:
         with:
           name: launcher
           path: |
-            BLApp/bin/Release/net10.0/win-x64/publish/NetBat2142.exe
+            NBLApp/bin/Release/net10.0/win-x64/publish/NetBat2142.exe
           
   release:
     name: Add artifacts to release
