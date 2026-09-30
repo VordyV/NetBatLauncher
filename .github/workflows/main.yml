@@ -30,8 +30,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: launcher
+          if-no-files-found: error
           path: |
-            NBLApp/bin/Release/net10.0/win-x64/publish/NetBat2142.exe
+            NBLApp/bin/Release/net10.0-windows/win-x64/publish/NetBat2142.exe
           
   release:
     name: Add artifacts to release
