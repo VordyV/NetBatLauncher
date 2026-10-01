@@ -1,3 +1,4 @@
+using System;
 using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
 using Avalonia.Interactivity;
@@ -5,7 +6,6 @@ using NBL;
 using NBLApp.Controls;
 using NBLApp.Localization;
 using NBLApp.Views;
-using System;
 using System.Threading.Tasks;
 using Window = Avalonia.Controls.Window;
 using WindowNotificationManager = Ursa.Controls.WindowNotificationManager;
@@ -19,7 +19,6 @@ public partial class MainWindow : Window
     protected ViewPresenter<Launcher> ViewPresenter;
     protected WindowNotificationManager NotificationManager;
     public string LauncherTitle => Locale.Get("LauncherTitle");
-
     public MainWindow()
     {
         InitializeComponent();

@@ -1,0 +1,31 @@
+[project]
+name = "server"
+version = "0.1.0"
+description = ""
+package-mode = false
+authors = [
+    {name = "Vordy"}
+]
+requires-python = ">=3.12,<4"
+dependencies = [
+    "fastapi (>=0.141.1,<0.142.0)",
+    "uvicorn (>=0.52.4,<0.53.0)",
+    "tzdata (>=2026.3,<2027.0)",
+    "pyyaml (>=6.0.3,<7.0.0)",
+    "pydantic (>=2.13.5,<3.0.0)",
+    "apscheduler (>=3.11.3,<4.0.0)",
+    "python-dotenv (>=1.2.3,<2.0.0)",
+    "prompt-toolkit (>=3.0.53,<4.0.0)",
+    "callixir (>=0.1.1,<0.2.0)",
+    "loguru (>=0.7.3,<0.8.0)",
+    "httpx (>=0.28.1,<0.29.0)",
+    "python-slugify (>=9.1.1,<10.0.0)",
+    "aiofiles (>=25.1.0,<26.0.0)",
+    "tortoise-orm[asyncmy] (>=1.1.8,<2.0.0)",
+    "cryptography (==44.0.2)",
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
