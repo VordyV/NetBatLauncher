@@ -1,11 +1,12 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Irihi.Avalonia.Shared.Contracts;
 using NBL;
 using NBL.Services;
-using Irihi.Avalonia.Shared.Contracts;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 namespace NBLApp.Forms;
@@ -73,73 +74,15 @@ public partial class SimpInst : UserControl
             ClientUpdateService updateService =
                 new ClientUpdateService();
             const string server =
-                "https://service.2142.stellarbear.space"; /// Жду API для получения актуального сервера
+                "http://api.nbl2142.fun/";
             var progress =
                 new Progress<ClientUpdateProgress>(
                     UpdateProgress);
-            await updateService.UpdateAsync(
-                server,
-                path,
-                progress,
-                _installationCancellation.Token);
-            string clientFilesPath =
-                Path.Combine(
-                    AppContext.BaseDirectory,
-                    "ClientFiles");
-            string sourceBf2142 =
-                Path.Combine(
-                    clientFilesPath,
-                    "BF2142.exe");
-            string sourceRendDx9 =
-                Path.Combine(
-                    clientFilesPath,
-                    "RendDX9.dll");
-            string sourceRendDx9Ori =
-                Path.Combine(
-                    clientFilesPath,
-                    "RendDX9_ori.dll");
-            string targetBf2142 =
-                Path.Combine(
-                    path,
-                    "BF2142.exe");
-            string targetRendDx9 =
-                Path.Combine(
-                    path,
-                    "RendDX9.dll");
-            string targetRendDx9Ori =
-                Path.Combine(
-                    path,
-                    "RendDX9_ori.dll");
-            if (!File.Exists(sourceBf2142))
-            {
-                throw new FileNotFoundException(
-                    "Не найден BF2142.exe.",
-                    sourceBf2142);
-            }
-            if (!File.Exists(sourceRendDx9))
-            {
-                throw new FileNotFoundException(
-                    "Не найден RendDX9.dll.",
-                    sourceRendDx9);
-            }
-            if (!File.Exists(sourceRendDx9Ori))
-            {
-                throw new FileNotFoundException(
-                    "Не найден RendDX9_ori.dll.",
-                    sourceRendDx9Ori);
-            }
-            File.Copy(
-                sourceBf2142,
-                targetBf2142,
-                true);
-            File.Copy(
-                sourceRendDx9,
-                targetRendDx9,
-                true);
-            File.Copy(
-                sourceRendDx9Ori,
-                targetRendDx9Ori,
-                true);
+            await updateService.UpdateAsync(server, "bf2142", path, progress, _installationCancellation.Token);
+
+            TextBlockStatus.Text =
+                "Установка файлов лаунчера...";
+
             TextBlockStatus.Text =
                 "Завершение...";
             ClientData client =
@@ -199,38 +142,59 @@ public partial class SimpInst : UserControl
             _installationCancellation = null;
         }
     }
-    private void UpdateProgress(
-        ClientUpdateProgress progress)
+    private void UpdateProgress(ClientUpdateProgress progress)
     {
         PanelProgress.IsVisible = true;
+
         TextBlockStatus.Text =
-            "Загрузка файлов...";
+            progress.IsDownloading
+                ? "Загрузка файлов..."
+                : "Проверка файлов...";
+
         ProgressBarOverall.Value =
             progress.Percent;
+
         TextBlockOverall.Text =
-            $"Общий прогресс: {progress.Percent}%";
+            $"Общий прогресс: {progress.Percent}% " +
+            $"({progress.CompletedFiles}/{progress.TotalFiles})";
+
         if (progress.BytesPerSecond > 0)
         {
             TextBlockSpeed.Text =
-                $"Скорость: " +
-                $"{FormatSpeed(progress.BytesPerSecond)}";
+                $"Скорость: {FormatSpeed(progress.BytesPerSecond)}";
         }
         else
         {
             TextBlockSpeed.Text =
                 "Скорость: —";
         }
+
         if (progress.EstimatedTimeRemaining.HasValue)
         {
             TextBlockEta.Text =
                 $"Осталось: " +
-                $"{FormatTime(
-                    progress.EstimatedTimeRemaining.Value)}";
+                $"{FormatTime(progress.EstimatedTimeRemaining.Value)}";
         }
         else
         {
             TextBlockEta.Text =
                 "Осталось: —";
+        }
+
+        if (progress.ActiveDownloads.Count > 0)
+        {
+            TextBlockDownloads.Text =
+                string.Join(
+                    Environment.NewLine,
+                    progress.ActiveDownloads.Select(
+                        download =>
+                            $"{download.FileName} — " +
+                            $"{download.Percent}%"));
+        }
+        else
+        {
+            TextBlockDownloads.Text =
+                string.Empty;
         }
     }
     private static string FormatSpeed(

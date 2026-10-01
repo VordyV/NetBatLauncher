@@ -1,370 +1,431 @@
-﻿using NBL.Models;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.Json;
+
 namespace NBL.Services;
+
 public class ActiveDownloadProgress
 {
     public int FileIndex { get; init; }
+
     public string FileName { get; init; } =
         string.Empty;
+
     public int Percent { get; init; }
+
     public long DownloadedBytes { get; init; }
+
     public long TotalBytes { get; init; }
 }
+
 public class ClientUpdateProgress
 {
-    public int CurrentFileNumber { get; init; }
+    public int CompletedFiles { get; init; }
+
     public int TotalFiles { get; init; }
+
     public long DownloadedBytes { get; init; }
+
     public long TotalBytes { get; init; }
+
     public int Percent { get; init; }
+
     public double BytesPerSecond { get; init; }
+
     public TimeSpan? EstimatedTimeRemaining { get; init; }
+
     public bool IsDownloading { get; init; }
-    public IReadOnlyList<ActiveDownloadProgress> ActiveDownloads { get; init; }
-        = Array.Empty<ActiveDownloadProgress>();
+
+    public List<ActiveDownloadProgress> ActiveDownloads { get; init; } =
+        new();
 }
+
 public class ClientUpdateService
 {
     private const int MaxConcurrentDownloads = 3;
+
     private readonly DownloadService _downloadService;
+
     public ClientUpdateService()
     {
         _downloadService =
             new DownloadService();
     }
-    public async Task<RemoteFileInfo[]> GetFileMapAsync(
+
+    public async Task<GameManifest> GetManifestAsync(
         string server,
+        string gameId,
         CancellationToken cancellationToken = default)
     {
         string url =
-            $"{server.TrimEnd('/')}/api/file/map";
+            $"{server.TrimEnd('/')}" +
+            $"/api/games/files/manifest?gameid=" +
+            $"{Uri.EscapeDataString(gameId)}";
+
         string json =
             await _downloadService.GetStringAsync(
                 url,
                 cancellationToken);
+
         var options =
             new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             };
+
         return
-            JsonSerializer.Deserialize<RemoteFileInfo[]>(
+            JsonSerializer.Deserialize<GameManifest>(
                 json,
                 options)
-            ?? Array.Empty<RemoteFileInfo>();
+            ?? throw new InvalidOperationException(
+                "API вернул пустой manifest.");
     }
+
     public async Task UpdateAsync(
         string server,
+        string gameId,
         string gamePath,
         IProgress<ClientUpdateProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
-        RemoteFileInfo[] files =
-            await GetFileMapAsync(
+        GameManifest manifest =
+            await GetManifestAsync(
                 server,
+                gameId,
                 cancellationToken);
-        if (files.Length == 0)
+
+        GameManifestFile[] files =
+            manifest.Files.ToArray();
+
+        int totalFiles =
+            files.Length;
+
+        if (totalFiles == 0)
         {
             progress?.Report(
                 new ClientUpdateProgress
                 {
-                    CurrentFileNumber = 0,
+                    CompletedFiles = 0,
                     TotalFiles = 0,
                     DownloadedBytes = 0,
                     TotalBytes = 0,
                     Percent = 100,
                     BytesPerSecond = 0,
-                    EstimatedTimeRemaining = TimeSpan.Zero,
-                    IsDownloading = false,
-                    ActiveDownloads =
-                        Array.Empty<ActiveDownloadProgress>()
+                    EstimatedTimeRemaining =
+                        TimeSpan.Zero,
+                    IsDownloading = false
                 });
+
             return;
         }
-        long totalBytes =
-            files.Sum(
-                x => Math.Max(0, x.Size));
+
         var downloadedByFile =
             new ConcurrentDictionary<int, long>();
+
+        var totalBytesByFile =
+            new ConcurrentDictionary<int, long>();
+
         var filesToDownload =
-            new List<(int Index, RemoteFileInfo File)>();
+            new List<(int Index, GameManifestFile File)>();
+
+        int completedFiles = 0;
+
         for (int i = 0; i < files.Length; i++)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            RemoteFileInfo file =
+
+            GameManifestFile file =
                 files[i];
-            if (string.IsNullOrWhiteSpace(file.File))
+
+            if (string.IsNullOrWhiteSpace(file.Path))
             {
+                completedFiles++;
                 continue;
             }
+
             string relativePath =
-                file.File.Replace(
+                file.Path.Replace(
                     '/',
                     Path.DirectorySeparatorChar);
+
             string localPath =
                 Path.Combine(
                     gamePath,
                     relativePath);
+
             string? directory =
-                Path.GetDirectoryName(localPath);
+                Path.GetDirectoryName(
+                    localPath);
+
             if (!string.IsNullOrEmpty(directory))
             {
-                Directory.CreateDirectory(directory);
+                Directory.CreateDirectory(
+                    directory);
             }
+
             bool needsDownload =
                 await NeedsDownloadAsync(
                     localPath,
                     file,
                     cancellationToken);
+
             if (needsDownload)
             {
                 filesToDownload.Add(
                     (i, file));
+
                 downloadedByFile[i] = 0;
             }
             else
             {
+                long localSize =
+                    new FileInfo(localPath).Length;
+
                 downloadedByFile[i] =
-                    Math.Max(0, file.Size);
+                    localSize;
+
+                totalBytesByFile[i] =
+                    localSize;
+
+                completedFiles++;
             }
         }
-        long initialDownloaded =
-            downloadedByFile.Values.Sum();
-        int initialPercent =
-            totalBytes > 0
-                ? (int)(
-                    initialDownloaded *
-                    100L /
-                    totalBytes)
-                : 100;
+
+        var activeDownloads =
+            new ConcurrentDictionary<
+                int,
+                ActiveDownloadProgress>();
+
+        Stopwatch stopwatch =
+            Stopwatch.StartNew();
+
         ReportProgress(
             progress,
-            files,
-            files.Length,
+            completedFiles,
+            totalFiles,
             downloadedByFile,
-            new ConcurrentDictionary<int, ActiveDownloadProgress>(),
-            initialDownloaded,
-            totalBytes,
-            initialPercent,
-            0,
-            null,
-            false);
+            totalBytesByFile,
+            activeDownloads,
+            stopwatch,
+            filesToDownload.Count > 0);
+
         if (filesToDownload.Count == 0)
         {
-            ReportProgress(
-                progress,
-                files,
-                files.Length,
-                downloadedByFile,
-                new ConcurrentDictionary<int, ActiveDownloadProgress>(),
-                totalBytes,
-                totalBytes,
-                100,
-                0,
-                TimeSpan.Zero,
-                false);
+            stopwatch.Stop();
+
+            progress?.Report(
+                new ClientUpdateProgress
+                {
+                    CompletedFiles =
+                        totalFiles,
+
+                    TotalFiles =
+                        totalFiles,
+
+                    DownloadedBytes =
+                        downloadedByFile.Values.Sum(),
+
+                    TotalBytes =
+                        totalBytesByFile.Values.Sum(),
+
+                    Percent =
+                        100,
+
+                    BytesPerSecond =
+                        CalculateSpeed(
+                            downloadedByFile.Values.Sum(),
+                            stopwatch.Elapsed),
+
+                    EstimatedTimeRemaining =
+                        TimeSpan.Zero,
+
+                    IsDownloading =
+                        false,
+
+                    ActiveDownloads =
+                        new List<ActiveDownloadProgress>()
+                });
+
             return;
         }
-        var activeDownloads =
-            new ConcurrentDictionary<int, ActiveDownloadProgress>();
+
         using var semaphore =
             new SemaphoreSlim(
                 MaxConcurrentDownloads,
                 MaxConcurrentDownloads);
-        Stopwatch stopwatch =
-            Stopwatch.StartNew();
+
         var tasks =
             new List<Task>();
+
         foreach (var item in filesToDownload)
         {
-            int fileIndex =
-                item.Index;
-            RemoteFileInfo file =
-                item.File;
             tasks.Add(
                 DownloadSingleFileAsync(
-                    server,
                     gamePath,
-                    fileIndex,
-                    file,
-                    files,
+                    item.Index,
+                    item.File,
+                    totalFiles,
                     downloadedByFile,
+                    totalBytesByFile,
                     activeDownloads,
                     semaphore,
-                    totalBytes,
                     stopwatch,
                     progress,
                     cancellationToken));
         }
+
         await Task.WhenAll(tasks);
+
         stopwatch.Stop();
+
         ReportProgress(
             progress,
-            files,
-            files.Length,
+            totalFiles,
+            totalFiles,
             downloadedByFile,
+            totalBytesByFile,
             activeDownloads,
-            totalBytes,
-            totalBytes,
-            100,
-            CalculateSpeed(
-                totalBytes,
-                stopwatch.Elapsed),
-            TimeSpan.Zero,
+            stopwatch,
             false);
     }
+
     private async Task DownloadSingleFileAsync(
-        string server,
         string gamePath,
         int fileIndex,
-        RemoteFileInfo file,
-        RemoteFileInfo[] files,
+        GameManifestFile file,
+        int totalFiles,
         ConcurrentDictionary<int, long> downloadedByFile,
+        ConcurrentDictionary<int, long> totalBytesByFile,
         ConcurrentDictionary<int, ActiveDownloadProgress> activeDownloads,
         SemaphoreSlim semaphore,
-        long totalBytes,
         Stopwatch stopwatch,
         IProgress<ClientUpdateProgress>? progress,
         CancellationToken cancellationToken)
     {
         await semaphore.WaitAsync(
             cancellationToken);
+
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
+
             string relativePath =
-                file.File.Replace(
+                file.Path.Replace(
                     '/',
                     Path.DirectorySeparatorChar);
+
             string localPath =
                 Path.Combine(
                     gamePath,
                     relativePath);
-            activeDownloads[fileIndex] =
-                new ActiveDownloadProgress
-                {
-                    FileIndex =
-                        fileIndex,
-                    FileName =
-                        file.File,
-                    Percent =
-                        0,
-                    DownloadedBytes =
-                        0,
-                    TotalBytes =
-                        file.Size
-                };
-            ReportProgress(
-                progress,
-                files,
-                fileIndex + 1,
-                downloadedByFile,
-                activeDownloads,
-                downloadedByFile.Values.Sum(),
-                totalBytes,
-                CalculateOverallPercent(
-                    downloadedByFile.Values.Sum(),
-                    totalBytes),
-                CalculateSpeed(
-                    downloadedByFile.Values.Sum(),
-                    stopwatch.Elapsed),
-                CalculateEta(
-                    downloadedByFile.Values.Sum(),
-                    totalBytes,
-                    stopwatch.Elapsed),
-                true);
-            string url =
-                $"{server.TrimEnd('/')}" +
-                $"/api/file/get?name=" +
-                Uri.EscapeDataString(file.File);
+
             var fileProgress =
                 new Progress<DownloadProgress>(
                     downloadProgress =>
                     {
                         long currentBytes =
-                            Math.Clamp(
-                                downloadProgress.SizeCurrent,
+                            Math.Max(
                                 0,
-                                Math.Max(
-                                    0,
-                                    file.Size));
+                                downloadProgress.SizeCurrent);
+
+                        long totalFileBytes =
+                            Math.Max(
+                                0,
+                                downloadProgress.SizeTotal);
+
+                        if (totalFileBytes > 0)
+                        {
+                            totalBytesByFile[fileIndex] =
+                                totalFileBytes;
+                        }
+
                         downloadedByFile[fileIndex] =
                             currentBytes;
+
                         activeDownloads[fileIndex] =
                             new ActiveDownloadProgress
                             {
                                 FileIndex =
                                     fileIndex,
+
                                 FileName =
-                                    file.File,
+                                    file.Path,
+
                                 Percent =
-                                    Math.Clamp(
-                                        downloadProgress.Percent,
-                                        0,
-                                        100),
+                                    downloadProgress.Percent,
+
                                 DownloadedBytes =
                                     currentBytes,
+
                                 TotalBytes =
-                                    file.Size
+                                    totalFileBytes
                             };
-                        long overallDownloaded =
-                            downloadedByFile.Values.Sum();
-                        double speed =
-                            CalculateSpeed(
-                                overallDownloaded,
-                                stopwatch.Elapsed);
+
                         ReportProgress(
                             progress,
-                            files,
-                            fileIndex + 1,
+                        CountCompletedFiles(
+                                downloadedByFile,
+                                totalBytesByFile),
+                            totalFiles,
                             downloadedByFile,
+                            totalBytesByFile,
                             activeDownloads,
-                            overallDownloaded,
-                            totalBytes,
-                            CalculateOverallPercent(
-                                overallDownloaded,
-                                totalBytes),
-                            speed,
-                            CalculateEta(
-                                overallDownloaded,
-                                totalBytes,
-                                stopwatch.Elapsed),
+                            stopwatch,
                             true);
                     });
+
             await _downloadService.DownloadFileAsync(
-                url,
+                file.Url,
                 localPath,
                 fileProgress,
                 cancellationToken);
+
+            string localHash =
+                await HashHelper.CalculateSha256Async(
+                    localPath,
+                    cancellationToken);
+
+            if (!string.Equals(
+                    localHash,
+                    file.ChecksumSha256,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    File.Delete(localPath);
+                }
+                catch
+                {
+                }
+
+                throw new InvalidDataException(
+                    $"Контрольная сумма файла '{file.Path}' " +
+                    $"не совпадает с manifest.");
+            }
+
+            long actualFileSize =
+                new FileInfo(localPath).Length;
+
+            totalBytesByFile[fileIndex] =
+                actualFileSize;
+
             downloadedByFile[fileIndex] =
-                Math.Max(0, file.Size);
+                actualFileSize;
+
             activeDownloads.TryRemove(
                 fileIndex,
                 out _);
-            long overallDownloaded =
-                downloadedByFile.Values.Sum();
-            double speed =
-                CalculateSpeed(
-                    overallDownloaded,
-                    stopwatch.Elapsed);
+
             ReportProgress(
                 progress,
-                files,
-                fileIndex + 1,
+                CountCompletedFiles(
+                    downloadedByFile,
+                    totalBytesByFile),
+                totalFiles,
                 downloadedByFile,
+                totalBytesByFile,
                 activeDownloads,
-                overallDownloaded,
-                totalBytes,
-                CalculateOverallPercent(
-                    overallDownloaded,
-                    totalBytes),
-                speed,
-                CalculateEta(
-                    overallDownloaded,
-                    totalBytes,
-                    stopwatch.Elapsed),
+                stopwatch,
                 activeDownloads.Count > 0);
         }
         finally
@@ -372,50 +433,76 @@ public class ClientUpdateService
             semaphore.Release();
         }
     }
+
+    private static int CountCompletedFiles(
+        ConcurrentDictionary<int, long> downloadedByFile,
+        ConcurrentDictionary<int, long> totalBytesByFile)
+    {
+        int completedFiles = 0;
+
+        foreach (int fileIndex in downloadedByFile.Keys)
+        {
+            if (!totalBytesByFile.TryGetValue(
+                    fileIndex,
+                    out long totalBytes))
+            {
+                continue;
+            }
+
+            long downloadedBytes =
+                downloadedByFile[fileIndex];
+
+            if (totalBytes > 0 &&
+                downloadedBytes >= totalBytes)
+            {
+                completedFiles++;
+            }
+        }
+
+        return completedFiles;
+    }
+
     private static async Task<bool> NeedsDownloadAsync(
         string localPath,
-        RemoteFileInfo remoteFile,
+        GameManifestFile remoteFile,
         CancellationToken cancellationToken)
     {
         if (!File.Exists(localPath))
         {
             return true;
         }
-        FileInfo localFile =
-            new FileInfo(localPath);
-        if (localFile.Length != remoteFile.Size)
-        {
-            return true;
-        }
-        string localMd5 =
-            await HashHelper.CalculateMd5Async(
+
+        string localHash =
+            await HashHelper.CalculateSha256Async(
                 localPath,
                 cancellationToken);
-        if (string.IsNullOrEmpty(localMd5))
+
+        if (string.IsNullOrEmpty(localHash))
         {
             return true;
         }
+
         return !string.Equals(
-            localMd5,
-            remoteFile.Md5,
+            localHash,
+            remoteFile.ChecksumSha256,
             StringComparison.OrdinalIgnoreCase);
     }
-    private static int CalculateOverallPercent(
-        long downloadedBytes,
-        long totalBytes)
+
+    private static int CalculateFilePercent(
+        int completedFiles,
+        int totalFiles)
     {
-        if (totalBytes <= 0)
+        if (totalFiles <= 0)
         {
             return 100;
         }
+
         return Math.Clamp(
-            (int)(
-                downloadedBytes *
-                100L /
-                totalBytes),
+            completedFiles * 100 / totalFiles,
             0,
             100);
     }
+
     private static double CalculateSpeed(
         long downloadedBytes,
         TimeSpan elapsed)
@@ -425,10 +512,12 @@ public class ClientUpdateService
         {
             return 0;
         }
+
         return
             downloadedBytes /
             elapsed.TotalSeconds;
     }
+
     private static TimeSpan? CalculateEta(
         long downloadedBytes,
         long totalBytes,
@@ -442,66 +531,94 @@ public class ClientUpdateService
                 ? TimeSpan.Zero
                 : null;
         }
+
         double speed =
             CalculateSpeed(
                 downloadedBytes,
                 elapsed);
+
         if (speed <= 0)
         {
             return null;
         }
+
         long remaining =
             totalBytes -
             downloadedBytes;
+
         return TimeSpan.FromSeconds(
             remaining / speed);
     }
+
     private static void ReportProgress(
         IProgress<ClientUpdateProgress>? progress,
-        RemoteFileInfo[] files,
-        int currentFileNumber,
+        int completedFiles,
+        int totalFiles,
         ConcurrentDictionary<int, long> downloadedByFile,
+        ConcurrentDictionary<int, long> totalBytesByFile,
         ConcurrentDictionary<int, ActiveDownloadProgress> activeDownloads,
-        long downloadedBytes,
-        long totalBytes,
-        int percent,
-        double bytesPerSecond,
-        TimeSpan? eta,
+        Stopwatch stopwatch,
         bool isDownloading)
     {
         if (progress == null)
         {
             return;
         }
-        List<ActiveDownloadProgress> active =
-            activeDownloads.Values
-                .OrderBy(x => x.FileIndex)
-                .Take(MaxConcurrentDownloads)
-                .ToList();
+
+        long downloadedBytes =
+            downloadedByFile.Values.Sum();
+
+        long totalBytes =
+            totalBytesByFile.Values.Sum();
+
+        double bytesPerSecond =
+            CalculateSpeed(
+                downloadedBytes,
+                stopwatch.Elapsed);
+
+        TimeSpan? eta =
+            CalculateEta(
+                downloadedBytes,
+                totalBytes,
+                stopwatch.Elapsed);
+
+        int percent =
+            CalculateFilePercent(
+                completedFiles,
+                totalFiles);
+
         progress.Report(
             new ClientUpdateProgress
             {
-                CurrentFileNumber =
-                    currentFileNumber,
+                CompletedFiles =
+                    completedFiles,
+
                 TotalFiles =
-                    files.Length,
+                    totalFiles,
+
                 DownloadedBytes =
                     downloadedBytes,
+
                 TotalBytes =
                     totalBytes,
+
                 Percent =
-                    Math.Clamp(
-                        percent,
-                        0,
-                        100),
+                    percent,
+
                 BytesPerSecond =
                     bytesPerSecond,
+
                 EstimatedTimeRemaining =
                     eta,
+
                 IsDownloading =
                     isDownloading,
+
                 ActiveDownloads =
-                    active
+                    activeDownloads.Values
+                        .OrderBy(
+                            x => x.FileIndex)
+                        .ToList()
             });
     }
 }

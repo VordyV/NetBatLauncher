@@ -13,7 +13,7 @@
         Title="NBLApp">
     <c:Window ClickHide="Window_OnClickHide" ClickMinMax="Window_OnClickMinMax" ClickClose="Window_OnClickClose">
         <c:Window.TitleContent>
-            <TextBlock Foreground="#fcffff">NetBat2142 Launcher</TextBlock>
+            <TextBlock Foreground="#fcffff" Text="{Binding LauncherTitle}"/>
         </c:Window.TitleContent>
         <Grid>
             <ContentControl Name="MainContent"/>

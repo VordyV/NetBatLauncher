@@ -76,7 +76,7 @@ public class Configurator
     }
     public void CheckSection(string sectionName)
     {
-        if (!this.HasSection(sectionName)) throw new Exception($"Section '{sectionName}' does not exist");
+        if (!this.HasSection(sectionName))  throw new Exception($"Section '{sectionName}' does not exist");
     }
     public void CheckOption(string sectionName, string optionName)
     {
@@ -135,5 +135,23 @@ public class Configurator
         {
             await Task.Delay(TimeSpan.FromMilliseconds(10));
         }
+    }
+    public void ReadSync(bool createMissing = false)
+    {
+        this.LockRead = true;
+
+        if (createMissing && !File.Exists(this.Path))
+        {
+            File.WriteAllText(this.Path, this.DefaultData);
+        }
+
+        string rawData = File.ReadAllText(this.Path);
+
+        this.RootNode =
+            rawData.Trim() != ""
+                ? JsonNode.Parse(rawData)
+                : JsonNode.Parse(this.DefaultData);
+
+        this.LockRead = false;
     }
 }

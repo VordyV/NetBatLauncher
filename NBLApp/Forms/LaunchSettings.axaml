@@ -5,11 +5,12 @@
              mc:Ignorable="d"
              d:DesignWidth="600"
              d:DesignHeight="650"
+			 x:Name="LaunchSettingsControl"
              xmlns:c="clr-namespace:NBLApp.Controls"
              x:Class="NBLApp.Forms.LaunchSettings">
 	<c:Form
-        Title="Настройки"
-        SubTitle="Параметры запуска Battlefield 2142"
+        Name="LaunchSettingsForm"
+        Title="{Binding #LaunchSettingsControl.TitleText}"
         Width="600">
 		<c:Form.Content>
 			<ScrollViewer
@@ -17,21 +18,14 @@
                 VerticalScrollBarVisibility="Auto">
 				<StackPanel Spacing="25">
 					<StackPanel Spacing="10">
-						<TextBlock
-                            Text="ПАРАМЕТРЫ ЗАПУСКА"
-                            Classes="H7"
-                            Theme="{StaticResource TitleTextBlock}"/>
-						<TextBlock>
-							Режим окна
-						</TextBlock>
 						<ContentControl
                             Name="MainContent"/>
 						<CheckBox
                             Name="CheckBoxNoIntro"
-                            Content="Без интро"/>
+                            Content="{Binding #LaunchSettingsControl.NoIntroText}"/>
 						<TextBlock
                             Name="TextBlockNoIntroStatus"
-                            Text="Игра не установлена"
+                            Text="{Binding #LaunchSettingsControl.GameNotInstalledText}"
                             Opacity="0.6"
                             FontSize="12"
                             TextWrapping="Wrap"/>
@@ -47,11 +41,11 @@
 				<Button
                     Name="ButtonCancel"
                     Click="ButtonCancel_OnClick"
-                    Content="Отмена"/>
+                    Content="{Binding #LaunchSettingsControl.CancelText}"/>
 				<Button
                     Name="ButtonSave"
                     Click="ButtonSave_OnClick"
-                    Content="Сохранить"
+                    Content="{Binding #LaunchSettingsControl.SaveText}"
                     Classes="Primary"
                     Theme="{StaticResource SolidButton}"/>
 			</StackPanel>
