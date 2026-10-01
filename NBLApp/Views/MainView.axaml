@@ -20,6 +20,9 @@
                 </StackPanel>
 				<Grid Grid.Row="4">
 					    <StackPanel>
+							<Button Click="Telegram_Click" Background="Transparent" HorizontalAlignment="Center">
+								<Image Source="/Assets/Telegram.png" Width="19" Height="19"/>
+							</Button>
 						    <Button Background="Transparent" HorizontalAlignment="Center">
 							    <Button.Content>
 								    <Image Source="/Assets/bell.png" Width="19" Height="19"/>

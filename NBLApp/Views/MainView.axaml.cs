@@ -8,6 +8,8 @@ using NBLApp.Controls;
 using NBLApp.Forms;
 using NBLApp.Localization;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Ursa.Controls;
@@ -301,4 +303,13 @@ public partial class MainView : View
                     false
             });
     }
+    private void Telegram_Click(object? sender, RoutedEventArgs e)
+    {
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = "https://t.me/VSEM2142",
+            UseShellExecute = true
+        });
+    }
+    
 }
