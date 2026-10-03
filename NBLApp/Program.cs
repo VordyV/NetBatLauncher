@@ -13,35 +13,66 @@ class Program
     [STAThread]
     public static void Main(string[] args)
     {
-        if (args.Length > 0 &&
-            args[0] == "--set-game-language")
+        Logger.Initialize();
+
+        Logger.Info("Application starting");
+        Logger.Info($"Arguments: {(args.Length > 0 ? string.Join(" ", args) : "none")}");
+
+        try
         {
-            int result =
-                GameLanguageService.HandleCommandLine(
-                    args);
+            if (args.Length > 0 &&
+                args[0] == "--set-game-language")
+            {
+                Logger.Info("Command line mode: --set-game-language");
 
-            Environment.Exit(result);
+                int result =
+                    GameLanguageService.HandleCommandLine(args);
+
+                Logger.Info($"Game language command finished with code: {result}");
+
+                Environment.Exit(result);
+            }
+
+            if (args.Length > 0 &&
+                args[0] == "--set-game-key")
+            {
+                Logger.Info("Command line mode: --set-game-key");
+
+                int result =
+                    GameKeyService.HandleCommandLine(args);
+
+                Logger.Info($"Game key command finished with code: {result}");
+
+                Environment.Exit(result);
+            }
+
+            Logger.Info("Starting AutoUpdater");
+            Logger.Info($"Update URL: {UpdateUrl}");
+
+            AutoUpdater.Start(UpdateUrl);
+
+            Logger.Info("Starting Avalonia application");
+
+            BuildAvaloniaApp()
+                .StartWithClassicDesktopLifetime(args);
+
+            Logger.Info("Avalonia application closed");
         }
-
-        if (args.Length > 0 &&
-            args[0] == "--set-game-key")
+        catch (Exception ex)
         {
-            int result =
-                GameKeyService.HandleCommandLine(
-                    args);
+            Logger.Error("Unhandled exception in Program.Main", ex);
 
-            Environment.Exit(result);
+            throw;
         }
-
-        AutoUpdater.Start(UpdateUrl);
-
-        BuildAvaloniaApp()
-            .StartWithClassicDesktopLifetime(args);
     }
 
     public static AppBuilder BuildAvaloniaApp()
-        => AppBuilder.Configure<App>()
+    {
+        Logger.Info("Building Avalonia application");
+
+        return AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .WithInterFont()
             .LogToTrace();
+    }
 }
