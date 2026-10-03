@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, WebSocket
 from fastapi.responses import RedirectResponse, Response, FileResponse
 from fastapi.exceptions import HTTPException
 from typing import Annotated
 from pydantic import Field
-from .models import GameModel, FileModel, FileManifestModel, GameClientModel, GameServerModel
+
+from .models import GameModel, FileModel, FileManifestModel, GameClientModel, GameServerModel, GameServerDataModel
 from .schemes import ResponseFile, ResponseGameFilesManifest
 from .storage import StorageObjectType
 from .schemes import GameServerData, GameServers, GameClient, GameClients, Games, Game
@@ -29,11 +30,18 @@ async def game_client(ctx: CtxField, game: GameField, clientid: GameClientIdFiel
 	if not client: raise HTTPException(status_code=404, detail=f"Game client '{clientid}' does not exist")
 	return client
 
+async def game_client_opt(ctx: CtxField, game: GameField, clientid: GameClientIdField = None) -> GameClientModel | GameModel:
+	if not clientid: return game
+	client = await GameClientModel.get_or_none(ident=clientid)
+	if not client: raise HTTPException(status_code=404, detail=f"Game client '{clientid}' does not exist")
+	return client
+
 CtxField = Annotated[Context, Depends(ctx)]
 GameIdField = Annotated[str, Field(max_length=64)]
 GameClientIdField = Annotated[str, Field(max_length=64)]
 GameField = Annotated[GameModel, Depends(game)]
 GameClientField = Annotated[GameClientModel, Depends(game_client)]
+GameClientOptField = Annotated[GameClientModel | GameModel, Depends(game_client_opt)]
 
 @router.get("/games/files/manifest", description="Get the list of game files and links to download them")
 async def games_files_manifest(ctx: CtxField, game: GameField) -> ResponseGameFilesManifest:
@@ -86,12 +94,20 @@ async def storage_download(request: Request, file_id: str):
         )
 
 @router.get("/games/servers", description="Get the list of game servers for the game client")
-async def games_servers(request: Request, game: GameField) -> GameServers:
-
+async def games_servers(request: Request, game_client: GameClientOptField) -> GameServers:
 	result = []
-	for client in await GameClientModel.filter(game=game).all():
-		for server in await GameServerModel.filter(client=client).all():
-			result.append(GameServerData(address=server.address, query_port=server.query_port, name=server.name))
+
+	if isinstance(game_client, GameModel):
+		for client in await GameClientModel.filter(game=game_client).all():
+			for server in await GameServerModel.filter(client=client).all():
+				result.append(GameServerData(address=server.address, query_port=server.query_port, name=server.name, clientid=client.ident))
+			for server in await GameServerDataModel.filter(client=client).all():
+				result.append(GameServerData(address=server.address, query_port=server.query_port, name=server.name, clientid=client.ident))
+	else:
+		for server in await GameServerModel.filter(client=game_client).all():
+			result.append(GameServerData(address=server.address, query_port=server.query_port, name=server.name, clientid=game_client.ident))
+		for server in await GameServerDataModel.filter(client=game_client).all():
+			result.append(GameServerData(address=server.address, query_port=server.query_port, name=server.name, clientid=game_client.ident))
 	return GameServers(servers=result)
 
 @router.get("/games/clients", description="Get the list of clients for the game")
