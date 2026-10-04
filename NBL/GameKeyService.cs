@@ -2,6 +2,7 @@
 using System;
 using System.Diagnostics;
 using System.Text;
+using System.Security.Cryptography;
 
 namespace NBL.Services;
 
@@ -139,5 +140,18 @@ public static class GameKeyService
         {
             return 1;
         }
+    }
+    public static string? GetKeyMd5()
+    {
+        string? key = GetKey();
+
+        if (string.IsNullOrWhiteSpace(key))
+            return null;
+
+        byte[] hash =
+            MD5.HashData(
+                Encoding.UTF8.GetBytes(key));
+
+        return Convert.ToHexString(hash);
     }
 }

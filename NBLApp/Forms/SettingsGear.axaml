@@ -119,16 +119,28 @@
 								<StackPanel Spacing="8">
 
 									<TextBlock
-										Text="{Binding #SettingsGearControl.GameKeyText}"
+										Text="{Binding #SettingsGearControl.KeyHashText}"
 										VerticalAlignment="Center"/>
 
-									<TextBox
-										Name="TextBoxGameKey"
-										IsReadOnly="True"
-										IsEnabled="False"
-										HorizontalContentAlignment="Left"
-										VerticalContentAlignment="Center"
-										HorizontalAlignment="Stretch"/>
+									<Grid
+										ColumnDefinitions="*,Auto"
+										ColumnSpacing="8">
+
+										<TextBox
+											Name="TextBoxGameKeyMd5"
+											Grid.Column="0"
+											IsReadOnly="True"
+											IsEnabled="False"
+											HorizontalContentAlignment="Left"
+											VerticalContentAlignment="Center"/>
+
+										<Button
+											Grid.Column="1"
+											Content="{Binding #SettingsGearControl.CopyText}"
+											Click="ButtonCopyGameKeyHash_OnClick"
+											Padding="16,8"/>
+
+									</Grid>
 
 									<Button
 										Name="ButtonGenerateGameKey"

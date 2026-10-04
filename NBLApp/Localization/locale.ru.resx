@@ -310,7 +310,7 @@
     <value>Среднее</value>
   </data>
   <data name="GenerateKey" xml:space="preserve">
-    <value>Сгенерировать</value>
+    <value>Сгенерировать ключ</value>
   </data>
   <data name="LaunchSettingsTitle" xml:space="preserve">
     <value>ПАРАМЕТРЫ ЗАПУСКА</value>
@@ -326,9 +326,6 @@
   </data>
   <data name="LaunchSettingsCustomPlaceholder" xml:space="preserve">
     <value>Ввод свойств вручную (например +nosound 1)</value>
-  </data>
-  <data name="GameKey" xml:space="preserve">
-    <value>Ключ игры</value>
   </data>
   <data name="Logfolder" xml:space="preserve">
     <value>Папка логов</value>
@@ -377,5 +374,11 @@
   </data>
   <data name="Close" xml:space="preserve">
     <value>Закрыть</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>Копировать</value>
+  </data>
+  <data name="KeyHash" xml:space="preserve">
+    <value>Хеш ключа</value>
   </data>
 </root>

@@ -310,7 +310,7 @@
     <value>Medium</value>
   </data>
   <data name="GenerateKey" xml:space="preserve">
-    <value>Generate</value>
+    <value>Generate key</value>
   </data>
   <data name="LaunchSettingsTitle" xml:space="preserve">
     <value>LAUNCH PARAMETERS</value>
@@ -326,9 +326,6 @@
   </data>
   <data name="LaunchSettingsCustomPlaceholder" xml:space="preserve">
     <value>Enter custom properties (e.g. +nosound 1)</value>
-  </data>
-  <data name="GameKey" xml:space="preserve">
-    <value>Game key</value>
   </data>
   <data name="Logfolder" xml:space="preserve">
     <value>Log folder</value>
@@ -377,5 +374,11 @@
   </data>
   <data name="Close" xml:space="preserve">
     <value>Close</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="KeyHash" xml:space="preserve">
+    <value>Hash key</value>
   </data>
 </root>
