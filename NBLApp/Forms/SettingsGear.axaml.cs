@@ -1,12 +1,15 @@
 ﻿using Avalonia.Controls;
+using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
+using Irihi.Avalonia.Shared.Contracts;
 using NBL;
 using NBL.Models;
 using NBL.Services;
 using NBLApp.Localization;
-using Irihi.Avalonia.Shared.Contracts;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 namespace NBLApp.Forms;
@@ -22,7 +25,13 @@ public partial class SettingsGear : UserControl
     private bool AudioSettingsAvailable;
 
     protected Game Game;
-   
+
+    public string LogDirectory =>
+        Logger.LogDirectory;
+    public string OpenText =>
+        Locale.Get("Open");
+    public string LogFolderText =>
+        Locale.Get("Logfolder");
     public string LauncherSettingsText =>
         Locale.Get("LauncherSettings");
 
@@ -136,6 +145,10 @@ public partial class SettingsGear : UserControl
         Locale.Get("GameLanguage");
     public string GenerateKeyText =>
         Locale.Get("GenerateKey");
+    public string CopyText =>
+        Locale.Get("Copy");
+    public string KeyHashText =>
+        Locale.Get("KeyHash");
 
     public SettingsGear(Game game)
     {
@@ -227,9 +240,48 @@ public partial class SettingsGear : UserControl
     }
     private void LoadGameKey()
     {
-        string? key = GameKeyService.GetKey();
-        if (key is null) this.TextBoxGameKey.Text = "The key is not set";
-        else this.TextBoxGameKey.Text = $"{key[5..9]}-{key[10..14]}-{key[15..19]}-{key[20..24]}";
+        this.TextBoxGameKeyMd5.Text =
+            GameKeyService.GetKeyMd5() ?? "";
+    }
+    private void ButtonGenerateGameKey_OnClick(
+     object? sender,
+     RoutedEventArgs e)
+    {
+        bool result =
+            GameKeyService.GenerateAndSetKey();
+
+        if (result)
+        {
+            this.TextBoxGameKeyMd5.Text =
+                GameKeyService.GetKeyMd5() ?? "";
+        }
+    }
+    private async void ButtonCopyGameKeyHash_OnClick(
+     object? sender,
+     RoutedEventArgs e)
+    {
+        try
+        {
+            string? hash =
+                this.TextBoxGameKeyMd5.Text;
+
+            if (string.IsNullOrWhiteSpace(hash))
+                return;
+
+            TopLevel? topLevel =
+                TopLevel.GetTopLevel(this);
+
+            if (topLevel?.Clipboard == null)
+                return;
+
+            await topLevel.Clipboard.SetTextAsync(hash);
+        }
+        catch (Exception exception)
+        {
+            Logger.Error(
+                "Failed to copy game key hash",
+                exception);
+        }
     }
     private void SaveGameLanguage()
     {
@@ -242,19 +294,6 @@ public partial class SettingsGear : UserControl
 
         GameLanguageService.SetLanguage(
             language);
-    }
-    private void ButtonGenerateGameKey_OnClick(
-    object? sender,
-    RoutedEventArgs e)
-    {
-        bool result =
-            GameKeyService.GenerateAndSetKey();
-
-        if (result)
-        {
-            this.TextBoxGameKey.Text =
-                GameKeyService.GetKey() ?? "";
-        }
     }
     private void DisableVideoSettings()
     {
@@ -706,5 +745,34 @@ public partial class SettingsGear : UserControl
         this.UpdateVolumeText(
             this.TextBlockVoipCaptureVolume,
             e.NewValue);
+    }
+    private async void OpenLogs_Click(
+    object? sender,
+    Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        try
+        {
+            Directory.CreateDirectory(
+                Logger.LogDirectory);
+
+            var topLevel =
+                TopLevel.GetTopLevel(this);
+
+            if (topLevel == null)
+                return;
+
+            var folder =
+                new DirectoryInfo(
+                    Logger.LogDirectory);
+
+            await topLevel.Launcher
+                .LaunchDirectoryInfoAsync(folder);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(
+                "Failed to open log directory",
+                ex);
+        }
     }
 }

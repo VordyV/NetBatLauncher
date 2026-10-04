@@ -310,7 +310,7 @@
     <value>Medium</value>
   </data>
   <data name="GenerateKey" xml:space="preserve">
-    <value>Generate</value>
+    <value>Generate key</value>
   </data>
   <data name="LaunchSettingsTitle" xml:space="preserve">
     <value>LAUNCH PARAMETERS</value>
@@ -326,5 +326,59 @@
   </data>
   <data name="LaunchSettingsCustomPlaceholder" xml:space="preserve">
     <value>Enter custom properties (e.g. +nosound 1)</value>
+  </data>
+  <data name="Logfolder" xml:space="preserve">
+    <value>Log folder</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="GamePath" xml:space="preserve">
+    <value>Game path</value>
+  </data>
+  <data name="Installing" xml:space="preserve">
+    <value>Installing...</value>
+  </data>
+  <data name="InstallDownloading" xml:space="preserve">
+    <value>Downloading files...</value>
+  </data>
+  <data name="InstallChecking" xml:space="preserve">
+    <value>Checking files...</value>
+  </data>
+  <data name="InstallLauncherFiles" xml:space="preserve">
+    <value>Installing launcher files...</value>
+  </data>
+  <data name="InstallFinishing" xml:space="preserve">
+    <value>Finishing...</value>
+  </data>
+  <data name="InstallCompleted" xml:space="preserve">
+    <value>Installation completed</value>
+  </data>
+  <data name="InstallCancelled" xml:space="preserve">
+    <value>Installation cancelled</value>
+  </data>
+  <data name="InstallOverallProgress" xml:space="preserve">
+    <value>Overall progress</value>
+  </data>
+  <data name="InstallSpeed" xml:space="preserve">
+    <value>Speed</value>
+  </data>
+  <data name="InvalidGamePath" xml:space="preserve">
+    <value>Invalid path</value>
+  </data>
+  <data name="InstallRemaining" xml:space="preserve">
+    <value>Remaining</value>
+  </data>
+  <data name="Install" xml:space="preserve">
+    <value>Install</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="KeyHash" xml:space="preserve">
+    <value>Hash key</value>
   </data>
 </root>

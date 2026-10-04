@@ -1,6 +1,9 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
+
 namespace NBL.Services;
+
 public class IntroVideoService
 {
     private static readonly string[] MovieFiles =
@@ -10,6 +13,7 @@ public class IntroVideoService
         "Intro.bik",
         "Dice.bik"
     };
+
     private static readonly string[] DisabledMovieFiles =
     {
         "EA.bikz",
@@ -17,13 +21,16 @@ public class IntroVideoService
         "Intro.bikz",
         "Dice.bikz"
     };
+
     public bool AreIntrosDisabled(
         string gamePath)
     {
         string moviesPath =
             GetMoviesPath(gamePath);
+
         if (!Directory.Exists(moviesPath))
             return false;
+
         foreach (string file in DisabledMovieFiles)
         {
             if (File.Exists(
@@ -34,19 +41,52 @@ public class IntroVideoService
                 return true;
             }
         }
+
         return false;
     }
+
+    public bool IsIntroVideo(
+        string filePath)
+    {
+        string fileName =
+            Path.GetFileName(filePath);
+
+        return MovieFiles.Contains(
+            fileName,
+            StringComparer.OrdinalIgnoreCase);
+    }
+
+    public bool IsIntroVideoDisabled(
+        string gamePath,
+        string filePath)
+    {
+        string fileName =
+            Path.GetFileName(filePath);
+
+        if (!IsIntroVideo(fileName))
+            return false;
+
+        string disabledFile =
+            Path.Combine(
+                GetMoviesPath(gamePath),
+                $"{fileName}z");
+
+        return File.Exists(disabledFile);
+    }
+
     public void SetIntrosDisabled(
         string gamePath,
         bool disabled)
     {
         string moviesPath =
             GetMoviesPath(gamePath);
+
         if (!Directory.Exists(moviesPath))
         {
             throw new DirectoryNotFoundException(
                 $"BF2142 Movies folder not found: {moviesPath}");
         }
+
         if (disabled)
         {
             DisableMovies(moviesPath);
@@ -56,6 +96,7 @@ public class IntroVideoService
             RestoreMovies(moviesPath);
         }
     }
+
     private static void DisableMovies(
         string moviesPath)
     {
@@ -65,10 +106,12 @@ public class IntroVideoService
                 Path.Combine(
                     moviesPath,
                     file);
+
             string target =
                 Path.Combine(
                     moviesPath,
                     $"{file}z");
+
             if (File.Exists(source)
                 && !File.Exists(target))
             {
@@ -78,6 +121,7 @@ public class IntroVideoService
             }
         }
     }
+
     private static void RestoreMovies(
         string moviesPath)
     {
@@ -87,10 +131,12 @@ public class IntroVideoService
                 Path.Combine(
                     moviesPath,
                     file);
+
             string target =
                 Path.Combine(
                     moviesPath,
                     file[..^1]);
+
             if (File.Exists(source)
                 && !File.Exists(target))
             {
@@ -100,6 +146,7 @@ public class IntroVideoService
             }
         }
     }
+
     private static string GetMoviesPath(
         string gamePath)
     {

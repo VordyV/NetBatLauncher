@@ -207,7 +207,7 @@ public partial class LaunchSettings : UserControl
                 TextBox textBox =
                     new TextBox
                     {
-                        Watermark =
+                        PlaceholderText =
                             "...+nosound 1...+widescreen 1...",
                         Text =
                             value,

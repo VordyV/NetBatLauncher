@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using NBL.Services;
+using System.Diagnostics;
 using System.Text.Json;
 using static NBL.LaunchParamDict;
 namespace NBL;
@@ -53,18 +54,28 @@ public class Game
     }
     public async Task<bool> CheckInstall()
     {
+        Logger.Debug($"Checking installation: {this.Id}");
+
         await this.Launcher.Registry.WaitReadiness();
+
         bool isInstall =
             this.HasGameInRegistry("path") &&
             this.CheckPathInstall();
+
         this.IsInstall =
             isInstall;
+
+        Logger.Info(
+            $"Game installation check: {this.Id}, installed={this.IsInstall}");
+
         if (!this.IsInstall)
         {
             await this.SetStatus(
                 GameStatus.NotInstalled);
+
             return false;
         }
+
         if (this.IsGameRunning())
         {
             await this.SetStatus(
@@ -75,23 +86,41 @@ public class Game
             await this.SetStatus(
                 GameStatus.NotRunning);
         }
+
         return true;
     }
     public bool CheckPathInstall()
     {
         if (!this.HasGameInRegistry("path"))
+        {
+            Logger.Warning(
+                $"Game path is not configured: {this.Id}");
+
             return false;
+        }
+
         string path =
             this.Registry.Get<string>(
                 this.Id,
                 "path");
-        if (!Directory.Exists(path))
-            return false;
+
         string exePath =
             Path.Combine(
                 path,
                 "BF2142.exe");
-        return File.Exists(exePath);
+
+        bool directoryExists =
+            Directory.Exists(path);
+
+        bool executableExists =
+            File.Exists(exePath);
+
+        Logger.Debug(
+            $"Game path check: path='{path}', " +
+            $"directoryExists={directoryExists}, " +
+            $"exeExists={executableExists}");
+
+        return directoryExists && executableExists;
     }
     public void AddGameRegistry(string path)
     {
@@ -222,18 +251,27 @@ public class Game
     {
         if (!this.HasGameInRegistry("path"))
         {
+            Logger.Warning(
+                $"Game path is not configured: {this.Id}");
+
             throw new GamePathNotSetException(
                 $"Игра '{this.Id}' путь не установлен");
         }
+
         string path =
             this.Registry.Get<string>(
                 this.Id,
                 "path");
+
         if (!Directory.Exists(path))
         {
+            Logger.Error(
+                $"Game path does not exist: '{path}'");
+
             throw new GamePathNotFoundException(
                 $"Путь '{path}' игры '{this.Id}' не найден");
         }
+
         return path;
     }
     public bool TryGetPath(
@@ -393,6 +431,9 @@ public class Game
                 }
             }
         }
+        Logger.Debug(
+    $"Built launch arguments for '{this.Id}': " +
+    $"{(args.Count > 0 ? string.Join(" ", args) : "none")}");
         return args.ToArray();
     }
     public void SetLaunchParameters(
@@ -500,7 +541,20 @@ public class Game
                 parameters[launchParam.Id] = value;
             }
         }
+        Logger.Debug(
+    $"Loaded launch parameters for '{this.Id}': " +
+    string.Join(
+        ", ",
+        parameters.Select(
+            x => $"{x.Key}={FormatLaunchParameterValue(x.Value)}")));
         return parameters;
+    }
+    private static string FormatLaunchParameterValue(object? value)
+    {
+        if (value is string[] array)
+            return $"[{string.Join(", ", array)}]";
+
+        return value?.ToString() ?? "null";
     }
     public string[] BuildSavedLaunchParams()
     {
@@ -529,29 +583,52 @@ public class Game
     }
     public async Task Launch()
     {
+        Logger.Info($"Launch requested: {this.Id}");
+
         if (!this.IsInstall)
         {
+            Logger.Warning(
+                $"Launch cancelled: game is not installed: {this.Id}");
+
             throw new GameInstallException(
                 "Игра не установлена");
         }
+
         if (this.IsGameRunning())
         {
+            Logger.Info(
+                $"Launch cancelled: game is already running: {this.Id}");
+
             return;
         }
+
         string gamePath =
             this.GetPath();
+
         string exePath =
             Path.Combine(
                 gamePath,
                 "BF2142.exe");
+
+        Logger.Info(
+            $"Game executable: '{exePath}'");
+
         if (!File.Exists(exePath))
         {
+            Logger.Error(
+                $"Game executable not found: '{exePath}'");
+
             throw new FileNotFoundException(
                 "BF2142.exe не найден",
                 exePath);
         }
+
         string[] args =
             this.BuildSavedLaunchParams();
+
+        Logger.Info(
+            $"Launch parameters: {(args.Length > 0 ? string.Join(" ", args) : "none")}");
+
         ProcessStartInfo startInfo =
             new ProcessStartInfo
             {
@@ -562,11 +639,16 @@ public class Game
                 UseShellExecute =
                     false
             };
+
         foreach (string arg in args)
         {
             startInfo.ArgumentList.Add(
                 arg);
         }
+
+        Logger.Debug(
+            $"Working directory: '{gamePath}'");
+
         _gameProcess =
             new Process
             {
@@ -575,28 +657,61 @@ public class Game
                 EnableRaisingEvents =
                     true
             };
+
         _gameProcess.Exited +=
             async (_, _) =>
             {
                 Process? process =
                     _gameProcess;
+
                 _gameProcess =
                     null;
+
+                Logger.Info(
+                    $"Game process exited: {this.Id}");
+
                 if (process != null)
                 {
                     process.Dispose();
                 }
+
                 await SetStatus(
                     GameStatus.NotRunning);
             };
-        if (!_gameProcess.Start())
+
+        try
         {
-            _gameProcess.Dispose();
-            _gameProcess = null;
-            throw new Exception(
-                "Не удалось запустить BF2142.exe");
+            Logger.Info(
+                $"Starting game process: {exePath}");
+
+            if (!_gameProcess.Start())
+            {
+                Logger.Error(
+                    $"Process.Start returned false: {exePath}");
+
+                _gameProcess.Dispose();
+                _gameProcess = null;
+
+                throw new Exception(
+                    "Не удалось запустить BF2142.exe");
+            }
+
+            Logger.Info(
+                $"Game process started successfully: {this.Id}, PID={_gameProcess.Id}");
+
+            await SetStatus(
+                GameStatus.Running);
         }
-        await SetStatus(
-            GameStatus.Running);
+        catch (Exception ex)
+        {
+            Logger.Error(
+                $"Failed to start game: {exePath}",
+                ex);
+
+            _gameProcess?.Dispose();
+            _gameProcess = null;
+
+            throw;
+        }
     }
 }

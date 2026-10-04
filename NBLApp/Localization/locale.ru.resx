@@ -310,7 +310,7 @@
     <value>Среднее</value>
   </data>
   <data name="GenerateKey" xml:space="preserve">
-    <value>Сгенерировать</value>
+    <value>Сгенерировать ключ</value>
   </data>
   <data name="LaunchSettingsTitle" xml:space="preserve">
     <value>ПАРАМЕТРЫ ЗАПУСКА</value>
@@ -326,5 +326,59 @@
   </data>
   <data name="LaunchSettingsCustomPlaceholder" xml:space="preserve">
     <value>Ввод свойств вручную (например +nosound 1)</value>
+  </data>
+  <data name="Logfolder" xml:space="preserve">
+    <value>Папка логов</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Открыть</value>
+  </data>
+  <data name="GamePath" xml:space="preserve">
+    <value>Путь игры</value>
+  </data>
+  <data name="Installing" xml:space="preserve">
+    <value>Установка...</value>
+  </data>
+  <data name="InstallDownloading" xml:space="preserve">
+    <value>Загрузка файлов...</value>
+  </data>
+  <data name="InstallChecking" xml:space="preserve">
+    <value>Проверка файлов...</value>
+  </data>
+  <data name="InstallLauncherFiles" xml:space="preserve">
+    <value>Установка файлов лаунчера...</value>
+  </data>
+  <data name="InstallFinishing" xml:space="preserve">
+    <value>Завершение...</value>
+  </data>
+  <data name="InstallCompleted" xml:space="preserve">
+    <value>Установка завершена</value>
+  </data>
+  <data name="InstallCancelled" xml:space="preserve">
+    <value>Установка отменена</value>
+  </data>
+  <data name="InstallOverallProgress" xml:space="preserve">
+    <value>Общий прогресс</value>
+  </data>
+  <data name="InstallSpeed" xml:space="preserve">
+    <value>Скорость</value>
+  </data>
+  <data name="InvalidGamePath" xml:space="preserve">
+    <value>Неверный путь</value>
+  </data>
+  <data name="InstallRemaining" xml:space="preserve">
+    <value>Осталось</value>
+  </data>
+  <data name="Install" xml:space="preserve">
+    <value>Установить</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Закрыть</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>Копировать</value>
+  </data>
+  <data name="KeyHash" xml:space="preserve">
+    <value>Хеш ключа</value>
   </data>
 </root>
