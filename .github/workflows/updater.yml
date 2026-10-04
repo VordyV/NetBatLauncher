@@ -22,7 +22,7 @@ jobs:
 
       - name: Creating the file
         run: |
-          echo "<?xml version="1.0" encoding="UTF-8"?>\n<item>\n<version>2.0.0.0</version>\n<url>https://rbsoft.org/downloads/AutoUpdaterTest.zip</url>\n<changelog>https://github.com/ravibpatel/AutoUpdater.NET/releases</changelog>\n<mandatory>false</mandatory>\n</item>" > update.xml
+          echo -e "<?xml version="1.0" encoding="UTF-8"?>\n<item>\n<version>2.0.0.0</version>\n<url>https://rbsoft.org/downloads/AutoUpdaterTest.zip</url>\n<changelog>https://github.com/ravibpatel/AutoUpdater.NET/releases</changelog>\n<mandatory>false</mandatory>\n</item>" > update.xml
 
       - name: Commit and push file
         run: |
