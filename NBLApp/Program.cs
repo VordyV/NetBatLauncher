@@ -49,7 +49,7 @@ class Program
             Logger.Info("Starting AutoUpdater");
             Logger.Info($"Update URL: {UpdateUrl}");
 
-            AutoUpdater.Start(UpdateUrl);
+            AutoUpdater.Start("https://raw.githubusercontent.com/VordyV/NetBatLauncher/main/update.xml");
 
             Logger.Info("Starting Avalonia application");
 

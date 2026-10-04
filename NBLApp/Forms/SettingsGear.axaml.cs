@@ -1,12 +1,14 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
+using Irihi.Avalonia.Shared.Contracts;
 using NBL;
 using NBL.Models;
 using NBL.Services;
 using NBLApp.Localization;
-using Irihi.Avalonia.Shared.Contracts;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 namespace NBLApp.Forms;
@@ -22,7 +24,15 @@ public partial class SettingsGear : UserControl
     private bool AudioSettingsAvailable;
 
     protected Game Game;
-   
+
+    public string LogDirectory =>
+        Logger.LogDirectory;
+    public string OpenText =>
+        Locale.Get("Open");
+    public string LogFolderText =>
+        Locale.Get("Logfolder");
+    public string GameKeyText =>
+        Locale.Get("GameKey");
     public string LauncherSettingsText =>
         Locale.Get("LauncherSettings");
 
@@ -708,5 +718,34 @@ public partial class SettingsGear : UserControl
         this.UpdateVolumeText(
             this.TextBlockVoipCaptureVolume,
             e.NewValue);
+    }
+    private async void OpenLogs_Click(
+    object? sender,
+    Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        try
+        {
+            Directory.CreateDirectory(
+                Logger.LogDirectory);
+
+            var topLevel =
+                TopLevel.GetTopLevel(this);
+
+            if (topLevel == null)
+                return;
+
+            var folder =
+                new DirectoryInfo(
+                    Logger.LogDirectory);
+
+            await topLevel.Launcher
+                .LaunchDirectoryInfoAsync(folder);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(
+                "Failed to open log directory",
+                ex);
+        }
     }
 }

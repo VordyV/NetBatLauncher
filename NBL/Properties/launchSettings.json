@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Debug": {
+      "commandName": "Executable",
+      "executablePath": "C:\\Users\\KranPlas\\source\\repos\\NetBatLauncher\\NetBatLauncher2142-0.1.0\\NBLApp\\bin\\Debug\\net10.0-windows\\NetBat2142.exe"
+    },
+    "Release": {
+      "commandName": "Executable",
+      "executablePath": "C:\\Users\\KranPlas\\source\\repos\\NetBatLauncher\\NetBatLauncher2142-0.1.0\\NBLApp\\bin\\Release\\net10.0-windows\\NetBat2142.exe"
+    }
+  }
+}

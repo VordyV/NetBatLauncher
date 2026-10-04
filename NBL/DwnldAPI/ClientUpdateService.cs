@@ -45,11 +45,15 @@ public class ClientUpdateService
     private const int MaxConcurrentDownloads = 3;
 
     private readonly DownloadService _downloadService;
+    private readonly IntroVideoService _introVideoService;
 
     public ClientUpdateService()
     {
         _downloadService =
             new DownloadService();
+
+        _introVideoService =
+            new IntroVideoService();
     }
 
     public async Task<GameManifest> GetManifestAsync(
@@ -62,6 +66,8 @@ public class ClientUpdateService
             $"/api/games/files/manifest?gameid=" +
             $"{Uri.EscapeDataString(gameId)}";
 
+        Logger.Info($"Getting game manifest: {url}");
+
         string json =
             await _downloadService.GetStringAsync(
                 url,
@@ -73,12 +79,18 @@ public class ClientUpdateService
                 PropertyNameCaseInsensitive = true
             };
 
-        return
+        GameManifest manifest =
             JsonSerializer.Deserialize<GameManifest>(
                 json,
                 options)
             ?? throw new InvalidOperationException(
                 "API вернул пустой manifest.");
+
+        Logger.Info(
+            $"Manifest received: game={gameId}, " +
+            $"files={manifest.Files.Count}");
+
+        return manifest;
     }
 
     public async Task UpdateAsync(
@@ -88,6 +100,10 @@ public class ClientUpdateService
         IProgress<ClientUpdateProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
+        Logger.Info(
+            $"Starting client update: " +
+            $"game={gameId}, path={gamePath}");
+
         GameManifest manifest =
             await GetManifestAsync(
                 server,
@@ -95,13 +111,24 @@ public class ClientUpdateService
                 cancellationToken);
 
         GameManifestFile[] files =
-            manifest.Files.ToArray();
+            manifest.Files
+                .Where(file =>
+                    !_introVideoService.IsIntroVideoDisabled(
+                        gamePath,
+                        file.Path))
+                .ToArray();
 
         int totalFiles =
             files.Length;
 
+        Logger.Info(
+            $"Files in manifest: {manifest.Files.Count}, " +
+            $"files to process: {totalFiles}");
+
         if (totalFiles == 0)
         {
+            Logger.Info("No files need to be processed.");
+
             progress?.Report(
                 new ClientUpdateProgress
                 {
@@ -159,8 +186,7 @@ public class ClientUpdateService
 
             if (!string.IsNullOrEmpty(directory))
             {
-                Directory.CreateDirectory(
-                    directory);
+                Directory.CreateDirectory(directory);
             }
 
             bool needsDownload =
@@ -175,6 +201,9 @@ public class ClientUpdateService
                     (i, file));
 
                 downloadedByFile[i] = 0;
+
+                Logger.Info(
+                    $"File needs download: {file.Path}");
             }
             else
             {
@@ -188,6 +217,9 @@ public class ClientUpdateService
                     localSize;
 
                 completedFiles++;
+
+                Logger.Info(
+                    $"File already up to date: {file.Path}");
             }
         }
 
@@ -213,41 +245,27 @@ public class ClientUpdateService
         {
             stopwatch.Stop();
 
-            progress?.Report(
-                new ClientUpdateProgress
-                {
-                    CompletedFiles =
-                        totalFiles,
+            Logger.Info(
+                $"Update completed without downloads: " +
+                $"files={totalFiles}");
 
-                    TotalFiles =
-                        totalFiles,
-
-                    DownloadedBytes =
-                        downloadedByFile.Values.Sum(),
-
-                    TotalBytes =
-                        totalBytesByFile.Values.Sum(),
-
-                    Percent =
-                        100,
-
-                    BytesPerSecond =
-                        CalculateSpeed(
-                            downloadedByFile.Values.Sum(),
-                            stopwatch.Elapsed),
-
-                    EstimatedTimeRemaining =
-                        TimeSpan.Zero,
-
-                    IsDownloading =
-                        false,
-
-                    ActiveDownloads =
-                        new List<ActiveDownloadProgress>()
-                });
+            ReportProgress(
+                progress,
+                totalFiles,
+                totalFiles,
+                downloadedByFile,
+                totalBytesByFile,
+                activeDownloads,
+                stopwatch,
+                false);
 
             return;
         }
+
+        Logger.Info(
+            $"Starting downloads: " +
+            $"files={filesToDownload.Count}, " +
+            $"maxConcurrent={MaxConcurrentDownloads}");
 
         using var semaphore =
             new SemaphoreSlim(
@@ -274,7 +292,25 @@ public class ClientUpdateService
                     cancellationToken));
         }
 
-        await Task.WhenAll(tasks);
+        try
+        {
+            await Task.WhenAll(tasks);
+        }
+        catch (OperationCanceledException)
+        {
+            Logger.Warning(
+                "Client update cancelled.");
+
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(
+                "Client update failed.",
+                ex);
+
+            throw;
+        }
 
         stopwatch.Stop();
 
@@ -287,6 +323,11 @@ public class ClientUpdateService
             activeDownloads,
             stopwatch,
             false);
+
+        Logger.Info(
+            $"Client update completed: " +
+            $"files={totalFiles}, " +
+            $"elapsed={stopwatch.Elapsed}");
     }
 
     private async Task DownloadSingleFileAsync(
@@ -308,6 +349,9 @@ public class ClientUpdateService
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            Logger.Info(
+                $"Download started: {file.Path}");
 
             string relativePath =
                 file.Path.Replace(
@@ -363,7 +407,7 @@ public class ClientUpdateService
 
                         ReportProgress(
                             progress,
-                        CountCompletedFiles(
+                            CountCompletedFiles(
                                 downloadedByFile,
                                 totalBytesByFile),
                             totalFiles,
@@ -380,6 +424,10 @@ public class ClientUpdateService
                 fileProgress,
                 cancellationToken);
 
+            Logger.Info(
+                $"Download finished, checking SHA-256: " +
+                $"{file.Path}");
+
             string localHash =
                 await HashHelper.CalculateSha256Async(
                     localPath,
@@ -390,12 +438,18 @@ public class ClientUpdateService
                     file.ChecksumSha256,
                     StringComparison.OrdinalIgnoreCase))
             {
+                Logger.Warning(
+                    $"SHA-256 mismatch: {file.Path}");
+
                 try
                 {
                     File.Delete(localPath);
                 }
-                catch
+                catch (Exception ex)
                 {
+                    Logger.Warning(
+                        $"Could not delete invalid file: " +
+                        $"{localPath}. {ex.Message}");
                 }
 
                 throw new InvalidDataException(
@@ -416,6 +470,10 @@ public class ClientUpdateService
                 fileIndex,
                 out _);
 
+            Logger.Info(
+                $"File verified successfully: " +
+                $"{file.Path}");
+
             ReportProgress(
                 progress,
                 CountCompletedFiles(
@@ -427,6 +485,19 @@ public class ClientUpdateService
                 activeDownloads,
                 stopwatch,
                 activeDownloads.Count > 0);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(
+                $"Failed to download/update file: " +
+                $"{file.Path}",
+                ex);
+
+            activeDownloads.TryRemove(
+                fileIndex,
+                out _);
+
+            throw;
         }
         finally
         {
@@ -463,12 +534,15 @@ public class ClientUpdateService
     }
 
     private static async Task<bool> NeedsDownloadAsync(
-        string localPath,
-        GameManifestFile remoteFile,
-        CancellationToken cancellationToken)
+     string localPath,
+     GameManifestFile remoteFile,
+     CancellationToken cancellationToken)
     {
         if (!File.Exists(localPath))
         {
+            Logger.Debug(
+                $"File does not exist: '{localPath}'");
+
             return true;
         }
 
@@ -479,29 +553,43 @@ public class ClientUpdateService
 
         if (string.IsNullOrEmpty(localHash))
         {
+            Logger.Warning(
+                $"Could not calculate SHA-256: '{localPath}'");
+
             return true;
         }
 
-        return !string.Equals(
-            localHash,
-            remoteFile.ChecksumSha256,
-            StringComparison.OrdinalIgnoreCase);
+        bool matches =
+            string.Equals(
+                localHash,
+                remoteFile.ChecksumSha256,
+                StringComparison.OrdinalIgnoreCase);
+
+        Logger.Debug(
+            $"SHA-256 check: '{remoteFile.Path}', " +
+            $"matches={matches}");
+
+        return !matches;
     }
 
-    private static int CalculateFilePercent(
-        int completedFiles,
-        int totalFiles)
+private static int CalculateProgress(
+    long downloadedBytes,
+    long totalBytes)
     {
-        if (totalFiles <= 0)
+        if (totalBytes <= 0)
         {
-            return 100;
+            return 0;
         }
 
         return Math.Clamp(
-            completedFiles * 100 / totalFiles,
+            (int)(
+                downloadedBytes *
+                100L /
+                totalBytes),
             0,
             100);
     }
+
 
     private static double CalculateSpeed(
         long downloadedBytes,
@@ -583,9 +671,9 @@ public class ClientUpdateService
                 stopwatch.Elapsed);
 
         int percent =
-            CalculateFilePercent(
-                completedFiles,
-                totalFiles);
+     CalculateProgress(
+         downloadedBytes,
+         totalBytes);
 
         progress.Report(
             new ClientUpdateProgress

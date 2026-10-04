@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography;
+﻿using NBL.Services;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 namespace NBL;
@@ -18,19 +19,25 @@ public class Launcher
         ".statesnapshot";
     public Configurator Registry { get; }
     protected Dictionary<string, Game> Games;
-    
+
     public Launcher(string pathConfig)
     {
         this.Games = new();
         this.Registry = new Configurator(pathConfig);
+
+        Logger.Info(
+            $"Launcher created: config='{pathConfig}'");
     }
     public void RegisterGame(
-        string gameId,
-        string name,
-        string shortName,
-        string[] determinants,
-        ILaunchParam[] launchParams)
+     string gameId,
+     string name,
+     string shortName,
+     string[] determinants,
+     ILaunchParam[] launchParams)
     {
+        Logger.Info(
+            $"Registering game: id='{gameId}', name='{name}', shortName='{shortName}'");
+
         if (!this.Games.TryAdd(
                 gameId,
                 new Game(
@@ -42,9 +49,15 @@ public class Launcher
                     determinants: determinants,
                     launchParams: launchParams)))
         {
+            Logger.Error(
+                $"Game registration failed: game '{gameId}' is already registered");
+
             throw new GameAlreadyRegException(
                 $"Игра с этим ID '{gameId}' уже зарегистрирована");
         }
+
+        Logger.Info(
+            $"Game registered successfully: '{gameId}'");
     }
     public Game GetGame(string gameId)
     {
@@ -61,21 +74,33 @@ public class Launcher
     public List<string> GetGames() =>
         this.Games.Keys.ToList();
     public void AddGameRegistry(
-        string gameId,
-        string path)
+    string gameId,
+    string path)
     {
+        Logger.Info(
+            $"Adding game to registry: game='{gameId}', path='{path}'");
+
         Game game =
             this.GetGame(gameId);
+
         if (game.IsInstall)
         {
+            Logger.Warning(
+                $"Game already registered: '{gameId}'");
+
             throw new GameInstallException(
                 $"Игра '{gameId}' уже зарегистрирована в реестре");
         }
+
         this.Registry.AddSection(gameId);
+
         this.Registry.Set(
             gameId,
             "path",
             path);
+
+        Logger.Info(
+            $"Game registry added successfully: game='{gameId}', path='{path}'");
     }
     public async Task<ClientData[]> GetClients(
         string gameId)
@@ -119,144 +144,290 @@ public class Launcher
                     throw new Exception();
                 clients.Add(client);
             }
-            catch
+            catch (Exception ex)
             {
-                Console.WriteLine(
-                    $"Не удалось прочитать манифест клиента '{Path.GetDirectoryName(dir)}'. Файл поврежден.");
+                Logger.Error(
+                    $"Failed to read client manifest: '{manifest}'",
+                    ex);
             }
         }
+        Logger.Info(
+    $"Loaded {clients.Count} clients for game '{gameId}'");
         return clients.ToArray();
     }
     public async Task SetStateSnapshot(
-        string gameId,
-        StateSnapshot state)
+     string gameId,
+     StateSnapshot state)
     {
         Game game =
             this.GetGame(gameId);
+
         string path =
             game.GetPath();
-        string data =
-            JsonSerializer.Serialize(state);
-        await File.WriteAllTextAsync(
-            Path.Combine(
-                path,
-                Launcher.StateSnapshotFilename),
-            data);
-    }
-    public async Task<StateSnapshot?> GetStateSnapshot(
-        string gameId)
-    {
-        Game game =
-            this.GetGame(gameId);
-        string path =
-            game.GetPath();
+
         string snapshotPath =
             Path.Combine(
                 path,
                 Launcher.StateSnapshotFilename);
+
+        string data =
+            JsonSerializer.Serialize(state);
+
+        await File.WriteAllTextAsync(
+            snapshotPath,
+            data);
+
+        Logger.Debug(
+            $"State snapshot saved: game='{gameId}', " +
+            $"files={state.Files.Count}, path='{snapshotPath}'");
+    }
+    public async Task<StateSnapshot?> GetStateSnapshot(
+     string gameId)
+    {
+        Game game =
+            this.GetGame(gameId);
+
+        string path =
+            game.GetPath();
+
+        string snapshotPath =
+            Path.Combine(
+                path,
+                Launcher.StateSnapshotFilename);
+
         if (!File.Exists(snapshotPath))
+        {
+            Logger.Debug(
+                $"State snapshot not found: game='{gameId}', " +
+                $"path='{snapshotPath}'");
+
             return null;
+        }
+
         string data =
             await File.ReadAllTextAsync(
                 snapshotPath);
-        return JsonSerializer.Deserialize<StateSnapshot>(
-            data);
+
+        StateSnapshot? state =
+            JsonSerializer.Deserialize<StateSnapshot>(
+                data);
+
+        Logger.Debug(
+            $"State snapshot loaded: game='{gameId}', " +
+            $"files={state?.Files.Count ?? 0}");
+
+        return state;
     }
     public async Task ChangeClientGame(
         string gameId,
         string clientId)
     {
-        Game game =
-            this.GetGame(gameId);
-        string path =
-            game.GetPath();
-        StateSnapshot? currentState =
-            await this.GetStateSnapshot(
-                gameId);
-        if (currentState == null)
-            return;
-        ClientData newClient =
-            game.Clients[clientId];
-        string refClientId =
-            game.GetReferenceClient();
-        ClientData refClient =
-            game.Clients[refClientId];
-        StateSnapshot newState =
-            new StateSnapshot
-            {
-                Files = currentState.Files
-            };
-        string clientsDir =
-            Path.Combine(
-                path,
-                Launcher.ClientsDir);
-        string newClientDir =
-            Path.Combine(
-                clientsDir,
-                newClient.ID);
-        string refClientDir =
-            Path.Combine(
-                clientsDir,
-                refClientId);
-        foreach (var file in currentState.Files)
+        Logger.Info(
+            $"Changing game client: game='{gameId}', client='{clientId}'");
+
+        try
         {
-            if (newClient.Files.Contains(file.Key) &&
-                file.Value != newClient.ID)
+            Game game =
+                this.GetGame(gameId);
+
+            string path =
+                game.GetPath();
+
+            Logger.Debug(
+                $"Game path: '{path}'");
+
+            StateSnapshot? currentState =
+                await this.GetStateSnapshot(
+                    gameId);
+
+            Logger.Debug(
+    $"Looking for clients: game='{gameId}', " +
+    $"directory='{Path.Combine(path, Launcher.ClientsDir)}'");
+
+            if (currentState == null)
             {
-                File.Copy(
-                    Path.Combine(
-                        newClientDir,
-                        file.Key),
-                    Path.Combine(
-                        path,
-                        file.Key),
-                    overwrite: true);
-                newState.Files[file.Key] =
-                    newClient.ID;
+                Logger.Warning(
+                    $"No state snapshot found for game '{gameId}'");
+
+                return;
             }
-            if (!newClient.Files.Contains(file.Key) &&
-                refClient.Files.Contains(file.Key) &&
-                file.Value != refClientId)
+
+
+            Logger.Debug(
+                $"Current state contains {currentState.Files.Count} files");
+
+            if (!game.Clients.TryGetValue(
+                    clientId,
+                    out ClientData? newClient))
             {
-                File.Copy(
-                    Path.Combine(
-                        refClientDir,
-                        file.Key),
-                    Path.Combine(
-                        path,
-                        file.Key),
-                    overwrite: true);
-                newState.Files[file.Key] =
-                    refClientId;
+                Logger.Error(
+                    $"Client '{clientId}' was not found for game '{gameId}'");
+
+                throw new Exception(
+                    $"Клиент '{clientId}' не найден");
             }
-            if (!newClient.Files.Contains(file.Key) &&
-                !refClient.Files.Contains(file.Key))
+
+            string refClientId =
+                game.GetReferenceClient();
+
+            if (!game.Clients.TryGetValue(
+                    refClientId,
+                    out ClientData? refClient))
             {
-                File.Delete(
-                    Path.Combine(
-                        path,
-                        file.Key));
-                newState.Files.Remove(
-                    file.Key);
+                Logger.Error(
+                    $"Reference client '{refClientId}' was not found");
+
+                throw new Exception(
+                    $"Reference client '{refClientId}' не найден");
             }
+
+            Logger.Info(
+                $"Switching client: '{refClientId}' -> '{newClient.ID}'");
+
+            StateSnapshot newState =
+                new StateSnapshot
+                {
+                    Files =
+                        currentState.Files
+                };
+
+            string clientsDir =
+                Path.Combine(
+                    path,
+                    Launcher.ClientsDir);
+
+            string newClientDir =
+                Path.Combine(
+                    clientsDir,
+                    newClient.ID);
+
+            string refClientDir =
+                Path.Combine(
+                    clientsDir,
+                    refClientId);
+
+            Logger.Debug(
+                $"New client directory: '{newClientDir}'");
+
+            Logger.Debug(
+                $"Reference client directory: '{refClientDir}'");
+
+            foreach (var file in currentState.Files)
+            {
+                if (newClient.Files.Contains(file.Key) &&
+                    file.Value != newClient.ID)
+                {
+                    string source =
+                        Path.Combine(
+                            newClientDir,
+                            file.Key);
+
+                    string destination =
+                        Path.Combine(
+                            path,
+                            file.Key);
+
+                    Logger.Debug(
+                        $"Copying client file: '{file.Key}' " +
+                        $"from '{newClient.ID}'");
+
+                    File.Copy(
+                        source,
+                        destination,
+                        overwrite: true);
+
+                    newState.Files[file.Key] =
+                        newClient.ID;
+                }
+
+                if (!newClient.Files.Contains(file.Key) &&
+                    refClient.Files.Contains(file.Key) &&
+                    file.Value != refClientId)
+                {
+                    string source =
+                        Path.Combine(
+                            refClientDir,
+                            file.Key);
+
+                    string destination =
+                        Path.Combine(
+                            path,
+                            file.Key);
+
+                    Logger.Debug(
+                        $"Restoring reference file: '{file.Key}'");
+
+                    File.Copy(
+                        source,
+                        destination,
+                        overwrite: true);
+
+                    newState.Files[file.Key] =
+                        refClientId;
+                }
+
+                if (!newClient.Files.Contains(file.Key) &&
+                    !refClient.Files.Contains(file.Key))
+                {
+                    string filePath =
+                        Path.Combine(
+                            path,
+                            file.Key);
+
+                    Logger.Debug(
+                        $"Deleting unused client file: '{file.Key}'");
+
+                    if (File.Exists(filePath))
+                    {
+                        File.Delete(filePath);
+                    }
+
+                    newState.Files.Remove(
+                        file.Key);
+                }
+            }
+
+            foreach (var file in newClient.Files)
+            {
+                if (!currentState.Files.ContainsKey(file))
+                {
+                    string source =
+                        Path.Combine(
+                            newClientDir,
+                            file);
+
+                    string destination =
+                        Path.Combine(
+                            path,
+                            file);
+
+                    Logger.Debug(
+                        $"Adding new client file: '{file}'");
+
+                    File.Copy(
+                        source,
+                        destination,
+                        overwrite: true);
+
+                    newState.Files[file] =
+                        newClient.ID;
+                }
+            }
+
+            await game.SetStateSnapshot(
+                newState);
+
+            Logger.Info(
+                $"Client switched successfully: game='{gameId}', " +
+                $"client='{newClient.ID}'");
         }
-        foreach (var file in newClient.Files)
+        catch (Exception ex)
         {
-            if (!currentState.Files.ContainsKey(file))
-            {
-                File.Copy(
-                    Path.Combine(
-                        newClientDir,
-                        file),
-                    Path.Combine(
-                        path,
-                        file),
-                    overwrite: true);
-                newState.Files[file] =
-                    newClient.ID;
-            }
+            Logger.Error(
+                $"Failed to change client: game='{gameId}', client='{clientId}'",
+                ex);
+
+            throw;
         }
-        await game.SetStateSnapshot(
-            newState);
     }
 }
