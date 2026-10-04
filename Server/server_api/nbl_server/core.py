@@ -10,13 +10,14 @@ from tortoise.contrib.fastapi import RegisterTortoise
 from tortoise import Tortoise
 from callixir import AsyncSimpleShell
 from .storage import LocalStorage, Storage
-from .models import GameModel, FileManifestModel, FileModel, StorageTaskModel, StorageTaskStatus, GameClientModel, GameServerModel
+from .models import GameModel, FileManifestModel, FileModel, StorageTaskModel, StorageTaskStatus, GameClientModel, GameServerModel, GameServerDataModel
 from .views import router
 from .schemes import GameServerData
 from .middlewares import LogMiddleware
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from slugify import slugify
+from .gs import get_server_list
 import nbl_server
 import os
 
@@ -33,7 +34,7 @@ class NetBatLauncherServer:
 			"local": LocalStorage
 		}
 		self.__scheduler = AsyncIOScheduler()
-		self.__game_servers: dict[str, GameServerData] = {}
+		self.__game_servers: dict[str, dict[str, GameServerData]] = {}
 
 		self.__fp_app.include_router(router)
 		self.__fp_app.add_middleware(TrustedHostMiddleware)
@@ -58,11 +59,39 @@ class NetBatLauncherServer:
 		self.__shell.register("gs.list", self._cmd_game_server_list, desc="Get the list of game servers of a game client")
 		self.__shell.register("help", self._on_cmd_help, desc="Get information about all commands")
 
+		self.__scheduler.add_job(self._task_refresh_game_servers_data, "interval", None, hours=12, id="refresh_game_servers_data")
+
 	async def _exc_404(self, request, exc):
 		return Response(status_code=404)
 
 	@property
 	def storage(self) -> Storage: return self.__storage
+
+	async def _task_refresh_game_servers_data(self):
+		logger.debug("Refresh of the server list and their data...")
+
+		async def func():
+			servers = []
+			for game in await GameModel.filter().all():
+				for client in await GameClientModel.filter(game=game).all():
+					if not client.master_server_address or not client.master_server_enctypex_key:
+						continue
+					try:
+						data = await get_server_list(client.master_server_address, 28910, client.master_server_enctypex_key, 5.0)
+						if not data: continue
+						for serv in data["servers"]:
+							servers.append(f"{serv["ip"]}:{serv["port"]}")
+							await GameServerDataModel.filter(address=serv["ip"], query_port=serv["port"]).delete()
+							await GameServerDataModel.create(client=client, address=serv["ip"], query_port=serv["port"], name=serv.get("data", {}).get("hostname"))
+					except Exception as e:
+						logger.debug(f"Failed to refresh the data for the servers of client '{client.ident}': {e}")
+						continue
+			for serv in await GameServerModel.filter().all():
+				if f"{serv.address}:{serv.query_port}" not in servers:
+					await serv.delete()
+			logger.debug(f"Refresh completed. Servers {len(servers)}")
+
+		task = asyncio.create_task(func())
 
 	async def _get_game(self, gameid: str) -> GameModel:
 		game = await GameModel.get_or_none(ident=gameid)
@@ -236,6 +265,7 @@ class NetBatLauncherServer:
 		await RegisterTortoise(db_url=os.getenv("DB_URL", "sqlite://db.sqlite3"), modules={'models': ['nbl_server.models']})
 		await Tortoise.generate_schemas(safe=True)
 		self.__scheduler.start()
+		await self._task_refresh_game_servers_data()
 		yield
 		self.__scheduler.shutdown(wait=False)
 		await Tortoise.close_connections()

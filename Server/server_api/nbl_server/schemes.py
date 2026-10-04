@@ -12,7 +12,8 @@ class ResponseGameFilesManifest(BaseModel):
 class GameServerData(BaseModel):
 	address: str
 	query_port: int
-	name: str
+	name: str | None
+	clientid: str
 
 class GameServers(BaseModel):
 	servers: list[GameServerData] = []

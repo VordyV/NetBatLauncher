@@ -73,3 +73,15 @@ class GameServerModel(Model):
 
 	class Meta:
 		table="nbl_game_server"
+
+class GameServerDataModel(Model):
+	id = fields.IntField(primary_key=True)
+	client = fields.ForeignKeyField("models.GameClientModel", on_delete=fields.CASCADE)
+	created_at = fields.DatetimeField(db_default=fields.Now())
+	address = fields.CharField(max_length=15)
+	query_port = fields.IntField()
+	name = fields.CharField(max_length=128, null=True)
+	fields = fields.JSONField(default={})
+
+	class Meta:
+		table="nbl_game_server_data"
