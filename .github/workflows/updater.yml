@@ -22,7 +22,7 @@ jobs:
 
       - name: Creating the file
         run: |
-          echo "<?xml version="1.0" encoding="UTF-8"?><item><version>${{ github.event.release.tag_name }}.0</version><url>https://github.com/VordyV/NetBatLauncher/releases/download/${{ github.event.release.tag_name }}/NetBat2142.exe</url><changelog>https://github.com/VordyV/NetBatLauncher/releases</changelog><mandatory>false</mandatory></item>" > update.xml
+          echo "<?xml version="1.0" encoding="UTF-8"?><item><version>${{ github.event.release.tag_name }}.0</version><url>https://github.com/VordyV/NetBatLauncher/releases/download/${{ github.event.release.tag_name }}/NetBat2142.exe</url><changelog>https://github.com/VordyV/NetBatLauncher/releases/tag/${{ github.event.release.tag_name }}</changelog><mandatory>false</mandatory></item>" > update.xml
 
       - name: Commit and push file
         run: |
