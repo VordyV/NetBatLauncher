@@ -125,6 +125,7 @@
 									<TextBox
 										Name="TextBoxGameKey"
 										IsReadOnly="True"
+										IsEnabled="False"
 										HorizontalContentAlignment="Left"
 										VerticalContentAlignment="Center"
 										HorizontalAlignment="Stretch"/>

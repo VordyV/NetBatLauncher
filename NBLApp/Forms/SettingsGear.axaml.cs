@@ -237,11 +237,9 @@ public partial class SettingsGear : UserControl
     }
     private void LoadGameKey()
     {
-        string? key =
-            GameKeyService.GetKey();
-
-        this.TextBoxGameKey.Text =
-            key ?? "";
+        string? key = GameKeyService.GetKey();
+        if (key is null) this.TextBoxGameKey.Text = "The key is not set";
+        else this.TextBoxGameKey.Text = $"{key[5..9]}-{key[10..14]}-{key[15..19]}-{key[20..24]}";
     }
     private void SaveGameLanguage()
     {
