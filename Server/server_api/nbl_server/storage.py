@@ -197,7 +197,7 @@ class Storage:
 		uuid = os.urandom(24).hex()
 		try:
 			url = await cls.on_add(data, uuid)
-			return await FileModel.create(ident=uuid, storage=cls.name, path=url, checksum_sha256=await cls.sha256_file(url), manifest=manifest, filename=filename, local_path=local_path)
+			return await FileModel.create(ident=uuid, size=len(data), storage=cls.name, path=url, checksum_sha256=await cls.sha256_file(url), manifest=manifest, filename=filename, local_path=local_path)
 		except Exception as e:
 			await cls.on_remove(uuid)
 			raise Exception(f"File 1 could not be added to storage: {e}")
