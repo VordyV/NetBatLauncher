@@ -18,12 +18,15 @@ public class Launcher
     public static string StateSnapshotFilename { get; } =
         ".statesnapshot";
     public Configurator Registry { get; }
+    public string ServerAddress { get; }
+    
     protected Dictionary<string, Game> Games;
 
-    public Launcher(string pathConfig)
+    public Launcher(string pathConfig, string serverAddress)
     {
         this.Games = new();
         this.Registry = new Configurator(pathConfig);
+        this.ServerAddress = serverAddress;
 
         Logger.Info(
             $"Launcher created: config='{pathConfig}'");
