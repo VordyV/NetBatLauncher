@@ -16,12 +16,11 @@ namespace NBLApp.Forms;
 
 public partial class SimpInst : UserControl
 {
-    protected Game Game = null!;
+    protected Game Game;
+    protected Launcher Launcher;
 
     private CancellationTokenSource? _installationCancellation;
-
-    private const string DefaultGamePath =
-        @"C:\Games\Battlefield 2142";
+    private const string DefaultGamePath = @"C:\Games\Battlefield 2142";
 
     public SimpInst()
     {
@@ -30,233 +29,145 @@ public partial class SimpInst : UserControl
         ApplyLocalization();
     }
 
-    public SimpInst(Game game)
+    public SimpInst(Launcher launcher, Game game)
     {
-        Game = game;
+        this.Game = game;
+        this.Launcher = launcher;
 
         InitializeComponent();
 
-        PathPickerGamePath.SelectedPathsText =
-            DefaultGamePath;
+        PathPickerGamePath.SelectedPathsText = DefaultGamePath;
 
         ApplyLocalization();
 
-        Logger.Debug(
-            $"SimpInst opened: game='{Game.Id}'");
+        Logger.Debug($"SimpInst opened: game='{Game.Id}'");
     }
 
     private void ApplyLocalization()
     {
         try
         {
-            TextBlockPath.Text =
-                Locale.Get("InstallGamePath");
+            TextBlockPath.Text = Locale.Get("InstallGamePath");
+            TextBlockStatus.Text = Locale.Get("InstallStatus");
+            TextBlockSpeed.Text = Locale.Get("InstallSpeed") + ": —";
+            TextBlockEta.Text = Locale.Get("InstallRemaining") + ": —";
+            TextBlockOverall.Text = Locale.Get("InstallOverallProgress") + ": 0%";
+            ButtonCancel.Content = Locale.Get("Cancel");
+            ButtonSave.Content = Locale.Get("Install");
 
-            TextBlockStatus.Text =
-                Locale.Get("InstallStatus");
-
-            TextBlockSpeed.Text =
-                Locale.Get("InstallSpeed") + ": —";
-
-            TextBlockEta.Text =
-                Locale.Get("InstallRemaining") + ": —";
-
-            TextBlockOverall.Text =
-                Locale.Get("InstallOverallProgress") + ": 0%";
-
-            ButtonCancel.Content =
-                Locale.Get("Cancel");
-
-            ButtonSave.Content =
-                Locale.Get("Install");
-
-            Logger.Debug(
-                "SimpInst localization applied");
+            Logger.Debug("SimpInst localization applied");
         }
         catch (Exception ex)
         {
-            Logger.Warning(
-                $"Failed to apply SimpInst localization: {ex.Message}");
+            Logger.Warning($"Failed to apply SimpInst localization: {ex.Message}");
         }
     }
 
-    private void ButtonCancel_OnClick(
-        object? sender,
-        RoutedEventArgs e)
+    private void ButtonCancel_OnClick(object? sender, RoutedEventArgs e)
     {
-        Logger.Info(
-            "Installation cancel button clicked");
+        Logger.Info("Installation cancel button clicked");
 
         if (_installationCancellation != null)
         {
-            Logger.Info(
-                "Cancelling game installation");
-
+            Logger.Info("Cancelling game installation");
             _installationCancellation.Cancel();
-
             return;
         }
 
         if (DataContext is IDialogContext ctx)
         {
-            Logger.Debug(
-                "Closing installation dialog");
-
+            Logger.Debug("Closing installation dialog");
             ctx.Close();
         }
     }
 
     protected void ShowError(string text)
     {
-        Logger.Error(
-            $"Installation UI error: {text}");
-
+        Logger.Error($"Installation UI error: {text}");
         TextBlockError.IsVisible = true;
         TextBlockError.Text = text;
     }
 
-    private async void ButtonSave_OnClick(
-        object? sender,
-        RoutedEventArgs e)
+    private async void ButtonSave_OnClick(object? sender, RoutedEventArgs e)
     {
-        Logger.Info(
-            "Install button clicked");
-
-        string? path =
-            PathPickerGamePath.SelectedPathsText;
+        Logger.Info("Install button clicked");
+        string? path = PathPickerGamePath.SelectedPathsText;
 
         if (string.IsNullOrWhiteSpace(path))
         {
-            Logger.Warning(
-                "Installation cancelled: game path is empty");
-
-            ShowError(
-                Locale.Get("InvalidGamePath"));
-
+            Logger.Warning("Installation cancelled: game path is empty");
+            ShowError(Locale.Get("InvalidGamePath"));
             return;
         }
 
         path = path.Trim();
 
-        Logger.Info(
-            $"Selected game installation path: '{path}'");
-
+        Logger.Info($"Selected game installation path: '{path}'");
         TextBlockError.IsVisible = false;
-
         await InstallGame(path);
     }
 
     private async Task InstallGame(string path)
     {
-        Logger.Info(
-            $"Game installation started: " +
-            $"game='{Game.Id}', path='{path}'");
+        Logger.Info($"Game installation started: " + $"game='{Game.Id}', path='{path}'");
 
         try
         {
             SetInstallingState(true);
-
-            _installationCancellation =
-                new CancellationTokenSource();
-
-            TextBlockStatus.Text =
-                Locale.Get("InstallStatus");
-
-            Logger.Debug(
-                $"Creating game directory: '{path}'");
-
+            _installationCancellation = new CancellationTokenSource();
+            TextBlockStatus.Text = Locale.Get("InstallStatus");
+            Logger.Debug($"Creating game directory: '{path}'");
             Directory.CreateDirectory(path);
-
-            Logger.Debug(
-                $"Registering game path: '{path}'");
-
+            Logger.Debug($"Registering game path: '{path}'");
+            
             Game.AddGameRegistry(path);
+            
+            ClientUpdateService updateService = new ClientUpdateService();
 
-            ClientUpdateService updateService =
-                new ClientUpdateService();
+            Logger.Info($"Starting game file update: server='{this.Launcher.ServerAddress}', game='bf2142'");
 
-            const string server =
-                "http://api.nbl2142.fun/";
+            var progress = new Progress<ClientUpdateProgress>(UpdateProgress);
 
-            Logger.Info(
-                $"Starting game file update: " +
-                $"server='{server}', game='bf2142'");
+            await updateService.UpdateAsync(this.Launcher.ServerAddress, "bf2142", path, progress, _installationCancellation.Token);
 
-            var progress =
-                new Progress<ClientUpdateProgress>(
-                    UpdateProgress);
+            Logger.Info("Game files update completed");
 
-            await updateService.UpdateAsync(
-                server,
-                "bf2142",
-                path,
-                progress,
-                _installationCancellation.Token);
+            TextBlockStatus.Text = Locale.Get("InstallLauncherFiles");
 
-            Logger.Info(
-                "Game files update completed");
+            TextBlockStatus.Text = Locale.Get("InstallFinishing");
 
-            TextBlockStatus.Text =
-                Locale.Get("InstallLauncherFiles");
+            Logger.Info("Generating default client");
 
-            TextBlockStatus.Text =
-                Locale.Get("InstallFinishing");
+            ClientData client = await Game.GenerateDefaultClient();
 
-            Logger.Info(
-                "Generating default client");
+            Logger.Info($"Default client generated: id='{client.ID}' files={client.Files.Length}");
 
-            ClientData client =
-                await Game.GenerateDefaultClient();
+            Game.SetReferenceClient(Launcher.ClientId);
 
-            Logger.Info(
-                $"Default client generated: " +
-                $"id='{client.ID}', " +
-                $"files={client.Files.Length}");
+            Game.SetCurrentClient(Launcher.ClientId);
 
-            Game.SetReferenceClient(
-                Launcher.ClientId);
-
-            Game.SetCurrentClient(
-                Launcher.ClientId);
-
-            Dictionary<string, string> files =
-                new();
+            Dictionary<string, string> files = new();
 
             foreach (var file in client.Files)
             {
-                files.Add(
-                    file,
-                    Launcher.ClientId);
+                files.Add(file, Launcher.ClientId);
             }
 
-            Logger.Debug(
-                $"Creating initial state snapshot: " +
-                $"files={files.Count}");
+            Logger.Debug($"Creating initial state snapshot: files={files.Count}");
 
-            await Game.SetStateSnapshot(
-                new StateSnapshot
-                {
-                    Files = files
-                });
+            await Game.SetStateSnapshot(new StateSnapshot {Files = files});
 
-            TextBlockStatus.Text =
-                Locale.Get("InstallCompleted");
+            TextBlockStatus.Text = Locale.Get("InstallCompleted");
 
-            ProgressBarOverall.Value =
-                100;
+            ProgressBarOverall.Value = 100;
 
-            TextBlockOverall.Text =
-                $"{Locale.Get("InstallOverallProgress")}: 100%";
+            TextBlockOverall.Text = $"{Locale.Get("InstallOverallProgress")}: 100%";
 
-            TextBlockSpeed.Text =
-                Locale.Get("InstallSpeed") + ": —";
+            TextBlockSpeed.Text = Locale.Get("InstallSpeed") + ": —";
 
-            TextBlockEta.Text =
-                Locale.Get("InstallRemaining") + ": 00:00";
+            TextBlockEta.Text = Locale.Get("InstallRemaining") + ": 00:00";
 
-            Logger.Info(
-                $"Game installation completed successfully: " +
-                $"game='{Game.Id}', path='{path}'");
+            Logger.Info($"Game installation completed successfully: game='{Game.Id}', path='{path}'");
 
             await Task.Delay(500);
 
@@ -267,30 +178,21 @@ public partial class SimpInst : UserControl
         }
         catch (OperationCanceledException)
         {
-            Logger.Warning(
-                $"Game installation cancelled: " +
-                $"game='{Game.Id}'");
+            Logger.Warning($"Game installation cancelled: game='{Game.Id}'");
 
-            TextBlockStatus.Text =
-                Locale.Get("InstallCancelled");
+            TextBlockStatus.Text = Locale.Get("InstallCancelled");
 
-            TextBlockSpeed.Text =
-                Locale.Get("InstallSpeed") + ": —";
+            TextBlockSpeed.Text = Locale.Get("InstallSpeed") + ": —";
 
-            TextBlockEta.Text =
-                Locale.Get("InstallRemaining") + ": —";
+            TextBlockEta.Text = Locale.Get("InstallRemaining") + ": —";
 
             SetInstallingState(false);
         }
         catch (Exception exception)
         {
-            Logger.Error(
-                $"Game installation failed: " +
-                $"game='{Game.Id}', path='{path}'",
-                exception);
+            Logger.Error($"Game installation failed: " + $"game='{Game.Id}', path='{path}'", exception);
 
-            ShowError(
-                exception.Message);
+            ShowError(exception.Message);
 
             SetInstallingState(false);
         }
@@ -300,120 +202,78 @@ public partial class SimpInst : UserControl
 
             _installationCancellation = null;
 
-            Logger.Debug(
-                "Installation cancellation source disposed");
+            Logger.Debug("Installation cancellation source disposed");
         }
     }
 
-    private void UpdateProgress(
-        ClientUpdateProgress progress)
+    private void UpdateProgress(ClientUpdateProgress progress)
     {
         PanelProgress.IsVisible = true;
 
-        TextBlockStatus.Text =
-            progress.IsDownloading
-                ? Locale.Get("InstallDownloading")
-                : Locale.Get("InstallChecking");
+        TextBlockStatus.Text = progress.IsDownloading ? Locale.Get("InstallDownloading") : Locale.Get("InstallChecking");
 
-        ProgressBarOverall.Value =
-            progress.Percent;
+        ProgressBarOverall.Value = progress.Percent;
 
-        TextBlockOverall.Text =
-            $"{Locale.Get("InstallOverallProgress")}: " +
-            $"{progress.Percent}% " +
-            $"({progress.CompletedFiles}/" +
-            $"{progress.TotalFiles})";
+        TextBlockOverall.Text = $"{Locale.Get("InstallOverallProgress")}: {progress.Percent}% ({progress.CompletedFiles}/{progress.TotalFiles})";
 
         if (progress.BytesPerSecond > 0)
         {
-            TextBlockSpeed.Text =
-                $"{Locale.Get("InstallSpeed")}: " +
-                $"{FormatSpeed(progress.BytesPerSecond)}";
+            TextBlockSpeed.Text = $"{Locale.Get("InstallSpeed")}: {FormatSpeed(progress.BytesPerSecond)}";
         }
         else
         {
-            TextBlockSpeed.Text =
-                Locale.Get("InstallSpeed") + ": —";
+            TextBlockSpeed.Text = Locale.Get("InstallSpeed") + ": —";
         }
 
         if (progress.EstimatedTimeRemaining.HasValue)
         {
-            TextBlockEta.Text =
-                $"{Locale.Get("InstallRemaining")}: " +
-                $"{FormatTime(progress.EstimatedTimeRemaining.Value)}";
+            TextBlockEta.Text = $"{Locale.Get("InstallRemaining")}: {FormatTime(progress.EstimatedTimeRemaining.Value)}";
         }
         else
         {
-            TextBlockEta.Text =
-                Locale.Get("InstallRemaining") + ": —";
+            TextBlockEta.Text = Locale.Get("InstallRemaining") + ": —";
         }
 
         if (progress.ActiveDownloads.Count > 0)
         {
-            TextBlockDownloads.Text =
-                string.Join(
-                    Environment.NewLine,
-                    progress.ActiveDownloads.Select(
-                        download =>
-                            $"{download.FileName} — " +
-                            $"{download.Percent}%"));
+            TextBlockDownloads.Text = string.Join(Environment.NewLine, progress.ActiveDownloads.Select(download => $"{download.FileName} — {download.Percent}%"));
         }
         else
         {
-            TextBlockDownloads.Text =
-                string.Empty;
+            TextBlockDownloads.Text = string.Empty;
         }
     }
 
-    private static string FormatSpeed(
-        double bytesPerSecond)
+    private static string FormatSpeed(double bytesPerSecond)
     {
         if (bytesPerSecond < 1024)
         {
-            return
-                $"{bytesPerSecond:F0} B/s";
+            return $"{bytesPerSecond:F0} B/s";
         }
 
         if (bytesPerSecond < 1024 * 1024)
         {
-            return
-                $"{bytesPerSecond / 1024:F1} KB/s";
+            return $"{bytesPerSecond / 1024:F1} KB/s";
         }
 
         if (bytesPerSecond < 1024 * 1024 * 1024)
         {
-            return
-                $"{bytesPerSecond / (1024 * 1024):F1} MB/s";
+            return $"{bytesPerSecond / (1024 * 1024):F1} MB/s";
         }
 
-        return
-            $"{bytesPerSecond /
-              (1024 * 1024 * 1024):F2} GB/s";
+        return $"{bytesPerSecond / (1024 * 1024 * 1024):F2} GB/s";
     }
 
     private static string FormatTime(TimeSpan time)
     {
-        return
-            $"{(int)time.TotalHours:00}." +
-            $"{time.Minutes:00}." +
-            $"{time.Seconds:00}";
+        return $"{(int)time.TotalHours:00}." +$"{time.Minutes:00}." +$"{time.Seconds:00}";
     }
 
-    private void SetInstallingState(
-        bool installing)
+    private void SetInstallingState(bool installing)
     {
-        PanelProgress.IsVisible =
-            installing;
-
-        PathPickerGamePath.IsEnabled =
-            !installing;
-
-        ButtonSave.IsEnabled =
-            !installing;
-
-        ButtonCancel.Content =
-            installing
-                ? Locale.Get("Cancel")
-                : Locale.Get("Close");
+        PanelProgress.IsVisible = installing;
+        PathPickerGamePath.IsEnabled = !installing;
+        ButtonSave.IsEnabled = !installing;
+        ButtonCancel.Content = installing ? Locale.Get("Cancel") : Locale.Get("Close");
     }
 }
