@@ -4,10 +4,10 @@ from fastapi.exceptions import HTTPException
 from typing import Annotated
 from pydantic import Field
 
-from .models import GameModel, FileModel, FileManifestModel, GameClientModel, GameServerModel, GameServerDataModel
+from .models import GameModel, FileModel, FileManifestModel, GameClientModel, GameServerModel, GameServerDataModel, GameModModel
 from .schemes import ResponseFile, ResponseGameFilesManifest
 from .storage import StorageObjectType
-from .schemes import GameServerData, GameServers, GameClient, GameClients, Games, Game
+from .schemes import GameServerData, GameServers, GameClient, GameClients, Games, Game, GameMod, GameMods
 
 router = APIRouter(prefix="/api")
 
@@ -36,12 +36,19 @@ async def game_client_opt(ctx: CtxField, game: GameField, clientid: GameClientId
 	if not client: raise HTTPException(status_code=404, detail=f"Game client '{clientid}' does not exist")
 	return client
 
+async def game_mod(ctx: CtxField, game: GameField, modid: GameModIdField) -> GameModModel:
+	mod = await GameModModel.get_or_none(ident=modid)
+	if not mod: raise HTTPException(status_code=404, detail=f"Game mod '{modid}' does not exist")
+	return mod
+
 CtxField = Annotated[Context, Depends(ctx)]
 GameIdField = Annotated[str, Field(max_length=64)]
 GameClientIdField = Annotated[str, Field(max_length=64)]
 GameField = Annotated[GameModel, Depends(game)]
 GameClientField = Annotated[GameClientModel, Depends(game_client)]
 GameClientOptField = Annotated[GameClientModel | GameModel, Depends(game_client_opt)]
+GameModIdField = Annotated[str, Field(max_length=64)]
+GameModField = Annotated[GameModModel, Depends(game_mod)]
 
 @router.get("/games/files/manifest", description="Get the list of game files and links to download them")
 async def games_files_manifest(ctx: CtxField, game: GameField) -> ResponseGameFilesManifest:
@@ -53,12 +60,15 @@ async def games_files_manifest(ctx: CtxField, game: GameField) -> ResponseGameFi
 	manifest = await FileManifestModel.get(id=game.file_manifest_id)
 
 	files = []
+	size = 0
 	for file in await FileModel.filter(manifest=manifest).all():
-		files.append(ResponseFile(checksum_sha256=file.checksum_sha256, url=str(ctx.request.url_for("storage_download", file_id=file.ident)), path=file.local_path))
+		size += file.size
+		files.append(ResponseFile(checksum_sha256=file.checksum_sha256, url=str(ctx.request.url_for("storage_download", file_id=file.ident)), path=file.local_path, size=file.size))
 
 	return ResponseGameFilesManifest(
 		files=files,
 		ident=manifest.ident,
+		size=size
 	)
 
 @router.get("/games/clients/files/manifest", description="Get the list of game client files and links to download them")
@@ -71,12 +81,36 @@ async def games_files_manifest(ctx: CtxField, game: GameField, client: GameClien
 	manifest = await FileManifestModel.get(id=client.file_manifest_id)
 
 	files = []
+	size = 0
 	for file in await FileModel.filter(manifest=manifest).all():
-		files.append(ResponseFile(checksum_sha256=file.checksum_sha256, url=str(ctx.request.url_for("storage_download", file_id=file.ident)), path=file.local_path))
+		size += file.size
+		files.append(ResponseFile(checksum_sha256=file.checksum_sha256, url=str(ctx.request.url_for("storage_download", file_id=file.ident)), path=file.local_path, size=file.size))
 
 	return ResponseGameFilesManifest(
 		files=files,
 		ident=manifest.ident,
+		size=size
+	)
+
+@router.get("/games/mods/files/manifest", description="")
+async def games_files_manifest(ctx: CtxField, game_mod: GameModField) -> ResponseGameFilesManifest:
+
+	if not game_mod.file_manifest: return Response(status_code=204)
+
+	storage = ctx.core.storage
+
+	manifest = await FileManifestModel.get(id=game_mod.file_manifest_id)
+
+	files = []
+	size = 0
+	for file in await FileModel.filter(manifest=manifest).all():
+		size += file.size
+		files.append(ResponseFile(checksum_sha256=file.checksum_sha256, url=str(ctx.request.url_for("storage_download", file_id=file.ident)), path=file.local_path, size=file.size))
+
+	return ResponseGameFilesManifest(
+		files=files,
+		ident=manifest.ident,
+		size=size
 	)
 
 @router.get("/storage/download/{file_id}", name="storage_download", description="Download a file by its id")
@@ -110,12 +144,21 @@ async def games_servers(request: Request, game_client: GameClientOptField) -> Ga
 			result.append(GameServerData(address=server.address, query_port=server.query_port, name=server.name, clientid=game_client.ident))
 	return GameServers(servers=result)
 
+@router.get("/games/mods")
+async def games_mods(request: Request, game: GameField) -> GameMods:
+
+	mods = []
+	for mod in await GameModModel.filter(game=game).all():
+		mods.append(GameMod(modid=mod.ident, name=mod.name, version=mod.version, developer=mod.developer, files=bool(mod.file_manifest), default=mod.default))
+
+	return GameMods(mods=mods)
+
 @router.get("/games/clients", description="Get the list of clients for the game")
 async def games_clients(request: Request, game: GameField) -> GameClients:
 
 	result = []
 	for client in await GameClientModel.filter(game=game).all():
-		result.append(GameClient(ident=client.ident, name=client.name, short_name=client.short_name, files=bool(client.file_manifest)))
+		result.append(GameClient(ident=client.ident, name=client.name, short_name=client.short_name, files=bool(client.file_manifest), reference=client.reference, address=client.master_server_address))
 
 	return GameClients(clients=result, gameid=game.ident)
 
@@ -123,7 +166,9 @@ async def games_clients(request: Request, game: GameField) -> GameClients:
 async def games(request: Request) -> Games:
 
 	result = []
-	for client in await GameModel.filter().all():
-		result.append(Game(ident=client.ident, name=client.name, short_name=client.short_name, files=bool(client.file_manifest)))
+	for game in await GameModel.filter().all():
+		default_mod = await GameModModel.get_or_none(game=game.id, default=True)
+		ref_client = await GameClientModel.get_or_none(game=game.id, reference=True)
+		result.append(Game(ident=game.ident, name=game.name, short_name=game.short_name, files=bool(game.file_manifest), default_mod_id=default_mod.ident if default_mod else None, reference_client_id=ref_client.ident if ref_client else None))
 
 	return Games(games=result)
