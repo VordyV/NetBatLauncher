@@ -35,10 +35,12 @@ public partial class App : Application
                     configDirectory,
                     "nblconfig.registry");
 
+            string serverAddress = "http://127.0.0.1:5000";
+
             Logger.Info($"Config file: {configPath}");
 
             Launcher =
-                new Launcher(pathConfig: configPath);
+                new Launcher(pathConfig: configPath, serverAddress: serverAddress);
 
             Logger.Info("Launcher instance created");
 
