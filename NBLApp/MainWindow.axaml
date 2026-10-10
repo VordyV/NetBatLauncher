@@ -8,6 +8,7 @@
         xmlns:c="clr-namespace:NBLApp.Controls"
         x:DataType="local:MainWindow"
         x:Class="NBLApp.MainWindow"
+        WindowStartupLocation="CenterScreen"
         WindowDecorations="BorderOnly"
         ExtendClientAreaToDecorationsHint="True"
         Title="NBLApp">
