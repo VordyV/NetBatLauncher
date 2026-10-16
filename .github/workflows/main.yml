@@ -83,8 +83,11 @@ jobs:
         shell: pwsh
         working-directory: release
         run: |
-          Compress-Archive -Path ./* -DestinationPath NetBat2142-${{ github.event.release.tag_name }}-win.zip
-          Rename-Item -Path "release/NetBat2142.exe" -NewName "NetBat2142-${{ github.event.release.tag_name }}-win.exe"
+          $version = "${{ github.event.release.tag_name }}"
+          $exe = "NetBat2142-$version-win.exe"
+          $zip = "NetBat2142-$version-win.zip"
+          Rename-Item -Path "NetBat2142.exe" -NewName $exe
+          Compress-Archive -Path $exe -DestinationPath $zip -CompressionLevel Optimal
 
       - name: Create/Update GitHub Release
         uses: softprops/action-gh-release@v2
