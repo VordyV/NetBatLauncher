@@ -115,8 +115,29 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Creating the file
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
-          echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?><item><version>${{ github.event.release.tag_name }}.0</version><url>https://github.com/VordyV/NetBatLauncher/releases/download/${{ github.event.release.tag_name }}/NetBat2142-${{ github.event.release.tag_name }}-win.zip</url><changelog>https://github.com/VordyV/NetBatLauncher/releases/tag/${{ github.event.release.tag_name }}</changelog><mandatory>false</mandatory></item>" > update.xml
+          $tag = $env:RELEASE_TAG
+          $version = [System.Security.SecurityElement]::Escape("$tag.0")
+          $encodedTag = [Uri]::EscapeDataString($tag)
+
+          $xml = @"
+          <?xml version="1.0" encoding="UTF-8"?>
+          <item>
+            <version>$version</version>
+            <url>https://github.com/VordyV/NetBatLauncher/releases/download/$encodedTag/NetBat2142-$encodedTag-win.zip</url>
+            <changelog>https://github.com/VordyV/NetBatLauncher/releases/tag/$encodedTag</changelog>
+            <mandatory>false</mandatory>
+          </item>
+          "@
+
+          [System.IO.File]::WriteAllText(
+            "update.xml",
+            $xml.Trim() + [Environment]::NewLine,
+            [System.Text.UTF8Encoding]::new($false)
+          )
 
       - name: Commit and push file
         run: |
