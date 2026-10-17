@@ -53,6 +53,7 @@ services:
       - nbl-storage:/app/storage
       - nbl-temp:/app/temp
       - nbl-logs:/app/logs
+      - nbl-migrations:/app/nbl_server/migrations
     depends_on:
       - mysql
     env_file:
@@ -69,3 +70,4 @@ volumes:
   nbl-storage:
   nbl-temp:
   nbl-logs:
+  nbl-migrations:
