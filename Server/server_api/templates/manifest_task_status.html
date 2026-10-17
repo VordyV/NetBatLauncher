@@ -1,0 +1,273 @@
+
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header">
+            <h4 class="card-title mb-0">
+                Storage task status
+            </h4>
+        </div>
+
+        <div class="card-body">
+            <div class="mb-3">
+                <span class="text-muted">Manifest ID:</span>
+                <code>{{ manifest_id }}</code>
+            </div>
+
+            <div class="mb-2">
+                <span class="text-muted">Task ID:</span>
+                <code id="task-id">Loading...</code>
+            </div>
+
+            <div class="mb-3">
+                <span class="text-muted">Current status:</span>
+                <strong id="task-status">Connecting...</strong>
+            </div>
+
+            <div class="progress mb-2"
+                 style="height: 24px;"
+                 role="progressbar"
+                 aria-label="Task progress"
+                 aria-valuemin="0"
+                 aria-valuemax="100"
+                 aria-valuenow="0"
+                 id="progress-container">
+
+                <div
+                    id="progress-bar"
+                    class="progress-bar progress-bar-striped progress-bar-animated"
+                    style="width: 0%;"
+                >
+                    0%
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between mb-3">
+                <small id="progress-text" class="text-muted">
+                    0%
+                </small>
+                <small id="last-updated" class="text-muted"></small>
+            </div>
+
+            <div id="task-message"
+                 class="alert alert-info"
+                 role="status">
+                Retrieving task status...
+            </div>
+
+            <button
+                id="retry-button"
+                class="btn btn-outline-primary"
+                type="button"
+                hidden>
+                Retry
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+{{ super() }}
+<script>
+(() => {
+    "use strict";
+
+    const manifestId = {{ manifest_id | tojson }};
+    const apiUrl = {{ status_api_url | tojson }};
+    const pollingInterval = 2500;
+
+    const statuses = {
+        0: "Pending — в очереди",
+        1: "Downloading — загрузка",
+        2: "IntegrityCheck — проверка целостности",
+        3: "Extraction — распаковка архива",
+        4: "UploadStorage — запись в хранилище",
+        5: "Done — завершено",
+        6: "Cancelled — отменено",
+        7: "Error — ошибка"
+    };
+
+    const terminalStatuses = new Set([5, 6, 7]);
+
+    const taskIdElement = document.getElementById("task-id");
+    const statusElement = document.getElementById("task-status");
+    const progressBar = document.getElementById("progress-bar");
+    const progressContainer = document.getElementById("progress-container");
+    const progressText = document.getElementById("progress-text");
+    const lastUpdated = document.getElementById("last-updated");
+    const messageElement = document.getElementById("task-message");
+    const retryButton = document.getElementById("retry-button");
+
+    let timer = null;
+    let stopped = false;
+    let requestInProgress = false;
+
+    function stopPolling() {
+        stopped = true;
+
+        if (timer !== null) {
+            clearTimeout(timer);
+            timer = null;
+        }
+
+        progressBar.classList.remove("progress-bar-animated");
+        retryButton.hidden = true;
+    }
+
+    function scheduleNextPoll() {
+        if (stopped || timer !== null) {
+            return;
+        }
+
+        timer = setTimeout(() => {
+            timer = null;
+            pollStatus();
+        }, pollingInterval);
+    }
+
+    function showMessage(message, type = "info") {
+        messageElement.className = `alert alert-${type}`;
+        messageElement.textContent = message;
+        messageElement.hidden = false;
+    }
+
+    function displayProgress(value) {
+        // Поддерживаются оба варианта:
+        // progress = 0.75 означает 75%, progress = 75 означает 75%.
+        let percent = value <= 1 ? value * 100 : value;
+        percent = Math.max(0, Math.min(100, percent));
+
+        const rounded = Math.round(percent * 10) / 10;
+
+        progressBar.style.width = `${percent}%`;
+        progressBar.textContent = `${rounded}%`;
+        progressContainer.setAttribute(
+            "aria-valuenow",
+            String(rounded)
+        );
+        progressText.textContent = `${rounded}%`;
+    }
+
+    function displayTerminalStatus(status) {
+        stopPolling();
+
+        progressBar.classList.remove(
+            "progress-bar-animated",
+            "progress-bar-striped",
+            "bg-primary",
+            "bg-success",
+            "bg-danger",
+            "bg-secondary"
+        );
+
+        if (status === 5) {
+            progressBar.classList.add("bg-success");
+            showMessage("Обработка манифеста завершена.", "success");
+        } else if (status === 6) {
+            progressBar.classList.add("bg-secondary");
+            showMessage("Обработка манифеста отменена.", "warning");
+        } else if (status === 7) {
+            progressBar.classList.add("bg-danger");
+            showMessage("При обработке манифеста произошла ошибка.", "danger");
+        }
+    }
+
+    async function pollStatus() {
+        if (stopped || requestInProgress) {
+            return;
+        }
+
+        requestInProgress = true;
+
+        try {
+            const url = new URL(apiUrl, window.location.origin);
+            url.searchParams.set("manifestid", manifestId);
+
+            const response = await fetch(url, {
+                method: "GET",
+                headers: {
+                    "Accept": "application/json"
+                },
+                cache: "no-store"
+            });
+
+            if (response.status === 404) {
+                stopPolling();
+                statusElement.textContent = "Not found";
+                showMessage(
+                    "Задача или манифест не найдены (HTTP 404).",
+                    "warning"
+                );
+                return;
+            }
+
+            if (response.status === 401 || response.status === 403) {
+                stopPolling();
+                statusElement.textContent = "Access denied";
+                showMessage(
+                    "Нет доступа к API статуса задачи.",
+                    "danger"
+                );
+                retryButton.hidden = false;
+                return;
+            }
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const task = await response.json();
+
+            const status = Number(task.status);
+            const rawProgress = Number(task.progress);
+
+            if (
+                !Number.isInteger(status) ||
+                !Number.isFinite(rawProgress)
+            ) {
+                throw new Error("Invalid task response");
+            }
+
+            taskIdElement.textContent = String(task.id ?? "—");
+            statusElement.textContent =
+                statuses[status] ?? `Неизвестный статус (${status})`;
+
+            displayProgress(rawProgress);
+
+            lastUpdated.textContent =
+                "Updated: " + new Date().toLocaleTimeString();
+
+            if (terminalStatuses.has(status)) {
+                displayTerminalStatus(status);
+                return;
+            }
+
+            showMessage("Обработка продолжается...", "info");
+        } catch (error) {
+            console.error("Failed to retrieve task status:", error);
+
+            showMessage(
+                "Не удалось получить статус. Повторная попытка будет выполнена автоматически.",
+                "warning"
+            );
+        } finally {
+            requestInProgress = false;
+        }
+
+        scheduleNextPoll();
+    }
+
+    retryButton.addEventListener("click", () => {
+        stopped = false;
+        retryButton.hidden = true;
+        showMessage("Повторное получение статуса...", "info");
+        pollStatus();
+    });
+
+    pollStatus();
+})();
+</script>
+{% endblock %}
