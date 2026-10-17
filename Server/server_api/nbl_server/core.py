@@ -16,7 +16,7 @@ from tortoise.migrations.autodetector import MigrationAutodetector
 from tortoise.migrations.api import migrate
 from callixir import AsyncSimpleShell
 from .storage import LocalStorage, Storage
-from .models import GameModel, FileManifestModel, FileModel, StorageTaskModel, StorageTaskStatus, GameClientModel, GameServerModel, GameServerDataModel, GameModModel
+from .models import GameModel, FileManifestModel, FileModel, StorageTaskModel, StorageTaskStatus, GameClientModel, GameServerModel, GameServerDataModel, GameModModel, AccountModel, SessionAccountModel
 from .views import router
 from .schemes import GameServerData
 from .middlewares import LogMiddleware
@@ -25,12 +25,20 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from slugify import slugify
 from .gs import get_server_list
 from .config import TORTOISE_ORM
+from starlette_admin.contrib.tortoise import Admin
+from .admin_view import GameView, GameClientsView, GameModsView, GameServerView, AccountView, SessionView, FileManifestView, FileView, FileUploadView
+from .admin_auth_providers import StanAuthProvider
+from starlette.middleware.sessions import SessionMiddleware
+from starlette_admin import TextWidget, HtmlWidget, CustomView
 import nbl_server
 import os
+import re
+import httpx
+import bcrypt
 
 class NetBatLauncherServer:
 
-	def __init__(self, address: str, port: int, log_level: str ="info", storage: str = "local"):
+	def __init__(self, address: str, port: int, steam_api_key: str, log_level: str ="info", storage: str = "local"):
 		self.__address = address
 		self.__port = port
 		self.__fp_app = FastAPI(lifespan=self._fa_lifespan, openapi_url="/openapi.json" if nbl_server.__debug_mode__ else None, docs_url="/docs" if nbl_server.__debug_mode__ else None, redoc_url="/redoc" if nbl_server.__debug_mode__ else None, version=nbl_server.__version__, title="NBL Server", description="API server for the Net Bat Launcher")
@@ -42,10 +50,15 @@ class NetBatLauncherServer:
 		}
 		self.__scheduler = AsyncIOScheduler()
 		self.__game_servers: dict[str, dict[str, GameServerData]] = {}
+		self.__one_time_codes: dict[str, str] = {}
+		self.__used_nonces_auth = set()
+		self.__steam_api_key = steam_api_key
+		self.__admin_panel = Admin(title="Net Bat 2142 Admin", templates_dir="templates", auth_provider=StanAuthProvider(), secret_key="12345")
 
 		self.__fp_app.include_router(router)
 		self.__fp_app.add_middleware(TrustedHostMiddleware)
 		self.__fp_app.add_middleware(LogMiddleware)
+		self.__fp_app.add_middleware(SessionMiddleware, secret_key="12345")
 		self.__fp_app.add_exception_handler(404, self._exc_404)
 
 		self.__storage = self.__storages.get(storage)
@@ -74,14 +87,116 @@ class NetBatLauncherServer:
 		self.__shell.register("mod.setdef", self._on_cmd_mod_set_def, desc="Set the game mod as the default")
 		self.__shell.register("mig", self._on_cmd_migrate, desc="Create a database changes migration")
 		self.__shell.register("appmig", self._on_cmd_apply_migrate, desc="Apply database migration changes")
+		self.__shell.register("acc.reg", self._on_cmd_register_account, desc="")
 
 		self.__scheduler.add_job(self._task_refresh_game_servers_data, "interval", None, hours=12, next_run_time=datetime.datetime.now() + datetime.timedelta(seconds=60), id="refresh_game_servers_data")
+
+		Tortoise.init_models(["nbl_server.models"], "models")
+		self.__admin_panel.add_view(GameView(self, GameModel, icon="fa fa-newspaper"))
+		self.__admin_panel.add_view(GameClientsView(self,GameClientModel, icon="fa fa-newspaper"))
+		self.__admin_panel.add_view(GameModsView(self,GameModModel, icon="fa fa-newspaper"))
+		self.__admin_panel.add_view(GameServerView(self,GameServerModel, icon="fa fa-newspaper"))
+		self.__admin_panel.add_view(AccountView(self,AccountModel, icon="fa fa-newspaper"))
+		self.__admin_panel.add_view(SessionView(self,SessionAccountModel, icon="fa fa-newspaper"))
+		self.__admin_panel.add_view(FileManifestView(self,FileManifestModel, icon="fa fa-newspaper"))
+		self.__admin_panel.add_view(FileView(self, FileModel, icon="fa fa-newspaper"))
+		self.__admin_panel.add_view(FileUploadView(self))
+		self.__admin_panel.mount_to(self.__fp_app)
 
 	async def _exc_404(self, request, exc):
 		return Response(status_code=404)
 
 	@property
 	def storage(self) -> Storage: return self.__storage
+
+	async def verify_steam_openid(self, params: dict) -> bool:
+		if params.get("openid.mode") != "id_res":
+			return False
+
+		signed = params.get("openid.signed", "")
+		if not signed:
+			return False
+
+		data = {
+			"openid.ns": "http://specs.openid.net/auth/2.0",
+			"openid.mode": "check_authentication",
+			"openid.assoc_handle": params.get("openid.assoc_handle", ""),
+			"openid.signed": signed,
+			"openid.sig": params.get("openid.sig", ""),
+		}
+
+		for item in signed.split(","):
+			key = f"openid.{item}"
+			value = params.get(key) or params.get(key.replace(".", "_"))
+			if value is not None:
+				data[key] = value
+
+		async with httpx.AsyncClient(timeout=10.0) as client:
+			response = await client.post(
+				"https://steamcommunity.com/openid/login",
+				data=data,
+				headers={"Content-Type": "application/x-www-form-urlencoded"},
+			)
+
+		if response.status_code != 200:
+			return False
+
+		return "is_valid:true" in response.text
+
+	async def get_steam_data(self, steam_id: str) -> dict:
+		async with httpx.AsyncClient(timeout=5.0) as client:
+			response = await client.get(f"https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002?key={self.__steam_api_key}&steamids={steam_id}")
+			if response.status_code != 200:
+				return dict()
+
+			data = response.json()
+			players = data.get("response", {}).get("players", [])
+
+			if not players: return dict()
+			return players[0]
+
+	def is_nonce_auth_valid(self, nonce: str, max_age_minutes: int = 15) -> bool:
+		if not nonce:
+			return False
+
+		match = re.match(r"^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)", nonce)
+		if not match:
+			return False
+
+		try:
+			nonce_time = datetime.datetime.strptime(match.group(1), "%Y-%m-%dT%H:%M:%SZ")
+			nonce_time = nonce_time.replace(tzinfo=datetime.timezone.utc)
+		except ValueError:
+			return False
+
+		now = datetime.datetime.now(datetime.timezone.utc)
+		if now - nonce_time > datetime.timedelta(minutes=max_age_minutes):
+			return False
+
+		if nonce in self.__used_nonces_auth:
+			return False
+
+		self.__used_nonces_auth.add(nonce)
+		return True
+
+	async def _task_remove_one_time_code(self, code: str):
+		if code in self.__one_time_codes:
+			del self.__one_time_codes[code]
+
+	def create_one_time_code(self, value: str) -> str:
+		code = os.urandom(8).hex()
+		self.__one_time_codes[code] = value
+		self.__scheduler.add_job(self._task_remove_one_time_code, 'date', args=(code,), run_date=datetime.datetime.now() + datetime.timedelta(seconds=15), id=f"clear_otc_{code}")
+		return code
+
+	def get_value_one_time_code(self, otc: str) -> str | None: # otc = one time code
+		token = self.__one_time_codes.get(otc)
+		if token:
+			if self.__scheduler.get_job(f"clear_otc_{otc}"):
+				self.__scheduler.remove_job(f"clear_otc_{otc}")
+			del self.__one_time_codes[otc]
+			return token
+		return None
 
 	async def _task_refresh_game_servers_data(self):
 		logger.debug("Refresh of the server list and their data...")
@@ -132,6 +247,15 @@ class NetBatLauncherServer:
 		except Exception:
 			raise Exception(f"Game mod '{modid}' does not exist")
 
+	async def _on_cmd_register_account(self, name: str, password: str, op: bool = False):
+		if await AccountModel.filter(name=name).exists():
+			return "Such an account has already been created"
+
+		hashed = await asyncio.to_thread(bcrypt.hashpw, password.encode(), bcrypt.gensalt())
+
+		account = await AccountModel.create(name=name, op=op, password=hashed.decode())
+		return f"A new account '{account.ident}' has been created"
+
 	async def _on_cmd_migrate(self):
 		migrations_dir = pathlib.Path("app/migrations")
 		migrations_dir.mkdir(parents=True, exist_ok=True)
@@ -161,8 +285,6 @@ class NetBatLauncherServer:
 			return f"Changes applied"
 		except Exception as e:
 			return f"Changes were not applied: {e}"
-		finally:
-			await Tortoise.close_connections()
 
 	async def _on_cmd_mod_list(self, gameid: str):
 		rows = ["id\tname\tversion\tdeveloper\tcreated_at\tmodified\tis default\tis files"]
