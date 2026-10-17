@@ -46,33 +46,33 @@ class Storage:
 			myzip.extractall(path=path_target)
 
 	@classmethod
-	async def add_files(cls, archive_data: bytes): # archive_data accepts the bytes of the zip archive file
-		raise NotImplementedError()
+	async def add_files(cls, filename) -> str:
 		uuid = os.urandom(16).hex()
-		dir = os.path.join(os.getenv("TEMP_STORAGE_PATH"), uuid)
-		path = os.path.join(dir, "temp.zip")
-		zip_files = os.path.join(dir, "files")
+		zip_file = os.path.join(os.getenv("TEMP_STORAGE_PATH"), filename)
+		zip_files_dir = os.path.join(os.getenv("TEMP_STORAGE_PATH"), uuid)
 
-		try:
+		if not os.path.exists(zip_file): raise Exception(f"File '{filename}' does not exist")
 
-			os.makedirs(dir, exist_ok=True)
-			async with aiofiles.open(path, mode='wb') as file:
-				await file.write(archive_data)
+		os.makedirs(zip_files_dir, exist_ok=True)
+		await asyncio.to_thread(cls._extract, zip_file, zip_files_dir)
 
-			if not zipfile.is_zipfile(path):
-				print("This is not a ZIP archive or the file is corrupted")
-				raise Exception("This is not a ZIP archive or the file is corrupted")
+		async def func():
+			try:
+				print("n1")
+				task = cls.get_task(ident)
 
+				await task.task
+				print("n2")
+			finally:
+				print("n3")
+				if os.path.isdir(zip_files_dir):
+					shutil.rmtree(zip_files_dir)
+				if os.path.exists(zip_file):
+					os.remove(zip_file)
 
-			#print(zipfile.is_zipfile(path))
-
-			#await asyncio.to_thread(cls._extract, path, os.path.join(dir, zip_files))
-
-			#for file in Path(zip_files).rglob('*'):
-			#	print(file)
-		finally:
-			if os.path.isdir(dir): pass
-				#shutil.rmtree(dir)
+		ident = await cls.add_files_via_path(zip_files_dir)
+		func_task = asyncio.create_task(func())
+		return ident
 
 	@classmethod
 	async def sha256_file(cls, filepath: str, chunk_size: int = 1024 * 1024) -> str:
