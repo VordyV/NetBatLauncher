@@ -8,7 +8,8 @@ from starlette_admin.actions import row_action
 from starlette.responses import RedirectResponse
 from starlette.exceptions import HTTPException
 from starlette_admin import TextWidget, HtmlWidget
-from .models import GameClientModel, GameModModel, SessionAccountModel, AccountModel, FileModel
+from .models import GameClientModel, GameModModel, SessionAccountModel, AccountModel, FileModel, GameModel
+from tortoise.models import Model
 import httpx
 from urllib.parse import quote
 from starlette.datastructures import UploadFile
@@ -96,9 +97,10 @@ class GameView(BaseModelView):
         StringField("name", validators=[length(min=1, max=128)], label="Name", help_text="", required=True),
         StringField("short_name", validators=[length(min=1, max=64)], label="Short name", help_text="", required=True),
         DateTimeField("created_at", label="Creation date and time", exclude_from_create=True, exclude_from_edit=True),
-        DateTimeField("modified", label="Date and time of modification", exclude_from_create=True, exclude_from_edit=True)
+        DateTimeField("modified", label="Date and time of modification", exclude_from_create=True, exclude_from_edit=True),
+        BooleanField("has_file_manifest", label="Files added", getter=lambda request, obj: obj.file_manifest_id is not None, read_only=True, exclude_from_create=True, exclude_from_edit=True),
     ]
-    menu_label = "Games"
+    menu_label = "Viewing games"
 
 class GameClientsView(BaseModelView):
     perm_read: str = "admin.gameclient.read"
@@ -114,10 +116,11 @@ class GameClientsView(BaseModelView):
         DateTimeField("created_at", label="Creation date and time", exclude_from_create=True, exclude_from_edit=True),
         DateTimeField("modified", label="Date and time of modification", exclude_from_create=True, exclude_from_edit=True),
         BooleanField("reference", label="Reference", exclude_from_create=True, exclude_from_edit=True),
+        BooleanField("has_file_manifest", label="Files added", getter=lambda request, obj: obj.file_manifest_id is not None, read_only=True, exclude_from_create=True, exclude_from_edit=True),
         IPAddressField("master_server_address", validators=[length(min=0, max=15)], label="Master server address", help_text=""),
         StringField("master_server_enctypex_key", validators=[length(min=0, max=64)], label="Master server key", help_text=""),
     ]
-    menu_label = "Game clients"
+    menu_label = "Viewing game clients"
     row_actions = [
         "view",
         "edit",
@@ -160,7 +163,8 @@ class GameModsView(BaseModelView):
         StringField("developer", validators=[length(min=1, max=128)], label="Developer", help_text="", required=True),
         BooleanField("default", label="Default", exclude_from_create=True, exclude_from_edit=True),
         DateTimeField("created_at", label="Creation date and time", exclude_from_create=True, exclude_from_edit=True),
-        DateTimeField("modified", label="Date and time of modification", exclude_from_create=True, exclude_from_edit=True)
+        DateTimeField("modified", label="Date and time of modification", exclude_from_create=True, exclude_from_edit=True),
+        BooleanField("has_file_manifest", label="Files added", getter=lambda request, obj: obj.file_manifest_id is not None, read_only=True, exclude_from_create=True, exclude_from_edit=True),
     ]
     menu_label = "Mods"
     row_actions = [
@@ -289,19 +293,28 @@ class FileView(BaseModelView):
 class UploadTooLarge(Exception):
     pass
 
-class FileUploadView(BaseCustomView):
-    menu_label = "Upload files"
-    icon = "fa fa-upload"
-    path = "/file"
+class BaseFileUploadView(BaseCustomView):
 
-    perm_read: str = "admin.fileupload.read"
-    perm_create: str = "admin.fileupload.create"
-    perm_edit: str = "admin.fileupload.edit"
-    perm_delete: str = "admin.fileupload.delete"
+    target: Model
+    form_title: str
+    select_desc: str
 
     @route("")
     async def index(self, request: Request):
         base_path = request.url.path.rstrip("/")
+
+        targets = await self.target.all()
+
+        model_view = next((view for view in self._admin._model_views if getattr(view, "model", None) is self.target), None)
+
+        if model_view is None: raise RuntimeError(f"No ModelView is registered for the model {self.target.__name__}")
+
+        choices = []
+
+        for target in targets:
+            pk = await model_view.get_pk_value(request, target)
+            label = await model_view.repr(target, request)
+            choices.append({"id": pk, "label": label})
 
         return self.templates.TemplateResponse(
             request=request,
@@ -309,6 +322,9 @@ class FileUploadView(BaseCustomView):
             context={
                 "title": self.title(request),
                 "upload_url": f"{base_path}/upload",
+                "targets": choices,
+                "select_desc": self.select_desc,
+                "form_title": self.form_title
             },
         )
 
@@ -316,8 +332,11 @@ class FileUploadView(BaseCustomView):
     async def upload(self, request: Request):
         form = await request.form()
         file = form.get("file")
+        target_id = form.get("target_id")
+        target = await self.target.get_or_none(id=target_id)
 
         if not isinstance(file, UploadFile): return JSONResponse({"error": "Файл не передан"},status_code=400)
+        if not target: return JSONResponse({"error": "Record not found"},status_code=400)
 
         CHUNK_SIZE = 1024 * 1024 # 1 MB
         UPLOAD_DIR = Path(os.getenv("TEMP_STORAGE_PATH"))
@@ -348,14 +367,14 @@ class FileUploadView(BaseCustomView):
         finally:
             await file.close()
 
-        manifest_id = await self.core.storage.add_files(destination.name)
+        manifest_id = await self.core.storage.add_files(destination.name, target=target)
 
         return JSONResponse({
             "ok": True,
             "message": f"Файл успешно загружен: MF:{manifest_id}",
             "filename": file.filename,
             "size": size,
-            "redirect_url": f"/admin/file/task?manifestid={manifest_id}"
+            "redirect_url": f"/admin{self.path}/task?manifestid={manifest_id}"
         })
 
     @route("/task")
@@ -377,3 +396,31 @@ class FileUploadView(BaseCustomView):
                 "status_api_url": "/api/storage/tasks",
             },
         )
+
+class GameFileUploadView(BaseFileUploadView):
+
+    target = GameModel
+    select_desc = "Select the desired game"
+    form_title = "Uploading game files"
+    menu_label = "Upload game files"
+    icon = "fa fa-upload"
+    path = "/games/file"
+
+    perm_read: str = "admin.game.fileupload.read"
+    perm_create: str = "admin.game.fileupload.create"
+    perm_edit: str = "admin.game.fileupload.edit"
+    perm_delete: str = "admin.game.fileupload.delete"
+
+class GameClientFileUploadView(BaseFileUploadView):
+
+    target = GameClientModel
+    select_desc = "Select the desired game client"
+    form_title = "Uploading game client files"
+    menu_label = "Upload game client files"
+    icon = "fa fa-upload"
+    path = "/games/clients/file"
+
+    perm_read: str = "admin.gameclient.fileupload.read"
+    perm_create: str = "admin.gameclient.fileupload.create"
+    perm_edit: str = "admin.gameclient.fileupload.edit"
+    perm_delete: str = "admin.gameclient.fileupload.delete"
