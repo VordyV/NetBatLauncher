@@ -2,6 +2,7 @@ import os
 import uuid
 
 from .storage_task_status import StorageTaskStatus
+from .mfds_status import MFDSStatus
 from tortoise.models import Model
 from tortoise import fields
 
@@ -73,7 +74,9 @@ class GameClientModel(Model):
 	class Meta:
 		table="nbl_game_client"
 
-	def __admin_repr__(self, request) -> str: return f"{self.game.name} - {self.name}"
+	async def __admin_repr__(self, request) -> str:
+		await self.fetch_related("game")
+		return f"{self.game.name} - {self.name}"
 
 class GameServerModel(Model):
 	id = fields.IntField(primary_key=True)
@@ -147,4 +150,20 @@ class SessionAccountModel(Model):
 	class Meta:
 		table="nbl_session_account"
 
-	def __admin_repr__(self, request) -> str: return f"{self.account.name}"
+	async def __admin_repr__(self, request) -> str:
+		await self.fetch_related("account")
+		return f"{self.account.name}"
+
+class ManifestFileDownloadSession(Model):
+	id = fields.IntField(primary_key=True)
+	ident = fields.UUIDField(unique=True, default=uuid.uuid4, index=True)
+	manifest = fields.ForeignKeyField("models.FileManifestModel", null=True, on_delete=fields.NO_ACTION)
+	completed = fields.BooleanField()
+	created_at = fields.DatetimeField(db_default=fields.Now())
+	completed_on = fields.DatetimeField(null=True)
+	country = fields.CharField(max_length=64, null=True)
+	city = fields.CharField(max_length=64, null=True)
+	possible_vpn = fields.BooleanField()
+	client_version = fields.CharField(max_length=8, null=True)
+	client_id = fields.CharField(max_length=32, null=True)
+	os = fields.CharField(max_length=16, null=True)
