@@ -1,6 +1,5 @@
 import datetime
 import pathlib
-
 from fastapi import FastAPI
 from fastapi.responses import Response
 import uvicorn
@@ -26,10 +25,10 @@ from slugify import slugify
 from .gs import get_server_list
 from .config import TORTOISE_ORM
 from starlette_admin.contrib.tortoise import Admin
-from .admin_view import GameView, GameClientsView, GameModsView, GameServerView, AccountView, SessionView, FileManifestView, FileView, FileUploadView
+from .admin_view import GameView, GameClientsView, GameModsView, GameServerView, AccountView, SessionView, FileManifestView, FileView, GameFileUploadView, GameClientFileUploadView
 from .admin_auth_providers import StanAuthProvider
 from starlette.middleware.sessions import SessionMiddleware
-from starlette_admin import TextWidget, HtmlWidget, CustomView
+from starlette_admin import TextWidget, HtmlWidget, CustomView, DropDown
 import nbl_server
 import os
 import re
@@ -89,18 +88,17 @@ class NetBatLauncherServer:
 		self.__shell.register("appmig", self._on_cmd_apply_migrate, desc="Apply database migration changes")
 		self.__shell.register("acc.reg", self._on_cmd_register_account, desc="")
 
-		self.__scheduler.add_job(self._task_refresh_game_servers_data, "interval", None, hours=12, next_run_time=datetime.datetime.now() + datetime.timedelta(seconds=60), id="refresh_game_servers_data")
+		self.__scheduler.add_job(self._task_refresh_game_servers_data, "interval", None, hours=1, next_run_time=datetime.datetime.now() + datetime.timedelta(seconds=120), id="refresh_game_servers_data")
 
 		Tortoise.init_models(["nbl_server.models"], "models")
-		self.__admin_panel.add_view(GameView(self, GameModel, icon="fa fa-newspaper"))
-		self.__admin_panel.add_view(GameClientsView(self,GameClientModel, icon="fa fa-newspaper"))
+		self.__admin_panel.add_view(DropDown("Games", icon="fa fa-newspaper", views=[GameView(self, GameModel, icon="fa fa-newspaper"), GameFileUploadView(self)]))
+		self.__admin_panel.add_view(DropDown("Game clients", icon="fa fa-newspaper", views=[GameClientsView(self, GameClientModel, icon="fa fa-newspaper"), GameClientFileUploadView(self)]))
 		self.__admin_panel.add_view(GameModsView(self,GameModModel, icon="fa fa-newspaper"))
 		self.__admin_panel.add_view(GameServerView(self,GameServerModel, icon="fa fa-newspaper"))
 		self.__admin_panel.add_view(AccountView(self,AccountModel, icon="fa fa-newspaper"))
 		self.__admin_panel.add_view(SessionView(self,SessionAccountModel, icon="fa fa-newspaper"))
 		self.__admin_panel.add_view(FileManifestView(self,FileManifestModel, icon="fa fa-newspaper"))
 		self.__admin_panel.add_view(FileView(self, FileModel, icon="fa fa-newspaper"))
-		self.__admin_panel.add_view(FileUploadView(self))
 		self.__admin_panel.mount_to(self.__fp_app)
 
 	async def _exc_404(self, request, exc):
