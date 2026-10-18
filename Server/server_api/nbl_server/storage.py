@@ -1,6 +1,7 @@
 import traceback
 from .storage_task_status import StorageTaskStatus
 from .models import FileModel, FileManifestModel, StorageTaskModel
+from tortoise.models import Model
 from enum import IntEnum
 import os
 import aiofiles
@@ -46,7 +47,7 @@ class Storage:
 			myzip.extractall(path=path_target)
 
 	@classmethod
-	async def add_files(cls, filename) -> str:
+	async def add_files(cls, filename, target: Model | None = None) -> str:
 		uuid = os.urandom(16).hex()
 		zip_file = os.path.join(os.getenv("TEMP_STORAGE_PATH"), filename)
 		zip_files_dir = os.path.join(os.getenv("TEMP_STORAGE_PATH"), uuid)
@@ -58,13 +59,14 @@ class Storage:
 
 		async def func():
 			try:
-				print("n1")
 				task = cls.get_task(ident)
-
 				await task.task
-				print("n2")
+				if target:
+					manifest = await FileManifestModel.get(ident=ident)
+					setattr(target, "file_manifest", manifest)
+					await target.save()
 			finally:
-				print("n3")
+
 				if os.path.isdir(zip_files_dir):
 					shutil.rmtree(zip_files_dir)
 				if os.path.exists(zip_file):
@@ -99,10 +101,16 @@ class Storage:
 				await storage_task.save()
 
 				added_files = []
-				for fp in Path(path).rglob('*'):
+				files = [fp for fp in Path(path).rglob('*')]
+				pg_target = len(files)
+				pg_part = 1
+				for fp in files:
+					pg_part += 1
 					if not fp.is_file(): continue
 					async with aiofiles.open(str(fp.resolve()), mode='rb') as f:
 						added_files.append(await cls.add(await f.read(), fp.name, str(fp.relative_to(path).as_posix()), manifest))
+
+					cls._tasks[uuid].progress = pg_part / pg_target
 
 				storage_task.status = StorageTaskStatus.Done
 				await storage_task.save()
@@ -110,11 +118,13 @@ class Storage:
 				storage_task.error = str(e)
 				storage_task.status = StorageTaskStatus.Cancelled
 				await storage_task.save()
+				await manifest.delete()
 			except Exception as e:
 				storage_task.error = str(e)
 				storage_task.status = StorageTaskStatus.Error
 				storage_task.traceback = traceback.format_exc()
 				await storage_task.save()
+				await manifest.delete()
 
 		manifest = await FileManifestModel.create(ident=uuid)
 		storage_task = await StorageTaskModel.create(ident=uuid, status=StorageTaskStatus.Pending)
@@ -122,6 +132,12 @@ class Storage:
 		cls._tasks[uuid] = StorageTask(ident=uuid, task=task)
 
 		return uuid
+
+	@classmethod
+	async def remove_files(cls, manifest: FileManifestModel):
+		files = await FileModel.filter(manifest=manifest).all()
+		for file in files:
+			pass
 
 	@classmethod
 	async def add_files_via_link(cls, url: str) -> str:
