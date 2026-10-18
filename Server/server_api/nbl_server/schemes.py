@@ -10,6 +10,7 @@ class ResponseGameFilesManifest(BaseModel):
 	ident: str
 	files: list[ResponseFile]
 	size: int
+	session_id: str | None
 
 class GameServerData(BaseModel):
 	address: str
