@@ -80,14 +80,14 @@
     const pollingInterval = 2500;
 
     const statuses = {
-        0: "Pending — в очереди",
-        1: "Downloading — загрузка",
-        2: "IntegrityCheck — проверка целостности",
-        3: "Extraction — распаковка архива",
-        4: "UploadStorage — запись в хранилище",
-        5: "Done — завершено",
-        6: "Cancelled — отменено",
-        7: "Error — ошибка"
+        0: "Pending",
+        1: "Downloading",
+        2: "Integrity check",
+        3: "Extraction",
+        4: "Upload storage",
+        5: "Done",
+        6: "Cancelled",
+        7: "Error"
     };
 
     const terminalStatuses = new Set([5, 6, 7]);
@@ -135,8 +135,6 @@
     }
 
     function displayProgress(value) {
-        // Поддерживаются оба варианта:
-        // progress = 0.75 означает 75%, progress = 75 означает 75%.
         let percent = value <= 1 ? value * 100 : value;
         percent = Math.max(0, Math.min(100, percent));
 
@@ -165,13 +163,13 @@
 
         if (status === 5) {
             progressBar.classList.add("bg-success");
-            showMessage("Обработка манифеста завершена.", "success");
+            showMessage("Manifest processing completed", "success");
         } else if (status === 6) {
             progressBar.classList.add("bg-secondary");
-            showMessage("Обработка манифеста отменена.", "warning");
+            showMessage("Manifest processing cancelled", "warning");
         } else if (status === 7) {
             progressBar.classList.add("bg-danger");
-            showMessage("При обработке манифеста произошла ошибка.", "danger");
+            showMessage("An error occurred while processing the manifest", "danger");
         }
     }
 
@@ -198,7 +196,7 @@
                 stopPolling();
                 statusElement.textContent = "Not found";
                 showMessage(
-                    "Задача или манифест не найдены (HTTP 404).",
+                    "Task or manifest not found (HTTP 404)",
                     "warning"
                 );
                 return;
@@ -208,7 +206,7 @@
                 stopPolling();
                 statusElement.textContent = "Access denied";
                 showMessage(
-                    "Нет доступа к API статуса задачи.",
+                    "No access to the task status API",
                     "danger"
                 );
                 retryButton.hidden = false;
@@ -233,7 +231,7 @@
 
             taskIdElement.textContent = String(task.id ?? "—");
             statusElement.textContent =
-                statuses[status] ?? `Неизвестный статус (${status})`;
+                statuses[status] ?? `Unknown status (${status})`;
 
             displayProgress(rawProgress);
 
@@ -245,12 +243,12 @@
                 return;
             }
 
-            showMessage("Обработка продолжается...", "info");
+            showMessage("Processing continues...", "info");
         } catch (error) {
             console.error("Failed to retrieve task status:", error);
 
             showMessage(
-                "Не удалось получить статус. Повторная попытка будет выполнена автоматически.",
+                "Failed to retrieve the status. A retry will be performed automatically",
                 "warning"
             );
         } finally {
@@ -263,7 +261,7 @@
     retryButton.addEventListener("click", () => {
         stopped = false;
         retryButton.hidden = true;
-        showMessage("Повторное получение статуса...", "info");
+        showMessage("Retrying status retrieval...", "info");
         pollStatus();
     });
 
