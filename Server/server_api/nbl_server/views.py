@@ -3,7 +3,7 @@ from fastapi.responses import RedirectResponse, Response, FileResponse
 from fastapi.exceptions import HTTPException
 from typing import Annotated
 from pydantic import Field
-from .models import GameModel, FileModel, FileManifestModel, GameClientModel, GameServerModel, GameServerDataModel, GameModModel, AccountModel, StorageTaskModel
+from .models import GameModel, FileModel, FileManifestModel, GameClientModel, GameServerModel, GameServerDataModel, GameModModel, AccountModel, StorageTaskModel, ManifestFileDownloadSession
 from .schemes import ResponseFile, ResponseGameFilesManifest
 from .storage import StorageObjectType
 from .schemes import GameServerData, GameServers, GameClient, GameClients, Games, Game, GameMod, GameMods, Exchange, AuthCallback, ManifestTask
@@ -73,8 +73,12 @@ GameModField = Annotated[GameModModel, Depends(game_mod)]
 AgentField = Annotated[str, Field(max_length=128)]
 OTCField = Annotated[str, Field(max_length=16, min_length=16)]
 ManifestTaskIdField = Annotated[str, Field(max_length=32, min_length=32)]
+ClientVersionField = Annotated[str, Field(max_length=8)]
+ClientIdField = Annotated[str, Field(max_length=32, min_length=32)]
+UserOsField = Annotated[str, Field(max_length=16)]
+ManifestSessionIdField = Annotated[str, Field(max_length=32, min_length=32)]
 
-@router.get("/auth/login", description="Log in to the account via Steam. This will redirect to the provider's login page. Performs authorization and returns the OTC code")
+'''@router.get("/auth/login", description="Log in to the account via Steam. This will redirect to the provider's login page. Performs authorization and returns the OTC code")
 async def auth_login(request: Request):
 	params = {
 		"openid.ns": "http://specs.openid.net/auth/2.0",
@@ -128,11 +132,11 @@ async def auth_exchange(request: Request, otac: OTCField, agent: AgentField) -> 
 	core = request.app.state.core
 	token = core.get_token_one_time_code(otac)
 	if token: return Exchange(access_token=token)
-	else: raise HTTPException(status_code=400, detail="Invalid or expired code")
+	else: raise HTTPException(status_code=400, detail="Invalid or expired code")'''
 
 
 @router.get("/games/files/manifest", description="Get the list of game files and links to download them")
-async def games_files_manifest(ctx: CtxField, game: GameField) -> ResponseGameFilesManifest:
+async def games_files_manifest(ctx: CtxField, game: GameField, install: bool = False, clientversion: ClientVersionField = None, clientid: ClientIdField = None, useros: UserOsField = None) -> ResponseGameFilesManifest:
 
 	if not game.file_manifest: return Response(status_code=404)
 
@@ -146,11 +150,32 @@ async def games_files_manifest(ctx: CtxField, game: GameField) -> ResponseGameFi
 		size += file.size
 		files.append(ResponseFile(checksum_sha256=file.checksum_sha256, url=str(ctx.request.url_for("storage_download", file_id=file.ident)), path=file.local_path, size=file.size))
 
+	sid = None
+	if install:
+		# Not for Roskomnadzor, this is only for analytics
+		possible_vpn = False
+
+		country = ""
+		city = ""
+
+		session = await ManifestFileDownloadSession.create(manifest=manifest, client_version=clientversion, client_id=clientid, os=useros, completed=False, possible_vpn=possible_vpn)
+		sid = session.ident.hex
+
 	return ResponseGameFilesManifest(
 		files=files,
 		ident=manifest.ident,
-		size=size
+		size=size,
+		session_id=sid
 	)
+
+@router.get("/games/files/manifest/endsession")
+async def games_files_manifest_end_session(ctx: CtxField, msid: ManifestSessionIdField):
+	session = await ManifestFileDownloadSession.get_or_none(ident=uuid.UUID(hex=msid))
+	if not session or session.completed: return Response(status_code=404)
+
+	session.completed = True
+	session.completed_on = datetime.datetime.now()
+	await session.save()
 
 @router.get("/games/clients/files/manifest", description="Get the list of game client files and links to download them")
 async def games_files_manifest(ctx: CtxField, game: GameField, client: GameClientField) -> ResponseGameFilesManifest:
