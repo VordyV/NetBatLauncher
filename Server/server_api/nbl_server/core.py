@@ -1,3 +1,6 @@
+import datetime
+import pathlib
+
 from fastapi import FastAPI
 from fastapi.responses import Response
 import uvicorn
@@ -8,9 +11,12 @@ from loguru import logger
 from contextlib import asynccontextmanager
 from tortoise.contrib.fastapi import RegisterTortoise
 from tortoise import Tortoise
+from tortoise.context import TortoiseContext
+from tortoise.migrations.autodetector import MigrationAutodetector
+from tortoise.migrations.api import migrate
 from callixir import AsyncSimpleShell
 from .storage import LocalStorage, Storage
-from .models import GameModel, FileManifestModel, FileModel, StorageTaskModel, StorageTaskStatus, GameClientModel, GameServerModel, GameServerDataModel
+from .models import GameModel, FileManifestModel, FileModel, StorageTaskModel, StorageTaskStatus, GameClientModel, GameServerModel, GameServerDataModel, GameModModel
 from .views import router
 from .schemes import GameServerData
 from .middlewares import LogMiddleware
@@ -18,6 +24,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from slugify import slugify
 from .gs import get_server_list
+from .config import TORTOISE_ORM
 import nbl_server
 import os
 
@@ -54,12 +61,21 @@ class NetBatLauncherServer:
 		self.__shell.register("client.list", self._cmd_game_clients_list, desc="Get the list of all game clients")
 		self.__shell.register("client.files.upload", self._cmd_game_client_upload_files, desc="Upload game client files")
 		self.__shell.register("client.files.rem", self._cmd_game_client_remove_files, desc="Delete game client files")
+		self.__shell.register("client.setref", self._on_cmd_client_set_ref, desc="Set the game client as the reference")
 		self.__shell.register("gs.add", self._cmd_add_game_server, desc="Add a game server to a game client")
 		self.__shell.register("gs.rem", self._cmd_rem_game_server, desc="Delete a game server of a game client")
 		self.__shell.register("gs.list", self._cmd_game_server_list, desc="Get the list of game servers of a game client")
 		self.__shell.register("help", self._on_cmd_help, desc="Get information about all commands")
+		self.__shell.register("mod.list", self._on_cmd_mod_list, desc="Get the list of game mods")
+		self.__shell.register("mod.add", self._cmd_add_game_mod, desc="Add a game mod")
+		self.__shell.register("mod.rem", self._cmd_rem_game_mod, desc="Delete a game mod")
+		self.__shell.register("mod.files.upload", self._cmd_game_mod_upload_files, desc="Upload game mod files")
+		self.__shell.register("mod.files.rem", self._cmd_game_mod_remove_files, desc="Delete game mod files")
+		self.__shell.register("mod.setdef", self._on_cmd_mod_set_def, desc="Set the game mod as the default")
+		self.__shell.register("mig", self._on_cmd_migrate, desc="Create a database changes migration")
+		self.__shell.register("appmig", self._on_cmd_apply_migrate, desc="Apply database migration changes")
 
-		self.__scheduler.add_job(self._task_refresh_game_servers_data, "interval", None, hours=12, id="refresh_game_servers_data")
+		self.__scheduler.add_job(self._task_refresh_game_servers_data, "interval", None, hours=12, next_run_time=datetime.datetime.now() + datetime.timedelta(seconds=60), id="refresh_game_servers_data")
 
 	async def _exc_404(self, request, exc):
 		return Response(status_code=404)
@@ -110,16 +126,142 @@ class NetBatLauncherServer:
 		except Exception:
 			raise Exception(f"Game server '{serverid}' does not exist")
 
+	async def _get_game_mod(self, gameid: str, modid: str) -> GameModModel:
+		try:
+			return await GameModModel.get(ident=modid, game__ident=gameid)
+		except Exception:
+			raise Exception(f"Game mod '{modid}' does not exist")
+
+	async def _on_cmd_migrate(self):
+		migrations_dir = pathlib.Path("app/migrations")
+		migrations_dir.mkdir(parents=True, exist_ok=True)
+
+		init_file = migrations_dir / "__init__.py"
+		init_file.touch(exist_ok=True)
+
+		async with TortoiseContext() as ctx:
+			await ctx.init(config=TORTOISE_ORM)
+
+			autodetector = MigrationAutodetector(ctx.apps, TORTOISE_ORM.get("apps"))
+
+			writers = await autodetector.changes()
+
+			if not writers:
+				return "No model changes detected"
+
+			for writer in writers:
+				path = writer.write()
+				print(f"Migration '{path}' created")
+
+			return "Done."
+
+	async def _on_cmd_apply_migrate(self):
+		try:
+			await migrate(config=TORTOISE_ORM)
+			return f"Changes applied"
+		except Exception as e:
+			return f"Changes were not applied: {e}"
+		finally:
+			await Tortoise.close_connections()
+
+	async def _on_cmd_mod_list(self, gameid: str):
+		rows = ["id\tname\tversion\tdeveloper\tcreated_at\tmodified\tis default\tis files"]
+
+		game = await self._get_game(gameid)
+
+		for mod in await GameModModel.filter(game=game).all():
+			rows.append(f"{mod.ident}\t{mod.name}\t{mod.version}\t{mod.developer}\t{mod.created_at}\t{mod.modified}\t{"yes" if mod.default else "no"}\t{"yes" if bool(mod.file_manifest) else "no"}")
+
+		if len(rows) < 2:
+			return "No mods"
+		return "\n".join(rows)
+
+	async def _cmd_add_game_mod(self, gameid: str, modid: str, name: str, version: str, developer: str):
+		modid = slugify(modid)
+		game = await self._get_game(gameid)
+
+		if await GameModModel.filter(ident=modid, game=game).exists(): raise Exception(f"A game mod '{modid}' already exists")
+
+		await GameModModel.create(ident=modid, game=game, name=name, version=version, developer=developer)
+		return f"Game mod '{modid}' added"
+
+	async def _cmd_rem_game_mod(self, gameid: str, modid: str):
+		mod = await self._get_game_mod(gameid, modid)
+		if not mod: raise Exception(f"Game mod '{mod}' does not exist")
+		await mod.delete()
+		return f"Game mod '{modid}' deleted"
+
+	async def _cmd_game_mod_upload_files(self, gameid: str, modid: str, path: str):
+		mod = await self._get_game_mod(gameid, modid)
+
+		ident = await self.storage.add_files_via_path(path)
+
+		print("Adding files to storage...")
+		storage_task = self.storage.get_task(ident)
+		await storage_task.task
+		task = await StorageTaskModel.get(ident=ident)
+		if task.status != StorageTaskStatus.Done: raise Exception(task.error)
+		manifest = await FileManifestModel.get(ident=ident)
+		mod.file_manifest = manifest
+		await mod.save()
+		return f"Manifest '{storage_task.ident}' created"
+
+	async def _cmd_game_mod_remove_files(self, gameid: str, modid: str):
+		mod = await self._get_game_mod(gameid, modid)
+
+		if not mod.file_manifest: raise Exception(f"Game mod '{modid}' has no files")
+
+		manifest = await FileManifestModel.get(id=mod.file_manifest_id)
+		m_id = manifest.ident
+
+		print("Deleting files from storage...")
+		for file in await FileModel.filter(manifest=manifest).all():
+			await self.storage.remove(file.ident)
+			await file.delete()
+
+		mod.file_manifest = None
+		await mod.save()
+		await manifest.delete()
+		return f"Manifest '{m_id}' deleted"
+
+	async def _on_cmd_mod_set_def(self, gameid: str, modid: str):
+		mod = await self._get_game_mod(gameid, modid)
+		if mod.default: raise Exception(f"Mod '{modid}' is already set as default")
+
+		for c in await GameModModel.filter(game__id=mod.game_id).all():
+			if c.default:
+				c.default = False
+				await c.save()
+				break
+
+		mod.default = True
+		await mod.save()
+		return f"Mod '{modid}' has been set as default"
+
+	async def _on_cmd_client_set_ref(self, gameid: str, clientid: str):
+		client = await self._get_game_client(gameid, clientid)
+		if client.reference: raise Exception(f"Client '{clientid}' is already set as the reference")
+
+		for c in await GameClientModel.filter(game__id=client.game_id).all():
+			if c.reference:
+				c.reference = False
+				await c.save()
+				break
+
+		client.reference = True
+		await client.save()
+		return f"Client '{clientid}' has been set as the reference"
+
 	async def _on_cmd_help(self):
 		return self.__shell.beautiful_help
 
 	async def _cmd_game_server_list(self, gameid: str, clientid: str):
-		rows = ["id\tname\tshort name\tcreated at\tmodified\taddress\tquery port"]
+		rows = ["id\tname\tcreated at\tmodified\taddress\tquery port"]
 
 		client = await self._get_game_client(gameid, clientid)
 
 		for server in await GameServerModel.filter(client=client).all():
-			rows.append(f"{server.ident}\t{server.name}\t{server.created_at}\t{server.modified}\t{server.address}\t{server.query_port}")
+			rows.append(f"{server.ident}\t{server.name}\t\t{server.created_at}\t{server.modified}\t{server.address}\t{server.query_port}")
 
 		if len(rows) < 2:
 			return "No servers"
@@ -155,12 +297,12 @@ class NetBatLauncherServer:
 		return f"Game client '{clientid}' deleted"
 
 	async def _cmd_game_clients_list(self, gameid: str):
-		rows = ["id\tname\tshort name\tcreated at\tmodified\tfiles\tms address"]
+		rows = ["id\tname\tshort name\tcreated at\tmodified\tfiles\tms address\tms enckey"]
 
 		game = await self._get_game(gameid)
 
 		for client in await GameClientModel.filter(game=game).all():
-			rows.append(f"{client.ident}\t{client.name}\t{client.short_name}\t{client.created_at}\t{client.modified}\t{"yes" if client.file_manifest else "no"}\t{client.master_server_address}")
+			rows.append(f"{client.ident}\t{client.name}\t{client.short_name}\t{client.created_at}\t{client.modified}\t{"yes" if client.file_manifest else "no"}\t{client.master_server_address if client.master_server_address else "no"}\t{client.master_server_enctypex_key if client.master_server_enctypex_key else "no"}")
 
 		if len(rows) < 2:
 			return "No clients"
@@ -262,10 +404,10 @@ class NetBatLauncherServer:
 	@asynccontextmanager
 	async def _fa_lifespan(self, app: FastAPI):
 		app.state.core = self
-		await RegisterTortoise(db_url=os.getenv("DB_URL", "sqlite://db.sqlite3"), modules={'models': ['nbl_server.models']})
-		await Tortoise.generate_schemas(safe=True)
+		await RegisterTortoise(config=TORTOISE_ORM)
+		#await Tortoise.generate_schemas(safe=True)
 		self.__scheduler.start()
-		await self._task_refresh_game_servers_data()
+		#await self._task_refresh_game_servers_data()
 		yield
 		self.__scheduler.shutdown(wait=False)
 		await Tortoise.close_connections()
@@ -279,7 +421,9 @@ class NetBatLauncherServer:
 				string = await session.prompt_async()
 				if string.strip() == "": continue
 				command = await self.__shell.execute(string)
-				if command.error: print(command.error)
+				if command.error:
+					print(command.error)
+					#print(command.err_traceback)
 				else: print(command.result)
 			except (EOFError, KeyboardInterrupt):
 				self.__event_stop.set()

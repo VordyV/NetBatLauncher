@@ -12,6 +12,7 @@ class FileModel(Model):
 	storage = fields.CharField(max_length=64)
 	path = fields.CharField(max_length=255)
 	created_at = fields.DatetimeField(db_default=fields.Now())
+	size = fields.IntField()
 
 	class Meta:
 		table="nbl_file"
@@ -57,6 +58,7 @@ class GameClientModel(Model):
 	file_manifest = fields.ForeignKeyField("models.FileManifestModel", null=True, on_delete=fields.NO_ACTION)
 	master_server_address = fields.CharField(max_length=64, null=True)
 	master_server_enctypex_key = fields.CharField(max_length=64, null=True)
+	reference = fields.BooleanField(default=False)
 
 	class Meta:
 		table="nbl_game_client"
@@ -85,3 +87,18 @@ class GameServerDataModel(Model):
 
 	class Meta:
 		table="nbl_game_server_data"
+
+class GameModModel(Model):
+	id = fields.IntField(primary_key=True)
+	ident = fields.CharField(max_length=64, index=True)
+	game = fields.ForeignKeyField("models.GameModel", on_delete=fields.CASCADE)
+	name = fields.CharField(max_length=128)
+	version = fields.CharField(max_length=16)
+	developer = fields.CharField(max_length=128)
+	created_at = fields.DatetimeField(db_default=fields.Now())
+	modified = fields.DatetimeField(auto_now=True)
+	default = fields.BooleanField(default=False)
+	file_manifest = fields.ForeignKeyField("models.FileManifestModel", null=True, on_delete=fields.NO_ACTION)
+
+	class Meta:
+		table="nbl_game_mod"

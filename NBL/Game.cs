@@ -155,76 +155,33 @@ public class Game
         }
         return true;
     }
+
     public async Task<ClientData> GenerateDefaultClient()
     {
-        string pathGame =
-            this.GetPath();
-        string pathDirClients =
-            Path.Combine(
-                pathGame,
-                Launcher.ClientsDir);
-        if (!Directory.Exists(pathDirClients))
+        string gamePath = GetPath();
+        string clientPath = Path.Combine(gamePath, Launcher.ClientsDir, Launcher.ClientId);
+        string manifestPath = Path.Combine(clientPath, Launcher.ClientManifestFilename);
+
+        if (File.Exists(manifestPath))
+            return JsonSerializer.Deserialize<ClientData>(await File.ReadAllTextAsync(manifestPath))!;
+
+        Directory.CreateDirectory(clientPath);
+        List<string> files = new();
+
+        foreach (string file in Directory.GetFiles(gamePath))
         {
-            Directory.CreateDirectory(
-                pathDirClients);
+            string name = Path.GetFileName(file);
+            if (Launcher.InvalidClientFileExtensions.Contains(Path.GetExtension(file))) continue;
+
+            File.Copy(file, Path.Combine(clientPath, name), true);
+            files.Add(name);
         }
-        string pathNewClient =
-            Path.Combine(
-                pathDirClients,
-                Launcher.ClientId);
-        if (Directory.Exists(pathNewClient))
-        {
-            Directory.Delete(
-                pathNewClient,
-                true);
-        }
-        Directory.CreateDirectory(
-            pathNewClient);
-        List<string> files =
-            new();
-        foreach (var file in Directory.GetFiles(pathGame))
-        {
-            string extension =
-                Path.GetExtension(file);
-            string fileName =
-                Path.GetFileName(file);
-            if (Launcher.InvalidClientFileExtensions.Contains(
-                    extension))
-            {
-                continue;
-            }
-            files.Add(
-                fileName);
-            File.Copy(
-                file,
-                Path.Combine(
-                    pathNewClient,
-                    fileName));
-        }
-        ClientData client =
-            new ClientData
-            {
-                ID =
-                    Launcher.ClientId,
-                Name =
-                    Launcher.ClientName,
-                Files =
-                    files.ToArray()
-            };
-        string txtMF =
-            JsonSerializer.Serialize(
-                client,
-                new JsonSerializerOptions
-                {
-                    WriteIndented = true
-                });
-        await File.WriteAllTextAsync(
-            Path.Combine(
-                pathNewClient,
-                Launcher.ClientManifestFilename),
-            txtMF);
+
+        ClientData client = new() { ID = Launcher.ClientId, Name = Launcher.ClientName, Files = files.ToArray() };
+        await File.WriteAllTextAsync(manifestPath, JsonSerializer.Serialize(client, new JsonSerializerOptions { WriteIndented = true }));
         return client;
     }
+
     protected bool HasGameInRegistry(
         string? option = null)
     {
@@ -356,6 +313,7 @@ public class Game
                 client);
         }
         return clients;
+
     }
     public async Task ChangeClientGame(
         string clientId)
