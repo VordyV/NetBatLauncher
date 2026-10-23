@@ -7,6 +7,9 @@ public class GameManifest
     [JsonPropertyName("ident")]
     public string Ident { get; set; } = string.Empty;
 
+    [JsonPropertyName("size")]
+    public long Size { get; set; }
+
     [JsonPropertyName("files")]
     public List<GameManifestFile> Files { get; set; } = new();
 }
@@ -21,4 +24,7 @@ public class GameManifestFile
 
     [JsonPropertyName("path")]
     public string Path { get; set; } = string.Empty;
+
+    [JsonPropertyName("size")]
+    public long Size { get; set; }
 }

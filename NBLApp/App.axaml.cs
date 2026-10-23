@@ -35,7 +35,7 @@ public partial class App : Application
                     configDirectory,
                     "nblconfig.registry");
 
-            string serverAddress = "http://127.0.0.1:5000";
+            string serverAddress = "http://api.nbl2142.fun";
 
             Logger.Info($"Config file: {configPath}");
 
