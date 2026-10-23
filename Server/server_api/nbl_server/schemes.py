@@ -10,6 +10,7 @@ class ResponseGameFilesManifest(BaseModel):
 	ident: str
 	files: list[ResponseFile]
 	size: int
+	session_id: str | None
 
 class GameServerData(BaseModel):
 	address: str
@@ -53,3 +54,14 @@ class GameMod(BaseModel):
 
 class GameMods(BaseModel):
 	mods: list[GameMod]
+
+class Exchange(BaseModel):
+	access_token: str
+
+class AuthCallback(BaseModel):
+	otc: str
+
+class ManifestTask(BaseModel):
+	id: str
+	status: int
+	progress: float

@@ -49,7 +49,9 @@ class Program
             Logger.Info("Starting AutoUpdater");
             Logger.Info($"Update URL: {UpdateUrl}");
 
-            AutoUpdater.Start("https://raw.githubusercontent.com/VordyV/NetBatLauncher/main/update.xml");
+            System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
+            AutoUpdater.Start(UpdateUrl);
+            AutoUpdater.ReportErrors = false;
 
             Logger.Info("Starting Avalonia application");
 

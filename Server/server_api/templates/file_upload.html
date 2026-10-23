@@ -1,0 +1,133 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1>{{ form_title }}</h1>
+
+    <form id="upload-form">
+        {{ csrf_input(request) }}
+
+        <select id="target-id" name="target_id" class="form-select" required>
+            <option value="">{{ select_desc }}</option>
+            {% for target in targets %}
+                <option value="{{ target.id }}">
+                    {{ target.label  }}
+                </option>
+            {% endfor %}
+        </select>
+        <br>
+        <div class="mb-3">
+            <label for="file-input" class="form-label">
+                Select a file
+            </label>
+
+            <input id="file-input" name="file" type="file" class="form-control" required>
+        </div>
+
+        <button id="upload-button" type="submit" class="btn btn-primary">Upload</button>
+    </form>
+
+    <div id="progress-wrapper" class="mt-3" hidden>
+        <progress id="upload-progress" max="100" value="0" style="width: 100%;"></progress>
+        <div id="progress-label">Transferred 0%</div>
+    </div>
+
+    <p id="upload-status" class="mt-3" role="status" aria-live="polite"></p>
+</div>
+{% endblock %}
+
+
+{% block script %}
+{{ super() }}
+
+<script>
+(() => {
+    const form = document.getElementById("upload-form");
+    const button = document.getElementById("upload-button");
+    const fileInput = document.getElementById("file-input");
+    const wrapper = document.getElementById("progress-wrapper");
+    const progress = document.getElementById("upload-progress");
+    const label = document.getElementById("progress-label");
+    const status = document.getElementById("upload-status");
+
+    form.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        if (!fileInput.files.length) {
+            status.textContent = "Select a file";
+            return;
+        }
+
+        const formData = new FormData(form);
+        const xhr = new XMLHttpRequest();
+
+        const currentPath = window.location.pathname
+            .replace(/\/+$/, "");
+
+        xhr.open("POST", `${currentPath}/upload`);
+
+        button.disabled = true;
+        wrapper.hidden = false;
+        progress.value = 0;
+        label.textContent = "Transferred 0%";
+        status.textContent = "";
+
+        xhr.upload.addEventListener("progress", (event) => {
+            if (!event.lengthComputable) {
+                return;
+            }
+
+            const percent = Math.round(
+                (event.loaded / event.total) * 100
+            );
+
+            progress.value = percent;
+            label.textContent = `Transferred ${percent}%`;
+
+            if (percent === 100) {
+                status.textContent =
+                    "File transferred. Waiting for the server response...";
+            }
+        });
+
+        xhr.addEventListener("load", () => {
+            let result = {};
+
+            try {
+                result = JSON.parse(xhr.responseText);
+            } catch {
+                result = {};
+            }
+
+            if (
+                xhr.status >= 200 &&
+                xhr.status < 300 &&
+                result.ok
+            ) {
+                window.location.assign(
+                    result.redirect_url || "/admin/"
+                );
+                return;
+            }
+
+            status.textContent =
+                result.error || `HTTP error ${xhr.status}`;
+
+            button.disabled = false;
+        });
+
+        xhr.addEventListener("error", () => {
+            status.textContent = "Network error while uploading the file";
+            button.disabled = false;
+        });
+
+        xhr.addEventListener("abort", () => {
+            status.textContent = "Upload cancelled";
+            button.disabled = false;
+        });
+
+        xhr.send(formData);
+    });
+})();
+</script>
+{% endblock %}

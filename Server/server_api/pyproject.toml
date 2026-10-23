@@ -1,12 +1,12 @@
 [project]
 name = "server"
-version = "0.4.0"
+version = "0.5.0"
 description = ""
 package-mode = false
 authors = [
     {name = "Vordy"}
 ]
-requires-python = ">=3.12,<4"
+requires-python = ">=3.12,<3.16"
 dependencies = [
     "fastapi (>=0.141.1,<0.142.0)",
     "uvicorn (>=0.52.4,<0.53.0)",
@@ -23,6 +23,10 @@ dependencies = [
     "aiofiles (>=25.1.0,<26.0.0)",
     "tortoise-orm[asyncmy] (>=1.1.8,<2.0.0)",
     "cryptography (==44.0.2)",
+    "nuitka (>=4.2.2,<5.0.0)",
+    "starlette-admin (>=1.0.2,<2.0.0)",
+    "bcrypt (>=5.0.0,<6.0.0)",
+    "python-multipart (>=0.0.32,<0.0.33)",
 ]
 
 
