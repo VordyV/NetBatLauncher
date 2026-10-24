@@ -62,9 +62,10 @@ class Storage:
 				task = cls.get_task(ident)
 				await task.task
 				if target:
-					manifest = await FileManifestModel.get(ident=ident)
-					setattr(target, "file_manifest", manifest)
-					await target.save()
+					manifest = await FileManifestModel.get_or_none(ident=ident)
+					if manifest:
+						setattr(target, "file_manifest", manifest)
+						await target.save()
 			finally:
 
 				if os.path.isdir(zip_files_dir):
@@ -130,14 +131,7 @@ class Storage:
 		storage_task = await StorageTaskModel.create(ident=uuid, status=StorageTaskStatus.Pending)
 		task = asyncio.create_task(func())
 		cls._tasks[uuid] = StorageTask(ident=uuid, task=task)
-
 		return uuid
-
-	@classmethod
-	async def remove_files(cls, manifest: FileManifestModel):
-		files = await FileModel.filter(manifest=manifest).all()
-		for file in files:
-			pass
 
 	@classmethod
 	async def add_files_via_link(cls, url: str) -> str:
@@ -207,6 +201,12 @@ class Storage:
 		cls._tasks[uuid] = StorageTask(ident=uuid, task=task)
 
 		return uuid
+
+	@classmethod
+	async def remove_files(cls, manifest: FileManifestModel):
+		for file in await FileModel.filter(manifest=manifest):
+			await cls.on_remove(file.ident)
+			await file.delete()
 
 	@classmethod
 	async def add(cls, data: bytes | str, filename: str, local_path: str | None, manifest: FileManifestModel | None) -> FileModel:  # str -> uuid

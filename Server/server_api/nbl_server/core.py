@@ -1,4 +1,5 @@
 import datetime
+import ipaddress
 import pathlib
 from fastapi import FastAPI
 from fastapi.responses import Response
@@ -15,7 +16,7 @@ from tortoise.migrations.autodetector import MigrationAutodetector
 from tortoise.migrations.api import migrate
 from callixir import AsyncSimpleShell
 from .storage import LocalStorage, Storage
-from .models import GameModel, FileManifestModel, FileModel, StorageTaskModel, StorageTaskStatus, GameClientModel, GameServerModel, GameServerDataModel, GameModModel, AccountModel, SessionAccountModel
+from .models import GameModel, FileManifestModel, FileModel, StorageTaskModel, StorageTaskStatus, GameClientModel, GameServerModel, GameServerDataModel, GameModModel, AccountModel, SessionAccountModel, ChronicleModel
 from .views import router
 from .schemes import GameServerData
 from .middlewares import LogMiddleware
@@ -25,10 +26,11 @@ from slugify import slugify
 from .gs import get_server_list
 from .config import TORTOISE_ORM
 from starlette_admin.contrib.tortoise import Admin
-from .admin_view import GameView, GameClientsView, GameModsView, GameServerView, AccountView, SessionView, FileManifestView, FileView, GameFileUploadView, GameClientFileUploadView
+from .admin_view import GameView, GameClientsView, GameModsView, GameServerView, AccountView, SessionView, FileManifestView, FileView, GameFileUploadView, GameClientFileUploadView, GeneralView
 from .admin_auth_providers import StanAuthProvider
 from starlette.middleware.sessions import SessionMiddleware
 from starlette_admin import TextWidget, HtmlWidget, CustomView, DropDown
+from .chronicle_action_type import ChronicleActionType
 import nbl_server
 import os
 import re
@@ -52,12 +54,12 @@ class NetBatLauncherServer:
 		self.__one_time_codes: dict[str, str] = {}
 		self.__used_nonces_auth = set()
 		self.__steam_api_key = steam_api_key
-		self.__admin_panel = Admin(title="Net Bat 2142 Admin", templates_dir="templates", auth_provider=StanAuthProvider(), secret_key="12345")
+		self.__admin_panel = Admin(title="Net Bat 2142 Admin", templates_dir="templates", auth_provider=StanAuthProvider(), secret_key=os.getenv("SECRET_KEY"))
 
 		self.__fp_app.include_router(router)
 		self.__fp_app.add_middleware(TrustedHostMiddleware)
 		self.__fp_app.add_middleware(LogMiddleware)
-		self.__fp_app.add_middleware(SessionMiddleware, secret_key="12345")
+		self.__fp_app.add_middleware(SessionMiddleware, secret_key=os.getenv("SECRET_KEY"))
 		self.__fp_app.add_exception_handler(404, self._exc_404)
 
 		self.__storage = self.__storages.get(storage)
@@ -91,6 +93,7 @@ class NetBatLauncherServer:
 		self.__scheduler.add_job(self._task_refresh_game_servers_data, "interval", None, hours=1, next_run_time=datetime.datetime.now() + datetime.timedelta(seconds=120), id="refresh_game_servers_data")
 
 		Tortoise.init_models(["nbl_server.models"], "models")
+		self.__admin_panel.add_view(GeneralView(self, icon="fa fa-newspaper"))
 		self.__admin_panel.add_view(DropDown("Games", icon="fa fa-newspaper", views=[GameView(self, GameModel, icon="fa fa-newspaper"), GameFileUploadView(self)]))
 		self.__admin_panel.add_view(DropDown("Game clients", icon="fa fa-newspaper", views=[GameClientsView(self, GameClientModel, icon="fa fa-newspaper"), GameClientFileUploadView(self)]))
 		self.__admin_panel.add_view(GameModsView(self,GameModModel, icon="fa fa-newspaper"))
@@ -106,6 +109,9 @@ class NetBatLauncherServer:
 
 	@property
 	def storage(self) -> Storage: return self.__storage
+
+	def write_chronicle(self, account_executor: AccountModel, action_type: ChronicleActionType, address: ipaddress.IPv4Address, agent: str, account_target: AccountModel | None = None, action_desc: str | None = None):
+		task = asyncio.create_task(ChronicleModel.create(account_executor_uuid=account_executor.ident, account_target_uuid=account_target.ident, action_desc=action_desc, action_type=action_type, address=str(address), agent=agent))
 
 	async def verify_steam_openid(self, params: dict) -> bool:
 		if params.get("openid.mode") != "id_res":
