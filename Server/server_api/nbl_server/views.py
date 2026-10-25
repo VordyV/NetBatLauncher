@@ -217,7 +217,8 @@ async def games_files_manifest(ctx: CtxField, game_mod: GameModField) -> Respons
 	return ResponseGameFilesManifest(
 		files=files,
 		ident=manifest.ident,
-		size=size
+		size=size,
+		session_id=""
 	)
 
 @router.get("/storage/download/{file_id}", name="storage_download", description="Download a file by its id")
