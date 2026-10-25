@@ -144,7 +144,8 @@ async def _get_NumDownloadsGame(request, obj):
     return 0
 
 async def _get_manifest_ident(request, obj):
-    return (await FileManifestModel.get_or_none(id=obj.file_manifest_id)).ident
+    manifest = await FileManifestModel.get_or_none(id=obj.file_manifest_id)
+    return manifest.ident if manifest else ""
 
 class GameView(BaseModelView):
 
