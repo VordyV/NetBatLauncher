@@ -195,7 +195,8 @@ async def games_files_manifest(ctx: CtxField, game: GameField, client: GameClien
 	return ResponseGameFilesManifest(
 		files=files,
 		ident=manifest.ident,
-		size=size
+		size=size,
+		session_id=""
 	)
 
 @router.get("/games/mods/files/manifest", description="")
