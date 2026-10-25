@@ -43,7 +43,7 @@ class NetBatLauncherServer:
 		self.__address = address
 		self.__port = port
 		self.__fp_app = FastAPI(lifespan=self._fa_lifespan, openapi_url="/openapi.json" if nbl_server.__debug_mode__ else None, docs_url="/docs" if nbl_server.__debug_mode__ else None, redoc_url="/redoc" if nbl_server.__debug_mode__ else None, version=nbl_server.__version__, title="NBL Server", description="API server for the Net Bat Launcher")
-		self.__http_server = uvicorn.Server(uvicorn.Config(self.__fp_app, port=self.__port, host=self.__address, log_level=log_level))
+		self.__http_server = uvicorn.Server(uvicorn.Config(self.__fp_app, proxy_headers=True, forwarded_allow_ips="*", port=self.__port, host=self.__address, log_level=log_level))
 		self.__event_stop = asyncio.Event()
 		self.__shell = AsyncSimpleShell()
 		self.__storages = {
