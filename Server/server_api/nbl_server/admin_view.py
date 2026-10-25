@@ -8,9 +8,10 @@ from starlette_admin.actions import row_action
 from starlette.responses import RedirectResponse
 from starlette.exceptions import HTTPException
 from starlette_admin import TextWidget, HtmlWidget
-from .models import GameClientModel, GameModModel, SessionAccountModel, AccountModel, FileModel, GameModel
+from .models import GameClientModel, GameModModel, SessionAccountModel, AccountModel, FileModel, GameModel, ManifestFileDownloadSession, FileManifestModel
 from tortoise.models import Model
 import httpx
+from .services import AccountService, Account
 from urllib.parse import quote
 from starlette.datastructures import UploadFile
 from starlette.requests import Request
@@ -18,7 +19,28 @@ from starlette.responses import JSONResponse, Response
 from pathlib import Path
 import anyio
 from uuid import uuid4
+from tortoise.expressions import Q
 from urllib.parse import urlencode
+from starlette_admin import (
+    Breakpoints,
+    CardRowWidget,
+    ChartWidget,
+    Col,
+    ColumnWidget,
+    CustomView,
+    DividerWidget,
+    EnumField,
+    GridWidget,
+    HtmlWidget,
+    IntegerField,
+    PanelWidget,
+    StatWidget,
+    TableWidget,
+    TabsWidget,
+    TextWidget,
+    ComputedField,
+    InlineModelView
+)
 
 class BaseCustomView(CustomView):
 
@@ -30,6 +52,8 @@ class BaseCustomView(CustomView):
     def __init__(self, core, *args, **kwargs):
         self.core = core
         super().__init__(*args, **kwargs)
+
+        if hasattr(self, "build_widget"): self.widget = self.build_widget
 
     def _is_permission(self, request: Request, permission) -> bool:
         permissions = request.state.admin_user.permissions
@@ -85,6 +109,44 @@ class BaseModelView(ModelView):
             if self.perm_actions[name] not in permissions: return False
         return await super().is_action_allowed(request, name)
 
+class GeneralView(BaseCustomView):
+
+    perm_read: str = "admin.general.read"
+    perm_create: str = "admin.general.create"
+    perm_edit: str = "admin.general.edit"
+    perm_delete: str = "admin.general.delete"
+
+    menu_label = "General"
+
+    '''async def build_widget(self, request: Request) -> ColumnWidget:
+        return ColumnWidget(
+            children=[
+                CardRowWidget(
+                    children=[
+                        Col(
+                            StatWidget(
+                                title="1",
+                                value_callback=self._count_downloads,
+                            )
+                        )
+                    ]
+                )
+            ]
+        )'''
+
+    async def _count_downloads(self, request: Request) -> int:
+        return 124
+
+async def _get_NumDownloadsGame(request, obj):
+    if obj.file_manifest:
+        mfds = await ManifestFileDownloadSession.filter(Q(manifest_id=obj.file_manifest_id) & Q(completed_on__not_isnull=True)).count()
+        return mfds
+    return 0
+
+async def _get_manifest_ident(request, obj):
+    manifest = await FileManifestModel.get_or_none(id=obj.file_manifest_id)
+    return manifest.ident if manifest else ""
+
 class GameView(BaseModelView):
 
     perm_read: str = "admin.game.read"
@@ -99,6 +161,8 @@ class GameView(BaseModelView):
         DateTimeField("created_at", label="Creation date and time", exclude_from_create=True, exclude_from_edit=True),
         DateTimeField("modified", label="Date and time of modification", exclude_from_create=True, exclude_from_edit=True),
         BooleanField("has_file_manifest", label="Files added", getter=lambda request, obj: obj.file_manifest_id is not None, read_only=True, exclude_from_create=True, exclude_from_edit=True),
+        StringField("file_manifest", label="Manifest ID", getter=_get_manifest_ident, copy_to_clipboard=True, exclude_from_create=True, exclude_from_edit=True, exclude_from_list=True),
+        ComputedField("step_count", label="Number of downloads", getter=_get_NumDownloadsGame),
     ]
     menu_label = "Viewing games"
 
@@ -117,6 +181,7 @@ class GameClientsView(BaseModelView):
         DateTimeField("modified", label="Date and time of modification", exclude_from_create=True, exclude_from_edit=True),
         BooleanField("reference", label="Reference", exclude_from_create=True, exclude_from_edit=True),
         BooleanField("has_file_manifest", label="Files added", getter=lambda request, obj: obj.file_manifest_id is not None, read_only=True, exclude_from_create=True, exclude_from_edit=True),
+        StringField("file_manifest", label="Manifest ID", getter=_get_manifest_ident, copy_to_clipboard=True, exclude_from_create=True, exclude_from_edit=True, exclude_from_list=True),
         IPAddressField("master_server_address", validators=[length(min=0, max=15)], label="Master server address", help_text=""),
         StringField("master_server_enctypex_key", validators=[length(min=0, max=64)], label="Master server key", help_text=""),
     ]
@@ -165,6 +230,7 @@ class GameModsView(BaseModelView):
         DateTimeField("created_at", label="Creation date and time", exclude_from_create=True, exclude_from_edit=True),
         DateTimeField("modified", label="Date and time of modification", exclude_from_create=True, exclude_from_edit=True),
         BooleanField("has_file_manifest", label="Files added", getter=lambda request, obj: obj.file_manifest_id is not None, read_only=True, exclude_from_create=True, exclude_from_edit=True),
+        StringField("file_manifest", label="Manifest ID", getter=_get_manifest_ident, copy_to_clipboard=True, exclude_from_create=True, exclude_from_edit=True, exclude_from_list=True),
     ]
     menu_label = "Mods"
     row_actions = [
@@ -220,15 +286,24 @@ class AccountView(BaseModelView):
     perm_delete: str = "admin.account.delete"
 
     fields = [
-        StringField("ident", validators=[length(min=1, max=32)], label="ID", help_text="", required=True, copy_to_clipboard=True),
+        StringField("ident", label="ID", help_text="", required=True, exclude_from_list=True, exclude_from_create=True, exclude_from_edit=True, copy_to_clipboard=True),
         StringField("name", validators=[length(min=1, max=128)], label="Name", help_text="", required=True),
-        StringField("steam_id", validators=[length(min=0, max=128)], label="Steam ID", help_text="", required=True),
+        PasswordField("before_password", label="Password", required=False, exclude_from_list=True, exclude_from_detail=True),
+        StringField("steam_id", validators=[length(min=0, max=128)], label="Steam ID", help_text="", required=False),
         DateTimeField("created_at", label="Creation date and time", exclude_from_create=True, exclude_from_edit=True),
         DateTimeField("modified", label="Date and time of modification", exclude_from_create=True, exclude_from_edit=True),
         BooleanField("active", label="Active"),
         BooleanField("op", label="Operator"),
     ]
     menu_label = "Accounts"
+
+    async def before_create(self, request: Request, data: dict[str, Any], obj: AccountModel):
+        password = data["before_password"]
+        obj.password = await AccountService.hash_password(password)
+
+    async def before_edit(self, request: Request, data: dict[str, Any], obj: AccountModel):
+        password = data["before_password"]
+        obj.password = await AccountService.hash_password(password)
 
 class SessionView(BaseModelView):
     perm_read: str = "admin.session.read"
@@ -239,6 +314,7 @@ class SessionView(BaseModelView):
     fields = [
         "account",
         DateTimeField("created_at", label="Creation date and time", exclude_from_create=True, exclude_from_edit=True),
+        DateTimeField("last_access", label="Last activity", exclude_from_create=True, exclude_from_edit=True),
         IPAddressField("address", validators=[length(min=1, max=15)], label="IP address", help_text="", required=True),
         StringField("agent", validators=[length(min=1, max=128)], label="Agent", help_text="", required=True),
     ]
@@ -270,6 +346,21 @@ class FileManifestView(BaseModelView):
     ]
     inlines = [FileInline]
     menu_label = "File manifests"
+
+    @row_action(
+        name="remove_files",
+        text="Remove files",
+        icon_class="fas fa-star",
+        confirmation="Delete ALL FILES of this manifest? Cancelling the action and recovery are impossible",
+        action_btn_class="btn btn-primary",
+        submit_btn_text="Remove files",
+        custom_response=True
+    )
+    async def remove_files_row_action(self, request: Request, pk: Any):
+        manifest = await FileManifestModel.get(id=pk)
+        await self.core.storage.remove_files(manifest)
+        await manifest.delete()
+        return RedirectResponse("/admin/file-manifest-model/list", status_code=303)
 
 class FileView(BaseModelView):
     perm_read: str = "admin.file.read"
