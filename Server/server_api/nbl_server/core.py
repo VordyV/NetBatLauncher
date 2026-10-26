@@ -55,7 +55,7 @@ class NetBatLauncherServer:
 		self.__one_time_codes: dict[str, str] = {}
 		self.__used_nonces_auth = set()
 		self.__steam_api_key = steam_api_key
-		self.__admin_panel = Admin(title="Net Bat 2142 Admin", templates_dir="templates", auth_provider=StanAuthProvider(), secret_key=os.getenv("SECRET_KEY"))
+		self.__admin_panel = Admin(title="Net Bat 2142 Admin", index_view=GeneralView(self, icon="fa fa-newspaper"), templates_dir="templates", auth_provider=StanAuthProvider(), secret_key=os.getenv("SECRET_KEY"))
 		self.__status: ServerStatus = ServerStatus.ok
 
 		self.__fp_app.include_router(router)
