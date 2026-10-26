@@ -8,8 +8,11 @@ services:
       - appnet
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./nginx/nblserverapi.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certbot/www:/var/www/certbot:ro
+      - ./letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - nblserverapi
 
@@ -43,7 +46,11 @@ services:
       - TEMP_STORAGE_PATH=${NBL_SERV_API_TEMP_STORAGE_PATH}
       - LOCAL_STORAGE=${NBL_SERV_API_LOCAL_STORAGE}
       - DEBUG=${NBL_SERV_API_DEBUG}
-      - DB_URL=mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE}
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USER=${MYSQL_USER}
+      - DB_PASSWORD=${MYSQL_PASSWORD}
+      - DB_NAME=${MYSQL_DATABASE}
     links:
       - "mysql:db"
     networks:

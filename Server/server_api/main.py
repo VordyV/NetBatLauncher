@@ -1,6 +1,10 @@
 import os
+if os.getenv("DEBUG"):
+	from dotenv import load_dotenv
+	load_dotenv()
 from nbl_server import NetBatLauncherServer
 from prompt_toolkit.patch_stdout import StdoutProxy
+
 
 from loguru import logger
 

@@ -3,10 +3,12 @@ from fastapi.responses import RedirectResponse, Response, FileResponse
 from fastapi.exceptions import HTTPException
 from typing import Annotated
 from pydantic import Field
-from .models import GameModel, FileModel, FileManifestModel, GameClientModel, GameServerModel, GameServerDataModel, GameModModel, AccountModel, StorageTaskModel, ManifestFileDownloadSession
+from .models import GameModel, FileModel, FileManifestModel, GameClientModel, GameServerModel, GameServerDataModel, GameModModel, AccountModel, StorageTaskModel, ManifestFileDownloadSession, GameMLTextModel
 from .schemes import ResponseFile, ResponseGameFilesManifest
 from .storage import StorageObjectType
-from .schemes import GameServerData, GameServers, GameClient, GameClients, Games, Game, GameMod, GameMods, Exchange, AuthCallback, ManifestTask
+from .schemes import GameServerData, GameServers, GameClient, GameClients, Games, Game, GameMod, GameMods, Exchange, AuthCallback, ManifestTask, GameDisclaimer
+from .language import Language
+from .server_status import ServerStatus
 import os
 import re
 import urllib.parse
@@ -195,7 +197,8 @@ async def games_files_manifest(ctx: CtxField, game: GameField, client: GameClien
 	return ResponseGameFilesManifest(
 		files=files,
 		ident=manifest.ident,
-		size=size
+		size=size,
+		session_id=""
 	)
 
 @router.get("/games/mods/files/manifest", description="")
@@ -216,7 +219,8 @@ async def games_files_manifest(ctx: CtxField, game_mod: GameModField) -> Respons
 	return ResponseGameFilesManifest(
 		files=files,
 		ident=manifest.ident,
-		size=size
+		size=size,
+		session_id=""
 	)
 
 @router.get("/storage/download/{file_id}", name="storage_download", description="Download a file by its id")
@@ -289,3 +293,13 @@ async def storage_manifest(request: Request, manifestid: ManifestTaskIdField) ->
 	if not task or not manifest: return Response(status_code=404)
 
 	return ManifestTask(id=manifest.ident, status=manifest.status.value, progress=task.progress)
+
+@router.get("/heartbeat")
+async def heartbeat(ctx: CtxField) -> ServerStatus:
+	return ctx.core.status
+
+@router.get("/games/disclaimers")
+async def games_disclaimers(ctx: CtxField, game: GameField, langcode: Language = Language.en) -> GameDisclaimer:
+	text = await GameMLTextModel.filter(game=game, lang_code=langcode).get_or_none()
+	if not text: return Response(status_code=404)
+	return GameDisclaimer(text=text.text)

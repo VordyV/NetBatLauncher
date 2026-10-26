@@ -1,17 +1,27 @@
 import os
 import uuid
+from enum import unique
 
 from .storage_task_status import StorageTaskStatus
 from .mfds_status import MFDSStatus
 from tortoise.models import Model
 from tortoise import fields
+from .language import Language
+
+class MultiLangText(Model):
+	id = fields.IntField(primary_key=True)
+	lang_code = fields.CharEnumField(Language)
+	text = fields.TextField()
+
+	class Meta:
+		abstract = True
 
 class FileModel(Model):
 	id = fields.IntField(primary_key=True)
 	ident = fields.CharField(max_length=64, unique=True, index=True)
 	filename = fields.CharField(max_length=128)
 	local_path = fields.CharField(max_length=255, null=True)
-	manifest = fields.ForeignKeyField("models.FileManifestModel", null=True, on_delete=fields.NO_ACTION, related_name="files")
+	manifest = fields.ForeignKeyField("models.FileManifestModel", null=True, on_delete=fields.SET_NULL, related_name="files")
 	checksum_sha256 = fields.CharField(max_length=255)
 	storage = fields.CharField(max_length=64)
 	path = fields.CharField(max_length=255)
@@ -41,12 +51,18 @@ class GameModel(Model):
 	short_name = fields.CharField(max_length=64)
 	created_at = fields.DatetimeField(db_default=fields.Now())
 	modified = fields.DatetimeField(auto_now=True)
-	file_manifest = fields.ForeignKeyField("models.FileManifestModel", null=True, on_delete=fields.NO_ACTION)
+	file_manifest = fields.ForeignKeyField("models.FileManifestModel", null=True, on_delete=fields.SET_NULL)
 
 	class Meta:
 		table="nbl_game"
 
 	def __admin_repr__(self, request) -> str: return self.name
+
+class GameMLTextModel(MultiLangText):
+	game = fields.ForeignKeyField("models.GameModel", unigue=True)
+
+	class Meta:
+		table="nbl_game_mlt"
 
 class StorageTaskModel(Model):
 	id = fields.IntField(primary_key=True)
@@ -66,7 +82,7 @@ class GameClientModel(Model):
 	short_name = fields.CharField(max_length=64)
 	created_at = fields.DatetimeField(db_default=fields.Now())
 	modified = fields.DatetimeField(auto_now=True)
-	file_manifest = fields.ForeignKeyField("models.FileManifestModel", null=True, on_delete=fields.NO_ACTION)
+	file_manifest = fields.ForeignKeyField("models.FileManifestModel", null=True, on_delete=fields.SET_NULL)
 	master_server_address = fields.CharField(max_length=64, null=True)
 	master_server_enctypex_key = fields.CharField(max_length=64, null=True)
 	reference = fields.BooleanField(default=False)
@@ -113,7 +129,7 @@ class GameModModel(Model):
 	created_at = fields.DatetimeField(db_default=fields.Now())
 	modified = fields.DatetimeField(auto_now=True)
 	default = fields.BooleanField(default=False)
-	file_manifest = fields.ForeignKeyField("models.FileManifestModel", null=True, on_delete=fields.NO_ACTION)
+	file_manifest = fields.ForeignKeyField("models.FileManifestModel", null=True, on_delete=fields.SET_NULL)
 
 	class Meta:
 		table="nbl_game_mod"
@@ -144,6 +160,7 @@ class SessionAccountModel(Model):
 	account = fields.ForeignKeyField("models.AccountModel", on_delete=fields.CASCADE)
 	token = fields.CharField(max_length=64, default=get_token, index=True)
 	created_at = fields.DatetimeField(db_default=fields.Now())
+	last_access = fields.DatetimeField(db_default=fields.Now())
 	address = fields.CharField(max_length=15)
 	agent = fields.CharField(max_length=128)
 
@@ -157,7 +174,7 @@ class SessionAccountModel(Model):
 class ManifestFileDownloadSession(Model):
 	id = fields.IntField(primary_key=True)
 	ident = fields.UUIDField(unique=True, default=uuid.uuid4, index=True)
-	manifest = fields.ForeignKeyField("models.FileManifestModel", null=True, on_delete=fields.NO_ACTION)
+	manifest = fields.ForeignKeyField("models.FileManifestModel", null=True, on_delete=fields.SET_NULL)
 	completed = fields.BooleanField()
 	created_at = fields.DatetimeField(db_default=fields.Now())
 	completed_on = fields.DatetimeField(null=True)
@@ -167,3 +184,20 @@ class ManifestFileDownloadSession(Model):
 	client_version = fields.CharField(max_length=8, null=True)
 	client_id = fields.CharField(max_length=32, null=True)
 	os = fields.CharField(max_length=16, null=True)
+
+	class Meta:
+		table="nbl_mfds"
+
+class ChronicleModel(Model):
+	id = fields.IntField(primary_key=True)
+	ident = fields.UUIDField(unique=True, default=uuid.uuid4, index=True)
+	account_executor_uuid = fields.UUIDField(index=True)
+	account_target_uuid = fields.UUIDField(index=True, null=True)
+	action_desc = fields.CharField(max_length=255, null=True)
+	action_type = fields.IntField()
+	created_at = fields.DatetimeField(db_default=fields.Now())
+	address = fields.CharField(max_length=15)
+	agent = fields.CharField(max_length=128)
+
+	class Meta:
+		table="nbl_chronicle"
