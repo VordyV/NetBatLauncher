@@ -12,6 +12,10 @@ public class GameManifest
 
     [JsonPropertyName("files")]
     public List<GameManifestFile> Files { get; set; } = new();
+
+    [JsonPropertyName("session_id")]
+    public string? SessionId { get; set; }
+
 }
 
 public class GameManifestFile

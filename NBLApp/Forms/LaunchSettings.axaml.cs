@@ -68,7 +68,6 @@ public partial class LaunchSettings : UserControl
                 this.IntroVideoService.AreIntrosDisabled(
                     gamePath);
             this.TextBlockNoIntroStatus.Text = " ";
-                //"Видео вступления будут отключены";
         }
         catch (GamePathNotSetException)
         {
@@ -329,12 +328,9 @@ public partial class LaunchSettings : UserControl
             }
             catch (GamePathNotSetException)
             {
-                // Игра ещё не установлена.
             }
             catch (GamePathNotFoundException)
             {
-                // Путь игры сохранён,
-                // но сама игра отсутствует.
             }
             if (this.DataContext
                 is IDialogContext ctx)

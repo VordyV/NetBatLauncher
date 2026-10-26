@@ -1,4 +1,5 @@
-﻿using Avalonia;
+﻿
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
@@ -10,12 +11,13 @@ using NBLApp.Controls;
 using NBLApp.Forms;
 using NBLApp.Localization;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Ursa.Controls;
+
 namespace NBLApp.Views;
+
 public partial class MainView : View
 {
     protected ViewPresenter<Launcher> Pages;
@@ -23,6 +25,8 @@ public partial class MainView : View
     protected Launcher Launcher;
     protected bool isLoaded = false;
     protected bool isUpdatingClients = false;
+    private bool isSyncingClients;
+    private bool clientSyncFailed;
 
     public string MainText => Locale.Get("Main");
     public string HeadquartersText => Locale.Get("Headquarters");
@@ -45,27 +49,29 @@ public partial class MainView : View
     public string LaunchpadText => Locale.Get("Launchpad");
     public string InstallClientText => Locale.Get("InstallClient");
 
-    private void Locale_LanguageChanged( object? sender, EventArgs e) { this.DataContext = null; this.DataContext = this; }
-    
-    public MainView( Launcher launcher, ViewPresenter<Launcher> viewPresenter, object? arg) : base(launcher, viewPresenter, arg)
+    private void Locale_LanguageChanged(object? sender, EventArgs e)
     {
-        this.Launcher = launcher;
-        Locale.LanguageChanged += this.Locale_LanguageChanged;
-        this.Loaded += async (sender, args) => await this.OnLoaded();
-        this.Game = launcher.GetGame((string)arg);
-        this.Game.OnChangeStatus += this.UpdateButtonMA;
-        this.Pages = new ViewPresenter<Launcher>( arg: this.Launcher, new()
-        {
-            {"general", (l, vp, arg) => new MainGeneralView( l, vp, arg) }
-        });
-        
-        InitializeComponent();
-        
-        this.DataContext = this;
-        this.MainContent.Content = this.Pages.Content;
-        this.Pages.ShowView("general", this.Game.Id);
+        DataContext = null;
+        DataContext = this;
     }
 
+    public MainView(Launcher launcher, ViewPresenter<Launcher> viewPresenter, object? arg) : base(launcher, viewPresenter, arg)
+    {
+        Launcher = launcher;
+        Locale.LanguageChanged += Locale_LanguageChanged;
+        Loaded += async (sender, args) => await OnLoaded();
+        Game = launcher.GetGame((string)arg);
+        Game.OnChangeStatus += UpdateButtonMA;
+        Pages = new ViewPresenter<Launcher>(arg: Launcher, new()
+        {
+            { "general", (l, vp, arg) => new MainGeneralView(l, vp, arg) }
+        });
+
+        InitializeComponent();
+        DataContext = this;
+        MainContent.Content = Pages.Content;
+        Pages.ShowView("general", Game.Id);
+    }
 
     protected async Task OnLoaded()
     {
@@ -74,17 +80,60 @@ public partial class MainView : View
         if (Game.IsInstall)
         {
             try { Game.GetCurrentClient(); }
-            catch (GameNotSetRegistryException) { Console.WriteLine("Клиент игры не установлен."); }
+            catch (GameNotSetRegistryException) { Logger.Warning("Current client not selected."); }
 
+            var clients = await Game.GetClients();
+            await UpdateClients(clients);
+            await SyncInstalledClientsAsync(clients);
             await UpdateClients(await Game.GetClients());
         }
         else
-        {
             await UpdateClients([]);
-        }
 
-        await UpdateButtonMA(Game.Status);
         isLoaded = true;
+        await UpdateButtonMA(Game.Status);
+    }
+
+    private async Task SyncInstalledClientsAsync(ClientData[] clients)
+    {
+        isSyncingClients = true;
+        clientSyncFailed = false;
+        await UpdateButtonMA(Game.Status);
+
+        try
+        {
+            var update = new ClientUpdateService();
+            int checkedClients = 0;
+
+            foreach (string id in new[] { "respy", "novgames" })
+            {
+                if (!clients.Any(c => c.ID.Equals(id, StringComparison.OrdinalIgnoreCase)))
+                    continue;
+
+                checkedClients++;
+
+                try
+                {
+                    await update.SyncClientAsync(Launcher.ServerAddress, Game.Id, Game.GetPath(), id);
+                    Logger.Info($"Client synchronization completed: {id}");
+                    Notify.ShowInfo("Синхронизация завершена", $"{id}: проверка файлов выполнена успешно.");
+                }
+                catch (Exception ex)
+                {
+                    clientSyncFailed = true;
+                    Logger.Error($"Client synchronization failed: {id}", ex);
+                    Notify.ShowError($"Ошибка синхронизации {id}", ex.Message);
+                }
+            }
+
+            if (checkedClients == 0)
+                Logger.Info("Client synchronization skipped: no Respy or NovGames installation found.");
+        }
+        finally
+        {
+            isSyncingClients = false;
+            await UpdateButtonMA(Game.Status);
+        }
     }
 
     private string GetSelectedClientId()
@@ -97,26 +146,17 @@ public partial class MainView : View
 
     private bool IsClientInstalled(string clientId)
     {
-        return Game.Clients.Keys.Any(id =>
-            id.Equals(clientId, StringComparison.OrdinalIgnoreCase));
+        return Game.Clients.Keys.Any(id => id.Equals(clientId, StringComparison.OrdinalIgnoreCase));
     }
-
 
     private async Task SwitchClientWithProfilesAsync(string clientId)
     {
         string currentClient;
 
-        try
-        {
-            currentClient = Game.GetCurrentClient();
-        }
-        catch
-        {
-            currentClient = Launcher.ClientId;
-        }
+        try { currentClient = Game.GetCurrentClient(); }
+        catch { currentClient = Launcher.ClientId; }
 
         var profiles = new ProfileService();
-
         await profiles.SwitchAsync(currentClient, clientId);
 
         try
@@ -126,11 +166,8 @@ public partial class MainView : View
         }
         catch
         {
-            if (!currentClient.Equals(
-                    clientId, StringComparison.OrdinalIgnoreCase))
-            {
+            if (!currentClient.Equals(clientId, StringComparison.OrdinalIgnoreCase))
                 await profiles.SwitchAsync(clientId, currentClient);
-            }
 
             throw;
         }
@@ -144,30 +181,16 @@ public partial class MainView : View
         {
             string current;
 
-            try
-            {
-                current = Game.GetCurrentClient();
-            }
-            catch
-            {
-                current = Launcher.ClientId;
-            }
+            try { current = Game.GetCurrentClient(); }
+            catch { current = Launcher.ClientId; }
 
             ApiClient[] available;
 
-            try
-            {
-                available = await Launcher.GetAvailableClientsAsync(Game.Id);
-            }
+            try { available = await Launcher.GetAvailableClientsAsync(Game.Id); }
             catch (Exception ex)
             {
                 Logger.Warning($"Failed to load available clients: {ex.Message}");
-
-                available = clients.Select(c => new ApiClient
-                {
-                    Ident = c.ID,
-                    Name = c.Name
-                }).ToArray();
+                available = clients.Select(c => new ApiClient { Ident = c.ID, Name = c.Name }).ToArray();
             }
 
             ComboBoxClients.Items.Clear();
@@ -175,8 +198,7 @@ public partial class MainView : View
 
             foreach (var client in available)
             {
-                bool installed = clients.Any(c =>
-                    c.ID.Equals(client.Ident, StringComparison.OrdinalIgnoreCase));
+                bool installed = clients.Any(c => c.ID.Equals(client.Ident, StringComparison.OrdinalIgnoreCase));
 
                 ComboBoxClients.Items.Add(new ComboBoxItem
                 {
@@ -200,27 +222,36 @@ public partial class MainView : View
         await UpdateButtonMA(Game.Status);
     }
 
-
     private async Task UpdateButtonMA(GameStatus status)
     {
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
+            if (isSyncingClients)
+            {
+                Button_MainAction.Content = "Синхронизация клиентов...";
+                Button_MainAction.IsEnabled = false;
+                return;
+            }
+
+            Button_MainAction.IsEnabled = true;
+
+            if (clientSyncFailed && status == GameStatus.NotRunning)
+            {
+                Button_MainAction.Content = "Повторить синхронизацию";
+                return;
+            }
+
             switch (status)
             {
                 case GameStatus.NotInstalled:
                     Button_MainAction.Content = InstallGameText;
                     break;
-
                 case GameStatus.NotRunning:
-                    Button_MainAction.Content = IsClientInstalled(GetSelectedClientId())
-                        ? LaunchGameText
-                        : InstallClientText;
+                    Button_MainAction.Content = IsClientInstalled(GetSelectedClientId()) ? LaunchGameText : InstallClientText;
                     break;
-
                 case GameStatus.Running:
                     Button_MainAction.Content = GameRunningText;
                     break;
-
                 case GameStatus.Stopping:
                     Button_MainAction.Content = StoppingText;
                     break;
@@ -230,29 +261,30 @@ public partial class MainView : View
 
     protected async void Button_MainAction_OnClick(object? sender, RoutedEventArgs e)
     {
+        if (isSyncingClients)
+            return;
+
         try
         {
-            switch (this.Game.Status)
+            if (clientSyncFailed && Game.Status == GameStatus.NotRunning)
             {
+                await SyncInstalledClientsAsync(await Game.GetClients());
+                await UpdateClients(await Game.GetClients());
+                await UpdateButtonMA(Game.Status);
+                return;
+            }
 
+            switch (Game.Status)
+            {
                 case GameStatus.NotInstalled:
                     {
                         var context = new DialogContext();
+                        await OverlayDialog.ShowCustomAsync<SimpInst>(new SimpInst(Launcher, Game) { DataContext = context }, context, hostId: "main", options: new OverlayDialogOptions { CanResize = false });
+                        await Game.CheckInstall();
+                        await UpdateButtonMA(Game.Status);
 
-                        await OverlayDialog.ShowCustomAsync<SimpInst>(
-                            new SimpInst(this.Launcher, this.Game) { DataContext = context },
-                            context,
-                            hostId: "main",
-                            options: new OverlayDialogOptions { CanResize = false });
-
-                        await this.Game.CheckInstall();
-
-                        await this.UpdateButtonMA(this.Game.Status);
-
-                        if (this.Game.IsInstall)
-                        {
-                            await this.UpdateClients(await this.Game.GetClients());
-                        }
+                        if (Game.IsInstall)
+                            await UpdateClients(await Game.GetClients());
 
                         break;
                     }
@@ -267,13 +299,12 @@ public partial class MainView : View
 
                             try
                             {
-                                var update = new ClientUpdateService();
+                                var context = new DialogContext();
+                                var window = new SimpInst(Launcher, Game, clientId, false) { DataContext = context };
+                                await OverlayDialog.ShowCustomAsync<SimpInst>(window, context, hostId: "main", options: new OverlayDialogOptions { CanResize = false });
 
-                                await update.InstallClientAsync(
-                                    Launcher.ServerAddress,
-                                    Game.Id,
-                                    Game.GetPath(),
-                                    clientId);
+                                if (!window.OperationSucceeded)
+                                    break;
 
                                 await Game.GetClients();
 
@@ -281,13 +312,12 @@ public partial class MainView : View
                                     throw new Exception($"Клиент '{clientId}' не установлен.");
 
                                 await SwitchClientWithProfilesAsync(clientId);
-
                                 await UpdateClients(await Game.GetClients());
                                 await UpdateButtonMA(Game.Status);
                             }
-                            catch (Exception exception)
+                            catch (Exception ex)
                             {
-                                Notify.ShowError(Locale.Get("ClientChangeFailed"), exception.Message);
+                                Notify.ShowError(Locale.Get("ClientChangeFailed"), ex.Message);
                             }
                             finally
                             {
@@ -297,50 +327,32 @@ public partial class MainView : View
                             break;
                         }
 
-                        string currentClient;
-
-                        try
-                        {
-                            currentClient = Game.GetCurrentClient();
-                        }
-                        catch
-                        {
-                            currentClient = "";
-                        }
-
                         await SwitchClientWithProfilesAsync(clientId);
                         await Game.Launch();
+                        break;
+                    }
 
-                        break;
-                    }
                 case GameStatus.Running:
-                    {
-                        break;
-                    }
                 case GameStatus.Stopping:
-                    {
-                        break;
-                    }
+                    break;
             }
         }
-        catch (Exception exception)
+        catch (Exception ex)
         {
-            Console.WriteLine(exception);
-            Notify.ShowError(Locale.Get("GameLaunchFailed"), exception.Message);
+            Logger.Error("Main action failed.", ex);
+            Notify.ShowError(Locale.Get("GameLaunchFailed"), ex.Message);
         }
     }
-    
+
     private async void ButtonSettings_OnClick(object? sender, RoutedEventArgs e)
     {
         var context = new DialogContext();
-        await OverlayDialog.ShowCustomAsync<SettingsGear>(new SettingsGear(this.Game) {DataContext = context}, context, hostId: "main", new OverlayDialogOptions {CanResize = false});
+        await OverlayDialog.ShowCustomAsync<SettingsGear>(new SettingsGear(Game) { DataContext = context }, context, hostId: "main", new OverlayDialogOptions { CanResize = false });
     }
 
-    private async void ComboBoxClients_OnSelectionChanged(
-    object? sender, SelectionChangedEventArgs e)
+    private async void ComboBoxClients_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (!isLoaded || isUpdatingClients || !Game.IsInstall ||
-            ComboBoxClients.SelectedItem is not ComboBoxItem)
+        if (!isLoaded || isUpdatingClients || !Game.IsInstall || ComboBoxClients.SelectedItem is not ComboBoxItem)
             return;
 
         await UpdateButtonMA(Game.Status);
@@ -349,12 +361,11 @@ public partial class MainView : View
     private async void ButtonParams_OnClick(object? sender, RoutedEventArgs e)
     {
         var context = new DialogContext();
-        await OverlayDialog.ShowCustomAsync<LaunchSettings>(new LaunchSettings(this.Game) {DataContext = context}, context, hostId: "main", new OverlayDialogOptions {CanResize = false});
+        await OverlayDialog.ShowCustomAsync<LaunchSettings>(new LaunchSettings(Game) { DataContext = context }, context, hostId: "main", new OverlayDialogOptions { CanResize = false });
     }
-    
+
     private void Telegram_Click(object? sender, RoutedEventArgs e)
-    { 
-        Process.Start(new ProcessStartInfo {FileName = "https://t.me/VSEM2142", UseShellExecute = true});
+    {
+        Process.Start(new ProcessStartInfo { FileName = "https://t.me/VSEM2142", UseShellExecute = true });
     }
-    
 }

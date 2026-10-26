@@ -233,7 +233,7 @@ public partial class SettingsGear : UserControl
     private void LoadGameLanguage()
     {
         string language =
-            GameLanguageService.GetLanguage();
+            LanguageKeyService.GetLanguage();
 
         GameLanguageComboBox.SelectedIndex =
             language == "Russian" ? 1 : 0;
@@ -241,19 +241,19 @@ public partial class SettingsGear : UserControl
     private void LoadGameKey()
     {
         this.TextBoxGameKeyMd5.Text =
-            GameKeyService.GetKeyMd5() ?? "";
+            RegistryKeyService.GetKeyMd5() ?? "";
     }
     private void ButtonGenerateGameKey_OnClick(
      object? sender,
      RoutedEventArgs e)
     {
         bool result =
-            GameKeyService.GenerateAndSetKey();
+            RegistryKeyService.GenerateAndSetKey();
 
         if (result)
         {
             this.TextBoxGameKeyMd5.Text =
-                GameKeyService.GetKeyMd5() ?? "";
+                RegistryKeyService.GetKeyMd5() ?? "";
         }
     }
     private async void ButtonCopyGameKeyHash_OnClick(
@@ -292,7 +292,7 @@ public partial class SettingsGear : UserControl
                 _ => "English"
             };
 
-        GameLanguageService.SetLanguage(
+        LanguageKeyService.SetLanguage(
             language);
     }
     private void DisableVideoSettings()

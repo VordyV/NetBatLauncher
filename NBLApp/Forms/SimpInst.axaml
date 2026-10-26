@@ -3,17 +3,17 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
-             d:DesignWidth="540"
-             d:DesignHeight="450"
+             d:DesignWidth="600"
+             d:DesignHeight="650"
              Background="Transparent"
              xmlns:u="https://irihi.tech/ursa"
              xmlns:c="clr-namespace:NBLApp.Controls"
-             Width="540"
+             x:Name="SimpInstControl"
              x:Class="NBLApp.Forms.SimpInst">
 
+
 	<c:Form Title="Установка игры"
-            SubTitle="BattleField 2142"
-            Width="540">
+            Width="600">
 
 		<c:Form.Content>
 

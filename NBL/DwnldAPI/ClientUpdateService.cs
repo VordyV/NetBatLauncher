@@ -32,17 +32,24 @@ public class ClientUpdateService
     private const int MaxConcurrentDownloads = 3;
     private readonly DownloadService _downloadService = new();
     private readonly IntroVideoService _introVideoService = new();
+    public string? SessionId { get; private set; }
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
         WriteIndented = true
     };
 
+
     public async Task<GameManifest> GetManifestAsync(
         string server, string gameId, CancellationToken cancellationToken = default,
-        string? clientId = null)
+        string? clientId = null, bool install = false)
     {
         string url = $"{server.TrimEnd('/')}/api/games/files/manifest?gameid={Uri.EscapeDataString(gameId)}";
+
+        if (install)
+            url += "&install=true";
+
         if (!string.IsNullOrWhiteSpace(clientId))
             url += $"&clientid={Uri.EscapeDataString(clientId)}";
 
@@ -51,44 +58,66 @@ public class ClientUpdateService
         GameManifest manifest = JsonSerializer.Deserialize<GameManifest>(json, JsonOptions)
             ?? throw new InvalidOperationException("API вернул пустой manifest.");
 
-        Logger.Info($"Manifest: client={clientId ?? "default"}, files={manifest.Files.Count}, firstFiles={string.Join(", ", manifest.Files.Take(5).Select(f => f.Path))}");
+        Logger.Info($"Manifest: client={clientId ?? "default"}, files={manifest.Files.Count}, sessionId={manifest.SessionId ?? "none"}, firstFiles={string.Join(", ", manifest.Files.Take(5).Select(f => f.Path))}");
         return manifest;
     }
 
 
+
+
     public async Task<bool> EndSessionAsync(
-        string server, CancellationToken token = default)
+        string server, string sessionId, CancellationToken token = default)
     {
-        string url = $"{server.TrimEnd('/')}/api/games/files/manifest/endsession";
+        if (string.IsNullOrWhiteSpace(sessionId) || sessionId.Length != 32)
+        {
+            Logger.Warning("EndSession skipped: invalid or missing session_id.");
+            return false;
+        }
+
+        string url = $"{server.TrimEnd('/')}/api/games/files/manifest/endsession?msid={Uri.EscapeDataString(sessionId)}";
 
         try
         {
             Logger.Info($"Ending download session: {url}");
 
-            using var response = await new HttpClient()
-                .GetAsync(url, token);
+            using var client = new HttpClient
+            {
+                Timeout = TimeSpan.FromSeconds(30)
+            };
+
+            using var response = await client.GetAsync(url, token);
+            string body = await response.Content.ReadAsStringAsync(token);
+
+            Logger.Info(
+                $"EndSession response: HTTP {(int)response.StatusCode} " +
+                $"{response.StatusCode}; body={body}");
 
             response.EnsureSuccessStatusCode();
 
-            Logger.Info($"Download session ended: HTTP {(int)response.StatusCode}");
+            Logger.Info("Download session ended successfully.");
             return true;
+        }
+        catch (OperationCanceledException)
+        {
+            Logger.Warning("EndSession request was cancelled or timed out.");
+            return false;
         }
         catch (Exception ex)
         {
-            Logger.Warning($"Failed to end download session: {ex.Message}");
+            Logger.Error("Failed to end download session.", ex);
             return false;
         }
     }
 
 
+
     public async Task<GameManifest> GetClientManifestAsync(
-    string server, string gameId, string clientId, CancellationToken token = default)
+        string server, string gameId, string clientId, CancellationToken token = default)
     {
         string url = $"{server.TrimEnd('/')}/api/games/clients/files/manifest" +
             $"?gameid={Uri.EscapeDataString(gameId)}&clientid={Uri.EscapeDataString(clientId)}";
 
         Logger.Info($"Getting client manifest: {url}");
-
         string json = await _downloadService.GetStringAsync(url, token);
         GameManifest manifest = JsonSerializer.Deserialize<GameManifest>(json, JsonOptions)
             ?? throw new InvalidOperationException("API вернул пустой client manifest.");
@@ -112,21 +141,23 @@ public class ClientUpdateService
         }
     }
 
-    // Установка основной игры
     public Task InstallGameAsync(
         string server, string gameId, string gamePath,
         IProgress<ClientUpdateProgress>? progress = null,
         CancellationToken token = default)
-        => UpdateAsync(server, gameId, gamePath, progress, token);
+        => UpdateAsync(server, gameId, gamePath, progress, token, install: true);
 
-    // Обратная совместимость со старым кодом
     public async Task UpdateAsync(
-        string server, string gameId, string gamePath,
-        IProgress<ClientUpdateProgress>? progress = null,
-        CancellationToken cancellationToken = default, string? clientId = null)
+    string server, string gameId, string gamePath,
+    IProgress<ClientUpdateProgress>? progress = null,
+    CancellationToken cancellationToken = default, string? clientId = null,
+    bool install = false)
     {
         GameManifest manifest = await GetManifestAsync(
-            server, gameId, cancellationToken, clientId);
+            server, gameId, cancellationToken, clientId, install);
+
+        if (install)
+            SessionId = manifest.SessionId;
 
         string targetPath = string.IsNullOrWhiteSpace(clientId)
             ? gamePath
@@ -136,7 +167,6 @@ public class ClientUpdateService
             manifest, gamePath, targetPath, clientId, progress, cancellationToken);
     }
 
-    // Отдельная установка клиента
     public async Task InstallClientAsync(
         string server, string gameId, string gamePath, string clientId,
         IProgress<ClientUpdateProgress>? progress = null,
@@ -146,6 +176,37 @@ public class ClientUpdateService
         string clientPath = Path.Combine(gamePath, Launcher.ClientsDir, clientId);
 
         await UpdateFilesAsync(manifest, gamePath, clientPath, clientId, progress, token);
+    }
+
+    public bool IsClientInstalled(string gamePath, string clientId)
+    {
+        if (clientId is not ("respy" or "novgames"))
+            return false;
+
+        return File.Exists(Path.Combine(
+            gamePath, Launcher.ClientsDir, clientId,
+            Launcher.ClientManifestFilename));
+    }
+
+    public async Task SyncClientAsync(
+        string server, string gameId, string gamePath, string clientId,
+        IProgress<ClientUpdateProgress>? progress = null,
+        CancellationToken token = default)
+    {
+        if (clientId is not ("respy" or "novgames"))
+            throw new ArgumentException(
+                "Поддерживаются только Respy и NovGames.", nameof(clientId));
+
+        string clientPath = Path.Combine(gamePath, Launcher.ClientsDir, clientId);
+
+        if (!File.Exists(Path.Combine(clientPath, Launcher.ClientManifestFilename)))
+            throw new InvalidOperationException($"Клиент {clientId} не установлен.");
+
+        GameManifest manifest = await GetClientManifestAsync(
+            server, gameId, clientId, token);
+
+        await UpdateFilesAsync(
+            manifest, gamePath, clientPath, clientId, progress, token);
     }
 
     private async Task UpdateFilesAsync(
@@ -158,6 +219,17 @@ public class ClientUpdateService
             .ToArray();
 
         Directory.CreateDirectory(targetPath);
+        string root = Path.GetFullPath(targetPath) + Path.DirectorySeparatorChar;
+
+        foreach (GameManifestFile file in files)
+        {
+            string path = Path.GetFullPath(Path.Combine(
+                targetPath, file.Path.Replace('/', Path.DirectorySeparatorChar)));
+
+            if (!path.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidDataException($"Недопустимый путь в manifest: {file.Path}");
+        }
+
         Logger.Info($"Starting update: client={clientId ?? "default"}, files={files.Length}, path={targetPath}");
 
         int total = files.Length;
