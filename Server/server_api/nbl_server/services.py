@@ -1,11 +1,15 @@
 from .models import AccountModel, SessionAccountModel
 from ipaddress import IPv4Address
 from dataclasses import dataclass
+from zoneinfo import ZoneInfo
 import asyncio
 import bcrypt
 import datetime
+import os
 
 class ServiceException(Exception): pass
+
+def now(): return datetime.datetime.now(ZoneInfo(os.getenv("TIMEZONE", "Europe/Moscow")))
 
 @dataclass
 class Account:
@@ -31,7 +35,7 @@ class AccountService:
 	async def re_authorize(token: str, ip_address: IPv4Address, agent: str) -> Account | None:
 		session = await SessionAccountModel.get_or_none(token=token)
 		if not session: return None
-		session.last_access = datetime.datetime.now()
+		session.last_access = now()
 		await session.save()
 
 		account = await AccountModel.get_or_none(id=session.account_id)
