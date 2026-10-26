@@ -6,7 +6,7 @@ using System.Security.Cryptography;
 
 namespace NBL.Services;
 
-public static class GameKeyService
+public static class ErgcKeyService
 {
     private const string RegistryPath =
         @"SOFTWARE\Electronic Arts\EA GAMES\Battlefield 2142\ergc";
