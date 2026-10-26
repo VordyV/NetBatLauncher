@@ -16,7 +16,7 @@ from tortoise.migrations.autodetector import MigrationAutodetector
 from tortoise.migrations.api import migrate
 from callixir import AsyncSimpleShell
 from .storage import LocalStorage, Storage
-from .models import GameModel, FileManifestModel, FileModel, StorageTaskModel, StorageTaskStatus, GameClientModel, GameServerModel, GameServerDataModel, GameModModel, AccountModel, SessionAccountModel, ChronicleModel
+from .models import GameModel, FileManifestModel, FileModel, StorageTaskModel, StorageTaskStatus, GameClientModel, GameServerModel, GameServerDataModel, GameModModel, AccountModel, SessionAccountModel, ChronicleModel, MultiLangText
 from .views import router
 from .schemes import GameServerData
 from .middlewares import LogMiddleware
@@ -31,6 +31,7 @@ from .admin_auth_providers import StanAuthProvider
 from starlette.middleware.sessions import SessionMiddleware
 from starlette_admin import TextWidget, HtmlWidget, CustomView, DropDown
 from .chronicle_action_type import ChronicleActionType
+from .server_status import ServerStatus
 import nbl_server
 import os
 import re
@@ -55,6 +56,7 @@ class NetBatLauncherServer:
 		self.__used_nonces_auth = set()
 		self.__steam_api_key = steam_api_key
 		self.__admin_panel = Admin(title="Net Bat 2142 Admin", templates_dir="templates", auth_provider=StanAuthProvider(), secret_key=os.getenv("SECRET_KEY"))
+		self.__status: ServerStatus = ServerStatus.ok
 
 		self.__fp_app.include_router(router)
 		self.__fp_app.add_middleware(TrustedHostMiddleware)
@@ -109,6 +111,9 @@ class NetBatLauncherServer:
 
 	@property
 	def storage(self) -> Storage: return self.__storage
+
+	@property
+	def status(self) -> ServerStatus: return self.__status
 
 	def write_chronicle(self, account_executor: AccountModel, action_type: ChronicleActionType, address: ipaddress.IPv4Address, agent: str, account_target: AccountModel | None = None, action_desc: str | None = None):
 		task = asyncio.create_task(ChronicleModel.create(account_executor_uuid=account_executor.ident, account_target_uuid=account_target.ident, action_desc=action_desc, action_type=action_type, address=str(address), agent=agent))

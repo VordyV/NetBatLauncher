@@ -65,3 +65,6 @@ class ManifestTask(BaseModel):
 	id: str
 	status: int
 	progress: float
+
+class GameDisclaimer(BaseModel):
+	text: str

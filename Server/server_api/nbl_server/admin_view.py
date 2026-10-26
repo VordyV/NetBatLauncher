@@ -8,7 +8,7 @@ from starlette_admin.actions import row_action
 from starlette.responses import RedirectResponse
 from starlette.exceptions import HTTPException
 from starlette_admin import TextWidget, HtmlWidget
-from .models import GameClientModel, GameModModel, SessionAccountModel, AccountModel, FileModel, GameModel, ManifestFileDownloadSession, FileManifestModel
+from .models import GameClientModel, GameModModel, SessionAccountModel, AccountModel, FileModel, GameModel, ManifestFileDownloadSession, FileManifestModel, GameMLTextModel
 from tortoise.models import Model
 import httpx
 from .services import AccountService, Account
@@ -21,26 +21,6 @@ import anyio
 from uuid import uuid4
 from tortoise.expressions import Q
 from urllib.parse import urlencode
-from starlette_admin import (
-    Breakpoints,
-    CardRowWidget,
-    ChartWidget,
-    Col,
-    ColumnWidget,
-    CustomView,
-    DividerWidget,
-    EnumField,
-    GridWidget,
-    HtmlWidget,
-    IntegerField,
-    PanelWidget,
-    StatWidget,
-    TableWidget,
-    TabsWidget,
-    TextWidget,
-    ComputedField,
-    InlineModelView
-)
 
 class BaseCustomView(CustomView):
 
@@ -147,6 +127,13 @@ async def _get_manifest_ident(request, obj):
     manifest = await FileManifestModel.get_or_none(id=obj.file_manifest_id)
     return manifest.ident if manifest else ""
 
+class GameDisclaimerTextInline(TortoiseInlineModelView):
+
+    model = GameMLTextModel
+    fk_attr = "game"
+    fields = ["lang_code", "text"]
+    extra = 1
+
 class GameView(BaseModelView):
 
     perm_read: str = "admin.game.read"
@@ -165,6 +152,7 @@ class GameView(BaseModelView):
         ComputedField("step_count", label="Number of downloads", getter=_get_NumDownloadsGame),
     ]
     menu_label = "Viewing games"
+    inlines = [GameDisclaimerTextInline]
 
 class GameClientsView(BaseModelView):
     perm_read: str = "admin.gameclient.read"

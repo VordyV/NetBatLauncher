@@ -1,10 +1,20 @@
 import os
 import uuid
+from enum import unique
 
 from .storage_task_status import StorageTaskStatus
 from .mfds_status import MFDSStatus
 from tortoise.models import Model
 from tortoise import fields
+from .language import Language
+
+class MultiLangText(Model):
+	id = fields.IntField(primary_key=True)
+	lang_code = fields.CharEnumField(Language)
+	text = fields.TextField()
+
+	class Meta:
+		abstract = True
 
 class FileModel(Model):
 	id = fields.IntField(primary_key=True)
@@ -47,6 +57,12 @@ class GameModel(Model):
 		table="nbl_game"
 
 	def __admin_repr__(self, request) -> str: return self.name
+
+class GameMLTextModel(MultiLangText):
+	game = fields.ForeignKeyField("models.GameModel", unigue=True)
+
+	class Meta:
+		table="nbl_game_mlt"
 
 class StorageTaskModel(Model):
 	id = fields.IntField(primary_key=True)
