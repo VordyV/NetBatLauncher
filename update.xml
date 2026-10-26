@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <item>
-  <version>0.5.1.0</version>
-  <url>https://github.com/VordyV/NetBatLauncher/releases/download/0.5.1/NetBat2142-0.5.1-win.zip</url>
-  <changelog>https://github.com/VordyV/NetBatLauncher/releases/tag/0.5.1</changelog>
+  <version>0.5.2.0</version>
+  <url>https://github.com/VordyV/NetBatLauncher/releases/download/0.5.2/NetBat2142-0.5.2-win.zip</url>
+  <changelog>https://github.com/VordyV/NetBatLauncher/releases/tag/0.5.2</changelog>
   <mandatory>false</mandatory>
 </item>
