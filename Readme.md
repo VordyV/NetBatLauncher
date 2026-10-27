@@ -7,6 +7,7 @@
 </div>
 
 ![GitHub All Releases](https://img.shields.io/github/downloads/VordyV/NetBatLauncher/total)
+![GitHub Release](https://img.shields.io/github/v/release/VordyV/NetBatLauncher)
 
 ## Introduction
 
