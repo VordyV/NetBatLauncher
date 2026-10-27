@@ -17,7 +17,7 @@
 ## What can it do?
 
 - Automatically update itself when a new version is released. The user will be prompted to perform an upgrade if their launcher version becomes outdated;
-- Launch on different platforms, NovGames or Respy and others.
+- Launch on different platforms, **NovGames** or **Respy** and others.
 
 ## How to download?
 
