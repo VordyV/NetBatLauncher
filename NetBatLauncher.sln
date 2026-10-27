@@ -9,6 +9,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NBL", "NBL\NBL.csproj", "{E
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test", "Test\Test.csproj", "{B1A12957-9E73-446C-8015-70FFFB8F57F0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NBLAPI", "NBLAPI\NBLAPI.csproj", "{26E8D187-43E4-419C-94B0-A49DB3DFE19D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestApi", "TestApi\TestApi.csproj", "{15B08B70-2324-4302-B00C-073AB311F4E9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +31,14 @@ Global
 		{B1A12957-9E73-446C-8015-70FFFB8F57F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B1A12957-9E73-446C-8015-70FFFB8F57F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B1A12957-9E73-446C-8015-70FFFB8F57F0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{26E8D187-43E4-419C-94B0-A49DB3DFE19D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{26E8D187-43E4-419C-94B0-A49DB3DFE19D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{26E8D187-43E4-419C-94B0-A49DB3DFE19D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{26E8D187-43E4-419C-94B0-A49DB3DFE19D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{15B08B70-2324-4302-B00C-073AB311F4E9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{15B08B70-2324-4302-B00C-073AB311F4E9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{15B08B70-2324-4302-B00C-073AB311F4E9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{15B08B70-2324-4302-B00C-073AB311F4E9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
