@@ -10,18 +10,13 @@
         <select id="target-id" name="target_id" class="form-select" required>
             <option value="">{{ select_desc }}</option>
             {% for target in targets %}
-                <option value="{{ target.id }}">
-                    {{ target.label  }}
-                </option>
+                <option value="{{ target.id }}">{{ target.label }}</option>
             {% endfor %}
         </select>
         <br>
         <div class="mb-3">
-            <label for="file-input" class="form-label">
-                Select a file
-            </label>
-
-            <input id="file-input" name="file" type="file" class="form-control" required>
+            <label for="file-input" class="form-label">Select a ZIP archive</label>
+            <input id="file-input" name="file" type="file" class="form-control" accept=".zip,application/zip" required>
         </div>
 
         <button id="upload-button" type="submit" class="btn btn-primary">Upload</button>
@@ -36,97 +31,194 @@
 </div>
 {% endblock %}
 
-
 {% block script %}
 {{ super() }}
-
 <script>
 (() => {
+    "use strict";
+
     const form = document.getElementById("upload-form");
     const button = document.getElementById("upload-button");
     const fileInput = document.getElementById("file-input");
+    const targetInput = document.getElementById("target-id");
     const wrapper = document.getElementById("progress-wrapper");
     const progress = document.getElementById("upload-progress");
     const label = document.getElementById("progress-label");
     const status = document.getElementById("upload-status");
+    const MAX_RETRIES = 5;
 
-    form.addEventListener("submit", (event) => {
+    function formData(extra = {}) {
+        const data = new FormData();
+        form.querySelectorAll('input[type="hidden"]').forEach((input) => data.append(input.name, input.value));
+        Object.entries(extra).forEach(([key, value]) => data.append(key, value));
+        return data;
+    }
+
+    function request(url, data, onProgress = null) {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", url);
+            xhr.timeout = 15 * 60 * 1000;
+            if (onProgress) {
+                xhr.upload.addEventListener("progress", (event) => {
+                    if (event.lengthComputable) onProgress(event.loaded, event.total);
+                });
+            }
+            xhr.addEventListener("load", () => {
+                let result = {};
+                try { result = JSON.parse(xhr.responseText); } catch (_) {}
+                if (xhr.status >= 200 && xhr.status < 300 && result.ok === true) {
+                    resolve(result);
+                    return;
+                }
+                const error = new Error(result.error || `HTTP error ${xhr.status}`);
+                error.status = xhr.status;
+                reject(error);
+            });
+            xhr.addEventListener("error", () => reject(new Error("Network connection interrupted")));
+            xhr.addEventListener("timeout", () => reject(new Error("Request timed out")));
+            xhr.addEventListener("abort", () => reject(new Error("Upload cancelled")));
+            xhr.send(data);
+        });
+    }
+
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    async function retry(operation, description) {
+        for (let attempt = 0; ; attempt++) {
+            try {
+                return await operation();
+            } catch (error) {
+                const retryable = !error.status || error.status === 408 || error.status === 429 || (error.status >= 500 && error.status !== 507);
+                if (!retryable || attempt >= MAX_RETRIES) throw error;
+                const delay = Math.min(1000 * (2 ** attempt), 15000);
+                status.textContent = `${description}: connection issue. Retrying in ${Math.ceil(delay / 1000)} s (${attempt + 1}/${MAX_RETRIES})...`;
+                await sleep(delay);
+            }
+        }
+    }
+
+    function newUploadId() {
+        const bytes = new Uint8Array(16);
+        window.crypto.getRandomValues(bytes);
+        return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+    }
+
+    function savedUpload(key, file, targetId) {
+        try {
+            const value = JSON.parse(localStorage.getItem(key) || "null");
+            if (value && value.target_id === targetId && value.filename === file.name &&
+                value.size === file.size && value.last_modified === file.lastModified &&
+                /^[0-9a-f]{32}$/.test(value.upload_id || "")) return value;
+        } catch (_) {}
+        return null;
+    }
+
+    function saveUpload(key, file, targetId, uploadId) {
+        try {
+            localStorage.setItem(key, JSON.stringify({
+                target_id: targetId,
+                filename: file.name,
+                size: file.size,
+                last_modified: file.lastModified,
+                upload_id: uploadId
+            }));
+        } catch (_) {}
+    }
+
+    function forgetUpload(key) {
+        try { localStorage.removeItem(key); } catch (_) {}
+    }
+
+    form.addEventListener("submit", async (event) => {
         event.preventDefault();
-
-        if (!fileInput.files.length) {
-            status.textContent = "Select a file";
+        const file = fileInput.files[0];
+        const targetId = targetInput.value;
+        if (!file || !targetId) {
+            status.textContent = !file ? "Select a ZIP archive" : "Select a target record";
+            return;
+        }
+        if (!file.name.toLowerCase().endsWith(".zip")) {
+            status.textContent = "Only ZIP archives are supported";
             return;
         }
 
-        const formData = new FormData(form);
-        const xhr = new XMLHttpRequest();
-
-        const currentPath = window.location.pathname
-            .replace(/\/+$/, "");
-
-        xhr.open("POST", `${currentPath}/upload`);
+        const currentPath = window.location.pathname.replace(/\/+$/, "");
+        const storageKey = `admin-upload:v1:${JSON.stringify([currentPath, targetId, file.name, file.size, file.lastModified])}`;
+        const previous = savedUpload(storageKey, file, targetId);
+        let uploadId = previous ? previous.upload_id : newUploadId();
 
         button.disabled = true;
+        fileInput.disabled = true;
+        targetInput.disabled = true;
         wrapper.hidden = false;
         progress.value = 0;
-        label.textContent = "Transferred 0%";
-        status.textContent = "";
+        label.textContent = "Preparing upload...";
+        status.textContent = "Starting a resumable upload session...";
 
-        xhr.upload.addEventListener("progress", (event) => {
-            if (!event.lengthComputable) {
-                return;
-            }
+        try {
+            const startRequest = (id) => retry(() => request(`${currentPath}/upload/start`, formData({
+                upload_id: id,
+                target_id: targetId,
+                filename: file.name,
+                size: String(file.size)
+            })), "Preparing upload");
 
-            const percent = Math.round(
-                (event.loaded / event.total) * 100
-            );
-
-            progress.value = percent;
-            label.textContent = `Transferred ${percent}%`;
-
-            if (percent === 100) {
-                status.textContent =
-                    "File transferred. Waiting for the server response...";
-            }
-        });
-
-        xhr.addEventListener("load", () => {
-            let result = {};
-
+            let session;
             try {
-                result = JSON.parse(xhr.responseText);
-            } catch {
-                result = {};
+                session = await startRequest(uploadId);
+            } catch (error) {
+                if (error.status !== 409 || !previous) throw error;
+                forgetUpload(storageKey);
+                uploadId = newUploadId();
+                session = await startRequest(uploadId);
             }
 
-            if (
-                xhr.status >= 200 &&
-                xhr.status < 300 &&
-                result.ok
-            ) {
-                window.location.assign(
-                    result.redirect_url || "/admin/"
-                );
+            if (session.completed) {
+                forgetUpload(storageKey);
+                window.location.assign(session.redirect_url || "/admin/");
                 return;
             }
 
-            status.textContent =
-                result.error || `HTTP error ${xhr.status}`;
+            uploadId = session.upload_id;
+            saveUpload(storageKey, file, targetId, uploadId);
+            const chunkSize = Number(session.chunk_size);
+            const chunkCount = Math.ceil(file.size / chunkSize);
+            const nextChunk = Number(session.next_chunk) || 0;
+            progress.value = Math.floor((Number(session.received || 0) / file.size) * 100);
+            label.textContent = session.resumed ? `Resuming from ${progress.value}%` : "Starting transfer...";
 
+            for (let index = nextChunk; index < chunkCount; index++) {
+                const start = index * chunkSize;
+                const end = Math.min(start + chunkSize, file.size);
+                const chunk = file.slice(start, end);
+                const data = formData({ upload_id: uploadId, chunk_index: String(index) });
+                data.append("file", chunk, file.name);
+
+                status.textContent = `Uploading part ${index + 1} of ${chunkCount}...`;
+                await retry(() => request(`${currentPath}/upload/chunk`, data, (loaded, total) => {
+                    const fraction = total ? Math.min(loaded / total, 1) : 0;
+                    const percent = Math.floor(((start + chunk.size * fraction) / file.size) * 100);
+                    progress.value = Math.min(percent, 100);
+                    label.textContent = `Transferred ${progress.value}% (${index + 1}/${chunkCount} parts)`;
+                }), `Uploading part ${index + 1}`);
+
+                progress.value = Math.floor((end / file.size) * 100);
+                label.textContent = `Transferred ${progress.value}% (${index + 1}/${chunkCount} parts)`;
+            }
+
+            status.textContent = "Upload received. Passing the archive to storage...";
+            const result = await retry(() => request(`${currentPath}/upload/complete`, formData({ upload_id: uploadId })), "Finalizing upload");
+            progress.value = 100;
+            label.textContent = "Transferred 100%";
+            forgetUpload(storageKey);
+            window.location.assign(result.redirect_url || "/admin/");
+        } catch (error) {
+            status.textContent = error.message || "Upload failed";
             button.disabled = false;
-        });
-
-        xhr.addEventListener("error", () => {
-            status.textContent = "Network error while uploading the file";
-            button.disabled = false;
-        });
-
-        xhr.addEventListener("abort", () => {
-            status.textContent = "Upload cancelled";
-            button.disabled = false;
-        });
-
-        xhr.send(formData);
+            fileInput.disabled = false;
+            targetInput.disabled = false;
+        }
     });
 })();
 </script>
