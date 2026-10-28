@@ -1,6 +1,6 @@
 [project]
 name = "server"
-version = "0.7.0"
+version = "0.8.0"
 description = ""
 package-mode = false
 authors = [
@@ -27,6 +27,7 @@ dependencies = [
     "starlette-admin (>=1.0.2,<2.0.0)",
     "bcrypt (>=5.0.0,<6.0.0)",
     "python-multipart (>=0.0.32,<0.0.33)",
+    "opengsq (>=3.7.0,<4.0.0)",
 ]
 
 
