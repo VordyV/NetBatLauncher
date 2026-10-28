@@ -1,4 +1,4 @@
-﻿namespace NBLAPI;
+﻿namespace NBLNet;
 
 public enum ServerStatus
 {

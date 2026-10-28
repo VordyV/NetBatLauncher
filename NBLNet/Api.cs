@@ -1,14 +1,15 @@
-﻿using System.Text.Json;
+﻿using System.Net;
+using System.Text.Json;
 
-namespace NBLAPI;
+namespace NBLNet;
 
-public class NBLApi
+public class Api
 {
     public string ServerAddress { get; private set; }
 
     private HttpClient _httpClient;
 
-    public NBLApi(string serverAddress)
+    public Api(string serverAddress)
     {
         this.ServerAddress = serverAddress;
         this._httpClient = new HttpClient();
@@ -23,6 +24,9 @@ public class NBLApi
     {
         using HttpRequestMessage request = new HttpRequestMessage(method, this.Combine(path));
         using HttpResponseMessage response = await this._httpClient.SendAsync(request);
+        
+        if (response.StatusCode == HttpStatusCode.NotFound) throw new NotFountException(); // 404
+        
         return await response.Content.ReadAsStringAsync();
     }
 
@@ -121,5 +125,35 @@ public class NBLApi
         JsonElement root = doc.RootElement;
         
         return root.GetProperty("text").GetString();
+    }
+
+    public async Task<Game> GetGame(string gameId)
+    {
+        string rowData = await this.Request(HttpMethod.Get, $"/api/game?gameid={gameId}");
+        return JsonSerializer.Deserialize<Game>(rowData)!;
+    }
+    
+    public async Task<GameClient> GetGameClient(string gameId, string clientId)
+    {
+        string rowData = await this.Request(HttpMethod.Get, $"/api/games/client?gameid={gameId}&clientid={clientId}");
+        return JsonSerializer.Deserialize<GameClient>(rowData)!;
+    }
+    
+    public async Task<GameMod> GetGameMod(string gameId, string modId)
+    {
+        string rowData = await this.Request(HttpMethod.Get, $"/api/games/mod?gameid={gameId}&modid={modId}");
+        return JsonSerializer.Deserialize<GameMod>(rowData)!;
+    }
+    
+    public async Task<int> GetNumberPlayers(string gameId, string clientId)
+    {
+        string rowData = await this.Request(HttpMethod.Get, $"/api/games/servers/numplayers?gameid={gameId}&clientid={clientId}");
+        return int.Parse(rowData);
+    }
+    
+    public async Task<int> GetAllNumberPlayers()
+    {
+        string rowData = await this.Request(HttpMethod.Get, $"/api/games/servers/numplayers/all");
+        return int.Parse(rowData);
     }
 }
