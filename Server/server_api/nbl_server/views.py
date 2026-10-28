@@ -263,6 +263,10 @@ async def games_mods(request: Request, game: GameField) -> GameMods:
 
 	return GameMods(mods=mods)
 
+@router.get("/games/mod")
+async def games_mods(request: Request, mod: GameModField) -> GameMod:
+	return GameMod(modid=mod.ident, name=mod.name, version=mod.version, developer=mod.developer, files=bool(mod.file_manifest), default=mod.default)
+
 @router.get("/games/clients", description="Get the list of clients for the game")
 async def games_clients(request: Request, game: GameField) -> GameClients:
 
@@ -271,6 +275,10 @@ async def games_clients(request: Request, game: GameField) -> GameClients:
 		result.append(GameClient(ident=client.ident, name=client.name, short_name=client.short_name, files=bool(client.file_manifest), reference=client.reference, address=client.master_server_address))
 
 	return GameClients(clients=result, gameid=game.ident)
+
+@router.get("/games/client")
+async def games_client(request: Request, client: GameClientField) -> GameClient:
+	return GameClient(ident=client.ident, name=client.name, short_name=client.short_name, files=bool(client.file_manifest), reference=client.reference, address=client.master_server_address)
 
 @router.get("/games", description="Get the list of games")
 async def games(request: Request) -> Games:
@@ -282,6 +290,12 @@ async def games(request: Request) -> Games:
 		result.append(Game(ident=game.ident, name=game.name, short_name=game.short_name, files=bool(game.file_manifest), default_mod_id=default_mod.ident if default_mod else None, reference_client_id=ref_client.ident if ref_client else None))
 
 	return Games(games=result)
+
+@router.get("/game")
+async def game(request: Request, game: GameField) -> Game:
+	default_mod = await GameModModel.get_or_none(game=game.id, default=True)
+	ref_client = await GameClientModel.get_or_none(game=game.id, reference=True)
+	return Game(ident=game.ident, name=game.name, short_name=game.short_name, files=bool(game.file_manifest), default_mod_id=default_mod.ident if default_mod else None, reference_client_id=ref_client.ident if ref_client else None)
 
 @router.get("/storage/tasks")
 async def storage_manifest(request: Request, manifestid: ManifestTaskIdField) -> ManifestTask:
@@ -303,3 +317,11 @@ async def games_disclaimers(ctx: CtxField, game: GameField, langcode: Language =
 	text = await GameMLTextModel.filter(game=game, lang_code=langcode).get_or_none()
 	if not text: return Response(status_code=404)
 	return GameDisclaimer(text=text.text)
+
+@router.get("/games/servers/numplayers")
+async def games_servers_num_players(ctx: CtxField, client: GameClientField) -> int:
+	return ctx.core.player_count.get(client.ident, 0)
+
+@router.get("/games/servers/numplayers/all")
+async def games_servers_num_players_all(ctx: CtxField) -> int:
+	return sum(ctx.core.player_count.values())
