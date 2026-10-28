@@ -32,6 +32,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from starlette_admin import TextWidget, HtmlWidget, CustomView, DropDown
 from .chronicle_action_type import ChronicleActionType
 from .server_status import ServerStatus
+from opengsq.protocols.battlefield2 import Battlefield2
 import nbl_server
 import os
 import re
@@ -57,6 +58,7 @@ class NetBatLauncherServer:
 		self.__steam_api_key = steam_api_key
 		self.__admin_panel = Admin(title="Net Bat 2142 Admin", index_view=GeneralView(self, icon="fa fa-newspaper"), templates_dir="templates", auth_provider=StanAuthProvider(), secret_key=os.getenv("SECRET_KEY"))
 		self.__status: ServerStatus = ServerStatus.ok
+		self.__player_count: dict[str, int] = {}
 
 		self.__fp_app.include_router(router)
 		self.__fp_app.add_middleware(TrustedHostMiddleware)
@@ -93,6 +95,7 @@ class NetBatLauncherServer:
 		self.__shell.register("acc.reg", self._on_cmd_register_account, desc="")
 
 		self.__scheduler.add_job(self._task_refresh_game_servers_data, "interval", None, hours=1, next_run_time=datetime.datetime.now() + datetime.timedelta(seconds=120), id="refresh_game_servers_data")
+		self.__scheduler.add_job(self._task_refresh_player_count, "interval", None, seconds=120, id="refresh_game_player_count")
 
 		Tortoise.init_models(["nbl_server.models"], "models")
 		self.__admin_panel.add_view(GeneralView(self, icon="fa fa-newspaper"))
@@ -114,6 +117,9 @@ class NetBatLauncherServer:
 
 	@property
 	def status(self) -> ServerStatus: return self.__status
+
+	@property
+	def player_count(self) -> dict[str, int]: return self.__player_count
 
 	def write_chronicle(self, account_executor: AccountModel, action_type: ChronicleActionType, address: ipaddress.IPv4Address, agent: str, account_target: AccountModel | None = None, action_desc: str | None = None):
 		task = asyncio.create_task(ChronicleModel.create(account_executor_uuid=account_executor.ident, account_target_uuid=account_target.ident, action_desc=action_desc, action_type=action_type, address=str(address), agent=agent))
@@ -206,6 +212,28 @@ class NetBatLauncherServer:
 			del self.__one_time_codes[otc]
 			return token
 		return None
+
+	async def _task_refresh_player_count(self):
+
+		async def func():
+			for client in await GameClientModel.filter().all():
+
+				num = 0
+				for server in await GameServerDataModel.filter(client=client).all():
+					try:
+						gs3 = Battlefield2(host=server.address, port=server.query_port, timeout=3.0)
+						data = await gs3.get_status()
+						num += int(data.info.get("numplayers", 0))
+					except TimeoutError:
+						continue
+					except Exception as e:
+						logger.exception(e)
+
+				self.__player_count[client.ident] = num
+
+			print(self.__player_count)
+
+		task = asyncio.create_task(func())
 
 	async def _task_refresh_game_servers_data(self):
 		logger.debug("Refresh of the server list and their data...")
