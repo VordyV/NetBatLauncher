@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 using System.Net.NetworkInformation;
 using System.Text.RegularExpressions;
 
-namespace NBLAPI;
+namespace NBLNet;
 
 public class GameClient
 {
