@@ -312,6 +312,10 @@ async def storage_manifest(request: Request, manifestid: ManifestTaskIdField) ->
 async def heartbeat(ctx: CtxField) -> ServerStatus:
 	return ctx.core.status
 
+@router.head("/status")
+async def status(ctx: CtxField):
+	return
+
 @router.get("/games/disclaimers")
 async def games_disclaimers(ctx: CtxField, game: GameField, langcode: Language = Language.en) -> GameDisclaimer:
 	text = await GameMLTextModel.filter(game=game, lang_code=langcode).get_or_none()
