@@ -4,9 +4,11 @@
 
 # Net Bat Launcher 2142
 
-![GitHub All Releases](https://img.shields.io/github/downloads/VordyV/NetBatLauncher/total)
-![GitHub Tag](https://img.shields.io/github/v/tag/VordyV/NetBatLauncher)
-![GitHub Release](https://img.shields.io/github/v/release/VordyV/NetBatLauncher)
+![GitHub All Releases](https://img.shields.io/github/downloads/VordyV/NetBatLauncher/total?style=flat-square)
+![GitHub Tag](https://img.shields.io/github/v/tag/VordyV/NetBatLauncher?style=flat-square)
+![GitHub Release](https://img.shields.io/github/v/release/VordyV/NetBatLauncher?style=flat-square)
+
+![Uptime Robot status](https://img.shields.io/uptimerobot/status/m804473063-06c9a43ed784cde08ef77225?style=flat-square)
 
 </div>
 
