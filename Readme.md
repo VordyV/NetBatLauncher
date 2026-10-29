@@ -31,3 +31,8 @@ You can download the current version in the GitHub [Releases](https://github.com
 
 > [!WARNING]
 > This is the only source at the moment; if you are offered to download from another place, do so at your own risk — we definitely do not know what code may be in the exe files of this particular version.
+
+
+---
+
+<sub>Net Bat Launcher 2142 is a non-commercial project created by fans. The project is not affiliated with or endorsed by GameSpy, Digital Illusions CE, or Electronic Arts. All trademarks and copyrights belong to their respective owners.</sub>
