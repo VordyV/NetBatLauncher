@@ -8,6 +8,8 @@
 ![GitHub Tag](https://img.shields.io/github/v/tag/VordyV/NetBatLauncher)
 ![GitHub Release](https://img.shields.io/github/v/release/VordyV/NetBatLauncher)
 
+![Uptime Robot status](https://img.shields.io/uptimerobot/status/m804473063-06c9a43ed784cde08ef77225)
+
 </div>
 
 ## Introduction
