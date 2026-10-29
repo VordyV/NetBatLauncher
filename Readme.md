@@ -21,6 +21,10 @@
 - Automatically update itself when a new version is released. The user will be prompted to perform an upgrade if their launcher version becomes outdated;
 - Launch on different platforms, **NovGames** or **Respy** and others.
 
+## Supported platforms
+
+- Windows 10/11 - x64
+
 ## How to download?
 
 You can download the current version in the GitHub [Releases](https://github.com/VordyV/NetBatLauncher/releases) section
