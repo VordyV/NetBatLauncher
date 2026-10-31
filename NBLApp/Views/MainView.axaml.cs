@@ -14,7 +14,9 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using NBLNet;
 using Ursa.Controls;
+using Game = NBL.Game;
 
 namespace NBLApp.Views;
 
@@ -48,11 +50,22 @@ public partial class MainView : View
     public string StoppingText => Locale.Get("Stopping");
     public string LaunchpadText => Locale.Get("Launchpad");
     public string InstallClientText => Locale.Get("InstallClient");
+    
+    public static readonly StyledProperty<string> PlayersProperty = AvaloniaProperty.Register<MainView, string>(nameof(Players), "");
+    public string Players { get => GetValue(PlayersProperty); set => SetValue(PlayersProperty, value); }
+    
+    public static readonly StyledProperty<string> PingProperty = AvaloniaProperty.Register<MainView, string>(nameof(Ping), "");
+    public string Ping { get => GetValue(PingProperty); set => SetValue(PingProperty, value); }
 
     private void Locale_LanguageChanged(object? sender, EventArgs e)
     {
         DataContext = null;
         DataContext = this;
+    }
+
+    public MainView()
+    {
+        InitializeComponent();
     }
 
     public MainView(Launcher launcher, ViewPresenter<Launcher> viewPresenter, object? arg) : base(launcher, viewPresenter, arg)
@@ -91,6 +104,10 @@ public partial class MainView : View
             await UpdateClients([]);
 
         isLoaded = true;
+        
+        _ = this.UpdateLabelPlayers();
+        _ = this.UpdateLabelPing();
+        
         await UpdateButtonMA(Game.Status);
     }
 
@@ -116,7 +133,7 @@ public partial class MainView : View
                 {
                     await update.SyncClientAsync(Launcher.ServerAddress, Game.Id, Game.GetPath(), id);
                     Logger.Info($"Client synchronization completed: {id}");
-                    Notify.ShowInfo("Синхронизация завершена", $"{id}: проверка файлов выполнена успешно.");
+                    //Notify.ShowInfo("Синхронизация завершена", $"{id}: проверка файлов выполнена успешно.");
                 }
                 catch (Exception ex)
                 {
@@ -350,12 +367,44 @@ public partial class MainView : View
         await OverlayDialog.ShowCustomAsync<SettingsGear>(new SettingsGear(Game) { DataContext = context }, context, hostId: "main", new OverlayDialogOptions { CanResize = false });
     }
 
+    private async Task UpdateLabelPlayers()
+    {
+        this.Players = "refresh";
+        try
+        {
+            int num = await this.Launcher.Server.GetNumberPlayers("bf2142", this.GetSelectedClientId());
+            this.Players = num.ToString();
+        }
+        catch (Exception e)
+        {
+            this.Players = "unknown";
+        }
+    }
+    
+    private async Task UpdateLabelPing()
+    {
+        this.Ping = "refresh";
+        try
+        {
+            GameClient client = await this.Launcher.Server.GetGameClient("bf2142", this.GetSelectedClientId());
+            long delay = await client.DetermineDelay();
+            this.Ping = $" {delay} ms";
+        }
+        catch (Exception e)
+        {
+            this.Ping = "unknown";
+        }
+    }
+
     private async void ComboBoxClients_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (!isLoaded || isUpdatingClients || !Game.IsInstall || ComboBoxClients.SelectedItem is not ComboBoxItem)
             return;
 
         await UpdateButtonMA(Game.Status);
+
+        _ = this.UpdateLabelPlayers();
+        _ = this.UpdateLabelPing();
     }
 
     private async void ButtonParams_OnClick(object? sender, RoutedEventArgs e)
