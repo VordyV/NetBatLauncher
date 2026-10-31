@@ -2,6 +2,7 @@
 using System.Net;
 using System.Text.Json.Serialization;
 using System.Net.NetworkInformation;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace NBLNet;
@@ -23,13 +24,9 @@ public class GameClient
 
     public async Task<long> DetermineDelay()
     {
-        var p = Process.Start(new ProcessStartInfo("ping.exe", $"-n 1 {this.MasterServerAddress}") { RedirectStandardOutput = true, UseShellExecute = false, CreateNoWindow = true })!;
-
-        string output = p.StandardOutput.ReadToEnd();
-        p.WaitForExit();
-
-        var m = Regex.Match(output, @"(?:время|time)[=<]\s*(\d+)\s*(?:мс|ms)", RegexOptions.IgnoreCase);
-
-        return m.Success ? int.Parse(m.Groups[1].Value) : -1;
+        using Ping pingSender = new Ping();
+        PingReply reply = await pingSender.SendPingAsync(this.MasterServerAddress, 5000);
+        if (reply.Status != IPStatus.Success) return -1;
+        return reply.RoundtripTime;
     }
 }
