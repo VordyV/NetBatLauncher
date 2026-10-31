@@ -50,12 +50,6 @@ public partial class MainView : View
     public string StoppingText => Locale.Get("Stopping");
     public string LaunchpadText => Locale.Get("Launchpad");
     public string InstallClientText => Locale.Get("InstallClient");
-    
-    public static readonly StyledProperty<string> PlayersProperty = AvaloniaProperty.Register<MainView, string>(nameof(Players), "");
-    public string Players { get => GetValue(PlayersProperty); set => SetValue(PlayersProperty, value); }
-    
-    public static readonly StyledProperty<string> PingProperty = AvaloniaProperty.Register<MainView, string>(nameof(Ping), "");
-    public string Ping { get => GetValue(PingProperty); set => SetValue(PingProperty, value); }
 
     private void Locale_LanguageChanged(object? sender, EventArgs e)
     {
@@ -369,30 +363,57 @@ public partial class MainView : View
 
     private async Task UpdateLabelPlayers()
     {
-        this.Players = "refresh";
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            this.Players.IsVisible = !this.Players.IsVisible;
+            this.LoadingIconPlayers.IsVisible = !this.LoadingIconPlayers.IsVisible;
+        });
+        
         try
         {
             int num = await this.Launcher.Server.GetNumberPlayers("bf2142", this.GetSelectedClientId());
-            this.Players = num.ToString();
+            await Dispatcher.UIThread.InvokeAsync(() => { this.Players.Text = num.ToString(); });
         }
         catch (Exception e)
         {
-            this.Players = "unknown";
+            await Dispatcher.UIThread.InvokeAsync(() => { this.Players.Text = "-1"; });
+        }
+        finally
+        {
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                this.Players.IsVisible = !this.Players.IsVisible;
+                this.LoadingIconPlayers.IsVisible = !this.LoadingIconPlayers.IsVisible;
+            });
         }
     }
     
     private async Task UpdateLabelPing()
     {
-        this.Ping = "refresh";
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            this.Ping.IsVisible = !this.Ping.IsVisible;
+            this.LoadingIconPing.IsVisible = !this.LoadingIconPing.IsVisible;
+        });
+
         try
         {
             GameClient client = await this.Launcher.Server.GetGameClient("bf2142", this.GetSelectedClientId());
             long delay = await client.DetermineDelay();
-            this.Ping = $" {delay} ms";
+            await Dispatcher.UIThread.InvokeAsync(() => { this.Ping.Text = $" {delay} ms"; });
+
         }
         catch (Exception e)
         {
-            this.Ping = "unknown";
+            await Dispatcher.UIThread.InvokeAsync(() => { this.Ping.Text = "-1"; });
+        }
+        finally
+        {
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                this.Ping.IsVisible = !this.Ping.IsVisible;
+                this.LoadingIconPing.IsVisible = !this.LoadingIconPing.IsVisible;
+            });
         }
     }
 

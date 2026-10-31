@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 			 xmlns:local="clr-namespace:NBLApp.Views"
              mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="450"
+             xmlns:u="https://irihi.tech/ursa"
 			 x:DataType="local:MainView"
              x:Name="Root"
              x:Class="NBLApp.Views.MainView">
@@ -83,9 +84,11 @@
                         </StackPanel>
                     </StackPanel>
                     <TextBlock Grid.Column="3" Grid.Row="0" Text="{Binding PlayersText}"/>
-                    <TextBlock Grid.Column="3" Grid.Row="1" Text="{Binding #Root.Players}" TextAlignment="Center"/>
+                    <u:LoadingIcon Grid.Column="3" Grid.Row="1" Name="LoadingIconPlayers" IsVisible="False"/>
+                    <TextBlock Grid.Column="3" Grid.Row="1" Name="Players" IsVisible="True" TextAlignment="Center"/>
                     <TextBlock Grid.Column="4" Grid.Row="0" Text="{Binding PingText}"/>
-                    <TextBlock Grid.Column="4" Grid.Row="1" Text="{Binding #Root.Ping}" TextAlignment="Center"/>
+                    <u:LoadingIcon Grid.Column="4" Grid.Row="1" Name="LoadingIconPing" IsVisible="False"/>
+                    <TextBlock Grid.Column="4" Grid.Row="1" Name="Ping" IsVisible="True" TextAlignment="Center"/>
                     <TextBlock Grid.Column="5" Grid.Row="0" Text="{Binding PlatformAccessText}"/>
                     <TextBlock Grid.Column="5" Grid.Row="1" Text="-" TextAlignment="Center"/>
                 </Grid>                      
