@@ -10,6 +10,8 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using NBLApp.Controls;
+using Ursa.Controls;
 
 namespace NBLApp.Forms;
 
@@ -38,6 +40,11 @@ public partial class SimpInst : UserControl
         PathPickerGamePath.SelectedPathsText = DefaultGamePath;
         ApplyLocalization();
         Logger.Debug($"SimpInst opened: game='{Game.Id}'");
+        Loaded += async (_, _) =>
+        {
+            var context = new DialogContext();
+            await OverlayDialog.ShowCustomAsync<Disclaimer>(new Disclaimer(Launcher, Game) { DataContext = context }, context, hostId: "main", options: new OverlayDialogOptions { IsCloseButtonVisible = false, CanResize = false });
+        };
     }
 
     public SimpInst(Launcher launcher, Game game, string clientId, bool syncOnly)
