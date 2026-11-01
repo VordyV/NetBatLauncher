@@ -62,8 +62,8 @@ public partial class App : Application
                 {
                     Id = "resolution",
                     Name = "Resolution",
-                    Description = " ",
-                    ShortDescription = Localization.Locale.Get("GameWindowResolution"),
+                    Description = null,
+                    ShortDescription = "Game window resolution",
                     Dictionary = new()
                     {
                         {"2560×1440", "+szx 2560 +szy 1440"},
@@ -74,27 +74,26 @@ public partial class App : Application
                         {"800×600", "+szx 800 +szy 600"}
                     }
                 },
-
                 
                 new LaunchParamBool()
                 {
                     Id = "fullscreen",
                     Name = Localization.Locale.Get("FullScreen"),
-                    Description = null,
+                    Description = "Game launches in full screen on the monitor",
                     ShortDescription = "Start game in full screen mode",
                 },
                 new LaunchParamBool()
                 {
                     Id = "widescreen",
                     Name = Localization.Locale.Get("WideScreen"),
-                    Description = null,
+                    Description = "Game window will be able to accept, in addition to 4:3, also 16:9",
                     ShortDescription = "Change the FOV to fit Wide-Screens",
                 },
                 new LaunchParamBool()
                 {
                     Id = "multi",
                     Name = Localization.Locale.Get("Multi"),
-                    Description = null,
+                    Description = "Allows launching multiple game windows simultaneously",
                     ShortDescription = "Allow starting multiple BF2 instances",
                 },
                 new LaunchParamBool()
