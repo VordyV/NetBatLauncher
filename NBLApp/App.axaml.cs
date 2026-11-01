@@ -60,36 +60,64 @@ public partial class App : Application
             {
                 new LaunchParamDict()
                 {
-                    Id = "screen",
-                    Name = "Screen",
+                    Id = "resolution",
+                    Name = "Resolution",
+                    Description = " ",
+                    ShortDescription = "Game window resolution",
                     Dictionary = new()
                     {
-                        {"Widesceen", "+widescreen 1"},
-                        {"Fullscreen 2560*1440", "+fullscreen 1 +szx 2560 +szy 1440"},
-                        {"Fullscreen 1920*1080", "+fullscreen 1 +szx 1920 +szy 1080"},
-                        {"Fullscreen 1600*900", "+fullscreen 1 +szx 1600 +szy 900"},
-                        {"Fullscreen 1280*1024", "+fullscreen 1 +szx 1280 +szy 1024"},
-                        {"Fullscreen 1024*768", "+fullscreen 1 +szx 1024 +szy 768"},
-                        {"Fullscreen 800*600", "+fullscreen 1 +szx 800 +szy 600"}
+                        {"2560×1440", "+szx 2560 +szy 1440"},
+                        {"1920×1080", "+szx 1920 +szy 1080"},
+                        {"1600×900", "+szx 1600 +szy 900"},
+                        {"1280×1024", "+szx 1280 +szy 1024"},
+                        {"1024×768", "+szx 1024 +szy 768"},
+                        {"800×600", "+szx 800 +szy 600"}
                     }
                 },
 
-                new LaunchOptionDict()
+                
+                new LaunchParamBool()
                 {
-                    Id = "additional",
-                    Name = "Additional",
-                    Dictionary = new()
-                    {
-                        {"Multi", "+multi 1"},
-                        {"LowPriority", "+lowPriority 1"},
-                        {"NoSound", "+noSound 1"}
-                    }
+                    Id = "fullscreen",
+                    Name = "Full screen",
+                    Description = null,
+                    ShortDescription = "Start game in full screen mode",
+                },
+                new LaunchParamBool()
+                {
+                    Id = "widescreen",
+                    Name = "Wide screen",
+                    Description = null,
+                    ShortDescription = "Change the FOV to fit Wide-Screens",
+                },
+                new LaunchParamBool()
+                {
+                    Id = "multi",
+                    Name = "Multiple windows",
+                    Description = null,
+                    ShortDescription = "Allow starting multiple BF2 instances",
+                },
+                new LaunchParamBool()
+                {
+                    Id = "lowPriority",
+                    Name = "Low priority",
+                    Description = null,
+                    ShortDescription = "Run the game with slightly lower priority",
+                },
+                new LaunchParamBool()
+                {
+                    Id = "noSound",
+                    Name = "No sound",
+                    Description = null,
+                    ShortDescription = "Start game without sound",
                 },
 
                 new LaunchParamCustom()
                 {
                     Id = "customparam",
                     Name = "CustomParam",
+                    Description = null,
+                    ShortDescription = "",
                     FullFormat = true
                 }
             };
