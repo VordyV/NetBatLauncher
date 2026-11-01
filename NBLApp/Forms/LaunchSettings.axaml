@@ -4,13 +4,15 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
              d:DesignWidth="600"
-             d:DesignHeight="650"
+             d:DesignHeight="500"
 			 x:Name="LaunchSettingsControl"
              xmlns:c="clr-namespace:NBLApp.Controls"
+             xmlns:u="https://irihi.tech/ursa"
              x:Class="NBLApp.Forms.LaunchSettings">
 	<c:Form
         Name="LaunchSettingsForm"
         Title="{Binding #LaunchSettingsControl.TitleText}"
+        Height="500"
         Width="600">
 		<c:Form.Content>
 			<ScrollViewer
@@ -18,8 +20,9 @@
                 VerticalScrollBarVisibility="Auto">
 				<StackPanel Spacing="25">
 					<StackPanel Spacing="10">
-						<ContentControl
-                            Name="MainContent"/>
+						<u:Form Name="MainContent" LabelPosition="Top" LabelWidth="*">
+						</u:Form>
+
 						<CheckBox
                             Name="CheckBoxNoIntro"
                             Content="{Binding #LaunchSettingsControl.NoIntroText}"/>

@@ -8,6 +8,10 @@ using NBLApp.Localization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Avalonia;
+using Avalonia.Media;
+using Avalonia.Styling;
+using Ursa.Controls;
 using static NBL.LaunchParamDict;
 namespace NBLApp.Forms;
 public partial class LaunchSettings : UserControl
@@ -53,13 +57,6 @@ public partial class LaunchSettings : UserControl
         InitializeComponent();
         this.DataContext =
             this;
-        StackPanel parametersPanel =
-            new StackPanel
-            {
-                Spacing = 12
-            };
-        this.MainContent.Content =
-            parametersPanel;
         try
         {
             string gamePath =
@@ -109,6 +106,7 @@ public partial class LaunchSettings : UserControl
                         IsChecked =
                             value
                     };
+                
                 this.Controls.Add(
                     param.Id,
                     control);
@@ -226,16 +224,21 @@ public partial class LaunchSettings : UserControl
                 throw new InvalidOperationException(
                     $"Launch parameter '{param.Name}' type not specified");
             }
-            StackPanel parameterPanel =
-                new StackPanel
-                {
-                    Spacing = 5
-                };
-            if (control is not CheckBox)
-            parameterPanel.Children.Add(
-                control);
-            parametersPanel.Children.Add(
-                parameterPanel);
+            
+            //TextBlock sd = new TextBlock() { Text = " (?)" };
+            
+            if (param.Description != null && Application.Current!.Styles.TryGetResource("SemiIconHelpCircle", ThemeVariant.Default, out var resource) && resource is Geometry geometry)
+            {
+                PathIcon sd = new PathIcon { Data = geometry, Width = 16, Height = 16, Foreground = new SolidColorBrush(Color.Parse("#777777"))};
+                ToolTip.SetTip(sd, param.Description);
+                FormItem.SetLabel(control, new StackPanel() {Orientation = Orientation.Horizontal, Spacing = 12, Children = {new TextBlock() { Text = param.ShortDescription } ,  sd}});
+                this.MainContent.Items.Add(control);
+            }
+            else
+            {
+                FormItem.SetLabel(control, new TextBlock() { Text = param.ShortDescription });
+                this.MainContent.Items.Add(control);
+            }
         }
     }
     private void ButtonCancel_OnClick(
