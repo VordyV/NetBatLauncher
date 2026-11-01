@@ -5,6 +5,8 @@ public abstract class ILaunchParam
     public required string Id { get; set; }
     public required string Name { get; set; }
     public bool FullFormat { get; set; } = false;
+    public required string? Description { get; set; }
+    public required string ShortDescription { get; set; }
 }
 public abstract class LaunchParam<T> : ILaunchParam
 {
