@@ -384,4 +384,19 @@
   <data name="InstallClient" xml:space="preserve">
     <value>INSTALL CLIENT</value>
   </data>
+  <data name="FullScreen" xml:space="preserve">
+    <value>Full screen</value>
+  </data>
+  <data name="WideScreen" xml:space="preserve">
+    <value>Wide screen</value>
+  </data>
+  <data name="Multi" xml:space="preserve">
+    <value>Multiple windows</value>
+  </data>
+  <data name="LowPriority" xml:space="preserve">
+    <value>Low priority</value>
+  </data>
+  <data name="NoSound" xml:space="preserve">
+    <value>No sound</value>
+  </data>
 </root>

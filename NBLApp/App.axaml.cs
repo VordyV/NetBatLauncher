@@ -55,7 +55,7 @@ public partial class App : Application
             Console.WriteLine(Localization.Locale.Get("LauncherTitle"));
             Console.WriteLine(Localization.Locale.Get("Settings"));
             Console.WriteLine(Localization.Locale.Get("Parameters"));
-
+            Console.WriteLine(Localization.Locale.Get("FullScreen"));
             ILaunchParam[] launchParams = new ILaunchParam[]
             {
                 new LaunchParamDict()
@@ -63,7 +63,7 @@ public partial class App : Application
                     Id = "resolution",
                     Name = "Resolution",
                     Description = " ",
-                    ShortDescription = "Game window resolution",
+                    ShortDescription = Localization.Locale.Get("GameWindowResolution"),
                     Dictionary = new()
                     {
                         {"2560×1440", "+szx 2560 +szy 1440"},
@@ -79,35 +79,35 @@ public partial class App : Application
                 new LaunchParamBool()
                 {
                     Id = "fullscreen",
-                    Name = "Full screen",
+                    Name = Localization.Locale.Get("FullScreen"),
                     Description = null,
                     ShortDescription = "Start game in full screen mode",
                 },
                 new LaunchParamBool()
                 {
                     Id = "widescreen",
-                    Name = "Wide screen",
+                    Name = Localization.Locale.Get("WideScreen"),
                     Description = null,
                     ShortDescription = "Change the FOV to fit Wide-Screens",
                 },
                 new LaunchParamBool()
                 {
                     Id = "multi",
-                    Name = "Multiple windows",
+                    Name = Localization.Locale.Get("Multi"),
                     Description = null,
                     ShortDescription = "Allow starting multiple BF2 instances",
                 },
                 new LaunchParamBool()
                 {
                     Id = "lowPriority",
-                    Name = "Low priority",
+                    Name = Localization.Locale.Get("LowPriority"),
                     Description = null,
                     ShortDescription = "Run the game with slightly lower priority",
                 },
                 new LaunchParamBool()
                 {
                     Id = "noSound",
-                    Name = "No sound",
+                    Name = Localization.Locale.Get("NoSound"),
                     Description = null,
                     ShortDescription = "Start game without sound",
                 },

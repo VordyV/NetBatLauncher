@@ -384,4 +384,19 @@
   <data name="InstallClient" xml:space="preserve">
     <value>УСТАНОВИТЬ КЛИЕНТ</value>
   </data>
+  <data name="FullScreen" xml:space="preserve">
+    <value>Полноэкранный режим</value>
+  </data>
+  <data name="WideScreen" xml:space="preserve">
+    <value>Широкоформатный режим</value>
+  </data>
+  <data name="Multi" xml:space="preserve">
+    <value>Множественные окна</value>
+  </data>
+  <data name="LowPriority" xml:space="preserve">
+    <value>Низкий приоритет</value>
+  </data>
+  <data name="NoSound" xml:space="preserve">
+    <value>Без звука</value>
+  </data>
 </root>
