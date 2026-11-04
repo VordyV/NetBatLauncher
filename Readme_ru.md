@@ -10,6 +10,9 @@
 
 ![Uptime Robot status](https://img.shields.io/uptimerobot/status/m804473063-06c9a43ed784cde08ef77225?style=flat-square)
 
+[English](https://github.com/VordyV/NetBatLauncher/blob/master/Readme.md)
+:arrow_right:[Русский](https://github.com/VordyV/NetBatLauncher/blob/master/Readme_ru.md)
+
 </div>
 
 ## Введение
