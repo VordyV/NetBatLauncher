@@ -36,6 +36,8 @@ You can download the current version in the GitHub [Releases](https://github.com
 > [!WARNING]
 > This is the only source at the moment; if you are offered to download from another place, do so at your own risk — we definitely do not know what code may be in the exe files of this particular version.
 
+## Contacts
+For contact and questions: nbl2142@outlook.com
 
 ---
 
