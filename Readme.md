@@ -18,8 +18,9 @@
 
 ## What can it do?
 
-- Automatically update itself when a new version is released. The user will be prompted to perform an upgrade if their launcher version becomes outdated;
-- Launch on different platforms, **NovGames** or **Respy** and others.
+- :arrows_counterclockwise: Automatically update itself when a new version is released. The user will be prompted to perform an upgrade if their launcher version becomes outdated;
+- :computer: Launch on different platforms, **NovGames** or **Respy** and others;
+- :earth_asia: Multilingual support.
 
 ## Supported platforms
 
