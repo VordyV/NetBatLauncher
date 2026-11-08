@@ -540,6 +540,8 @@ sv.allowSpectators 0
 sv.allowTitanMovement 1
 """;
 
+    private const string OriginalClientId = "original";
+
     public Task SwitchAsync(string currentClientId, string targetClientId)
     {
         ValidateClientId(currentClientId);
@@ -547,24 +549,50 @@ sv.allowTitanMovement 1
 
         Directory.CreateDirectory(StoragePath);
         EnsureGeneratedFiles(ProfilesPath);
+
         SaveSnapshot(GetClientPath(currentClientId));
 
         if (currentClientId.Equals(targetClientId, StringComparison.OrdinalIgnoreCase))
             return Task.CompletedTask;
 
         string targetPath = GetClientPath(targetClientId);
+
         if (!Directory.Exists(targetPath))
         {
-            Directory.CreateDirectory(targetPath);
+            string originalPath = GetClientPath(OriginalClientId);
+
+            string sourcePath = Directory.Exists(originalPath)
+                ? originalPath
+                : GetClientPath(currentClientId);
+
+            CopyDirectory(sourcePath, targetPath);
+
+            ResetAccountData(targetPath);
             EnsureGeneratedFiles(targetPath);
-            Logger.Info($"Initial profile generated for client '{targetClientId}'");
+
+            Logger.Info($"Initial profile created for client '{targetClientId}' from '{Path.GetFileName(sourcePath)}'");
         }
 
         RestoreSnapshot(targetPath);
         EnsureGeneratedFiles(ProfilesPath);
 
         Logger.Info($"Profiles switched: '{currentClientId}' -> '{targetClientId}'");
+
         return Task.CompletedTask;
+    }
+
+    private static void ResetAccountData(string root)
+    {
+        string global = Path.Combine(root, "Global.con");
+        string profile = Path.Combine(root, "0001", "Profile.con");
+
+        Directory.CreateDirectory(Path.GetDirectoryName(global)!);
+        Directory.CreateDirectory(Path.GetDirectoryName(profile)!);
+
+        File.WriteAllText(global, DefaultGlobal + Environment.NewLine);
+        File.WriteAllText(profile, DefaultProfile + Environment.NewLine);
+
+        Logger.Info($"Account data reset: '{root}'");
     }
 
     private string GetClientPath(string clientId) => Path.Combine(StoragePath, clientId);
@@ -609,53 +637,72 @@ sv.allowTitanMovement 1
         Logger.Info($"Config created: '{path}'");
     }
 
+
     private void SaveSnapshot(string destination)
     {
-        string temp = destination + ".tmp";
-        string old = destination + ".old";
-
-        DeleteDirectory(temp);
-        DeleteDirectory(old);
-        CopyDirectory(ProfilesPath, temp);
-
-        if (Directory.Exists(destination))
-            Directory.Move(destination, old);
+        string temp = destination + ".tmp-" + Guid.NewGuid().ToString("N");
+        string old = destination + ".old-" + Guid.NewGuid().ToString("N");
 
         try
         {
-            Directory.Move(temp, destination);
-            DeleteDirectory(old);
+            CopyDirectory(ProfilesPath, temp);
+
+            if (Directory.Exists(destination))
+                Directory.Move(destination, old);
+
+            try
+            {
+                Directory.Move(temp, destination);
+            }
+            catch
+            {
+                if (!Directory.Exists(destination) && Directory.Exists(old))
+                    Directory.Move(old, destination);
+
+                throw;
+            }
+
+            if (Directory.Exists(old))
+                DeleteDirectory(old);
         }
-        catch
+        finally
         {
-            if (!Directory.Exists(destination) && Directory.Exists(old))
-                Directory.Move(old, destination);
-            throw;
+            if (Directory.Exists(temp))
+                DeleteDirectory(temp);
         }
     }
 
     private void RestoreSnapshot(string source)
     {
-        string temp = ProfilesPath + ".nbl-temp";
-        string old = ProfilesPath + ".nbl-old";
-
-        DeleteDirectory(temp);
-        DeleteDirectory(old);
-        CopyDirectory(source, temp);
-
-        if (Directory.Exists(ProfilesPath))
-            Directory.Move(ProfilesPath, old);
+        string temp = ProfilesPath + ".nbl-temp-" + Guid.NewGuid().ToString("N");
+        string old = ProfilesPath + ".nbl-old-" + Guid.NewGuid().ToString("N");
 
         try
         {
-            Directory.Move(temp, ProfilesPath);
-            DeleteDirectory(old);
+            CopyDirectory(source, temp);
+
+            if (Directory.Exists(ProfilesPath))
+                Directory.Move(ProfilesPath, old);
+
+            try
+            {
+                Directory.Move(temp, ProfilesPath);
+            }
+            catch
+            {
+                if (!Directory.Exists(ProfilesPath) && Directory.Exists(old))
+                    Directory.Move(old, ProfilesPath);
+
+                throw;
+            }
+
+            if (Directory.Exists(old))
+                DeleteDirectory(old);
         }
-        catch
+        finally
         {
-            if (!Directory.Exists(ProfilesPath) && Directory.Exists(old))
-                Directory.Move(old, ProfilesPath);
-            throw;
+            if (Directory.Exists(temp))
+                DeleteDirectory(temp);
         }
     }
 
@@ -664,15 +711,75 @@ sv.allowTitanMovement 1
         Directory.CreateDirectory(destination);
 
         foreach (string dir in Directory.GetDirectories(source))
-            CopyDirectory(dir, Path.Combine(destination, Path.GetFileName(dir)));
+        {
+            CopyDirectory(
+                dir,
+                Path.Combine(destination, Path.GetFileName(dir)));
+        }
 
         foreach (string file in Directory.GetFiles(source))
-            File.Copy(file, Path.Combine(destination, Path.GetFileName(file)), true);
+        {
+            string target = Path.Combine(
+                destination,
+                Path.GetFileName(file));
+
+            File.Copy(file, target, true);
+
+            File.SetAttributes(target, File.GetAttributes(file));
+        }
     }
 
     private static void DeleteDirectory(string path)
     {
-        if (Directory.Exists(path))
-            Directory.Delete(path, true);
+        if (!Directory.Exists(path))
+            return;
+
+        try
+        {
+            foreach (string file in Directory.GetFiles(path))
+            {
+                try
+                {
+                    FileAttributes attributes = File.GetAttributes(file);
+
+                    if ((attributes & FileAttributes.ReadOnly) != 0)
+                    {
+                        Logger.Warning(
+                            $"Skipped read-only file: '{file}'");
+
+                        continue;
+                    }
+
+                    File.Delete(file);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warning(
+                        $"Failed to delete file '{file}': {ex.Message}");
+                }
+            }
+
+            foreach (string dir in Directory.GetDirectories(path))
+            {
+                DeleteDirectory(dir);
+            }
+
+            // Удаляем папку только если она опустела.
+            try
+            {
+                Directory.Delete(path, false);
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning(
+                    $"Failed to delete directory '{path}': {ex.Message}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Warning(
+                $"Directory cleanup failed '{path}': {ex.Message}");
+        }
     }
 }
+

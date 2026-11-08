@@ -399,4 +399,94 @@
   <data name="NoSound" xml:space="preserve">
     <value>No sound</value>
   </data>
+  <data name="ControlSettingsDescription" xml:space="preserve">
+    <value>Soon..</value>
+  </data>
+  <data name="DescWidescreen" xml:space="preserve">
+    <value>Game window will be able to accept, in addition to 4:3, also 16:9</value>
+  </data>
+  <data name="DescFullscreen" xml:space="preserve">
+    <value>Game launches in full screen (if the game does not start in widescreen mode)</value>
+  </data>
+  <data name="DescMulti" xml:space="preserve">
+    <value>Allows launching multiple game windows simultaneously</value>
+  </data>
+  <data name="CustomParam" xml:space="preserve">
+    <value>Custom parameters</value>
+  </data>
+  <data name="ServerMonitorTitle" xml:space="preserve">
+    <value>Server monitoring</value>
+  </data>
+  <data name="ServerMonitorDescription" xml:space="preserve">
+    <value>Available Battlefield 2142 servers</value>
+  </data>
+  <data name="ServerMonitorLoading" xml:space="preserve">
+    <value>Loading...</value>
+  </data>
+  <data name="ServerMonitorFetching" xml:space="preserve">
+    <value>Retrieving server list...</value>
+  </data>
+  <data name="ServerMonitorUpdated" xml:space="preserve">
+    <value>Updated 0 sec. ago</value>
+  </data>
+  <data name="ServerMonitorUpdateError" xml:space="preserve">
+    <value>Update failed · 0 sec. ago</value>
+  </data>
+  <data name="ServerCount" xml:space="preserve">
+    <value>Servers</value>
+  </data>
+  <data name="PlayerCount" xml:space="preserve">
+    <value>Players</value>
+  </data>
+  <data name="PopulatedCount" xml:space="preserve">
+    <value>Populated</value>
+  </data>
+  <data name="FreeSlots" xml:space="preserve">
+    <value>Free slots</value>
+  </data>
+  <data name="ServerSearchPlaceholder" xml:space="preserve">
+    <value>Search servers...</value>
+  </data>
+  <data name="ServerFilterAllClients" xml:space="preserve">
+    <value>All clients</value>
+  </data>
+  <data name="ServerColumnName" xml:space="preserve">
+    <value>Server</value>
+  </data>
+  <data name="ServerColumnMap" xml:space="preserve">
+    <value>Map</value>
+  </data>
+  <data name="ServerColumnMode" xml:space="preserve">
+    <value>Mode</value>
+  </data>
+  <data name="ServerColumnPlayers" xml:space="preserve">
+    <value>Players</value>
+  </data>
+  <data name="ServerColumnPing" xml:space="preserve">
+    <value>Ping</value>
+  </data>
+  <data name="ServerMonitorEmpty" xml:space="preserve">
+    <value>No servers found</value>
+  </data>
+  <data name="UninstallGame" xml:space="preserve">
+    <value>Uninstall game</value>
+  </data>
+  <data name="UninstallGameTitle" xml:space="preserve">
+    <value>Uninstall game</value>
+  </data>
+  <data name="UninstallGameConfirm" xml:space="preserve">
+    <value>Are you sure you want to uninstall Battlefield 2142?\nAll game files and installed clients will be deleted.</value>
+  </data>
+  <data name="UninstallGameCancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="UninstallGameConfirmButton" xml:space="preserve">
+    <value>Uninstall</value>
+  </data>
+  <data name="UninstallGameError" xml:space="preserve">
+    <value>Uninstallation error</value>
+  </data>
+  <data name="CommonOk" xml:space="preserve">
+    <value>OK</value>
+  </data>
 </root>
