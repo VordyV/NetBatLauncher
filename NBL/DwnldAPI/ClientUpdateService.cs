@@ -178,15 +178,8 @@ public class ClientUpdateService
         await UpdateFilesAsync(manifest, gamePath, clientPath, clientId, progress, token);
     }
 
-    public bool IsClientInstalled(string gamePath, string clientId)
-    {
-        if (clientId is not ("respy" or "novgames"))
-            return false;
-
-        return File.Exists(Path.Combine(
-            gamePath, Launcher.ClientsDir, clientId,
-            Launcher.ClientManifestFilename));
-    }
+    public bool IsClientInstalled(string gamePath, string clientId) => !string.IsNullOrWhiteSpace(clientId) 
+        && File.Exists(Path.Combine(gamePath, Launcher.ClientsDir, clientId, Launcher.ClientManifestFilename));
 
     public async Task SyncClientAsync(
         string server, string gameId, string gamePath, string clientId,

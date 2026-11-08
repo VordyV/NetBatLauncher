@@ -243,9 +243,6 @@
   <data name="AudioSettings" xml:space="preserve">
     <value>АУДИО</value>
   </data>
-  <data name="EffectsVolume" xml:space="preserve">
-    <value>Громкость эффектов</value>
-  </data>
   <data name="MusicVolume" xml:space="preserve">
     <value>Громкость музыки</value>
   </data>
@@ -398,5 +395,23 @@
   </data>
   <data name="NoSound" xml:space="preserve">
     <value>Без звука</value>
+  </data>
+  <data name="ControlSettingsDescription" xml:space="preserve">
+    <value>Скоро..</value>
+  </data>
+  <data name="DescWidescreen" xml:space="preserve">
+    <value>Игровое окно сможет поддерживать не только формат 4:3, но и 16:9</value>
+  </data>
+  <data name="EffectsVolume" xml:space="preserve">
+    <value>Звук эффектов</value>
+  </data>
+  <data name="DescFullscreen" xml:space="preserve">
+    <value>Игра запускается в полноэкранном режиме (если игра не запускается в widescreen моде)</value>
+  </data>
+  <data name="DescMulti" xml:space="preserve">
+    <value>Позволяет запускать несколько игровых окон одновременно</value>
+  </data>
+  <data name="CustomParam" xml:space="preserve">
+    <value>Кастомные параметры</value>
   </data>
 </root>

@@ -80,6 +80,7 @@ public partial class MainView : View
         Pages.ShowView("general", Game.Id);
     }
 
+
     protected async Task OnLoaded()
     {
         await Game.CheckInstall();
@@ -89,21 +90,19 @@ public partial class MainView : View
             try { Game.GetCurrentClient(); }
             catch (GameNotSetRegistryException) { Logger.Warning("Current client not selected."); }
 
-            var clients = await Game.GetClients();
-            await UpdateClients(clients);
-            await SyncInstalledClientsAsync(clients);
             await UpdateClients(await Game.GetClients());
         }
         else
             await UpdateClients([]);
 
         isLoaded = true;
-        
-        _ = this.UpdateLabelPlayers();
-        _ = this.UpdateLabelPing();
-        
+
+        _ = UpdateLabelPlayers();
+        _ = UpdateLabelPing();
+
         await UpdateButtonMA(Game.Status);
     }
+
 
     private async Task SyncInstalledClientsAsync(ClientData[] clients)
     {
@@ -184,6 +183,7 @@ public partial class MainView : View
         }
     }
 
+
     protected async Task UpdateClients(ClientData[] clients)
     {
         isUpdatingClients = true;
@@ -195,33 +195,29 @@ public partial class MainView : View
             try { current = Game.GetCurrentClient(); }
             catch { current = Launcher.ClientId; }
 
-            ApiClient[] available;
-
-            try { available = await Launcher.GetAvailableClientsAsync(Game.Id); }
-            catch (Exception ex)
-            {
-                Logger.Warning($"Failed to load available clients: {ex.Message}");
-                available = clients.Select(c => new ApiClient { Ident = c.ID, Name = c.Name }).ToArray();
-            }
+            // Сначала показываем установленные локально клиенты.
+            var available = clients
+                .Select(c => new ApiClient { Ident = c.ID, Name = c.Name })
+                .ToList();
 
             ComboBoxClients.Items.Clear();
             ComboBoxClients.SelectedIndex = -1;
 
             foreach (var client in available)
             {
-                bool installed = clients.Any(c => c.ID.Equals(client.Ident, StringComparison.OrdinalIgnoreCase));
-
                 ComboBoxClients.Items.Add(new ComboBoxItem
                 {
                     Content = client.Name,
                     Name = $"ComboBoxItemClients_{client.Ident}",
-                    Foreground = installed ? Brushes.White : Brushes.Gray
+                    Foreground = Brushes.White
                 });
 
                 if (client.Ident.Equals(current, StringComparison.OrdinalIgnoreCase))
                     ComboBoxClients.SelectedIndex = ComboBoxClients.ItemCount - 1;
             }
 
+            // Если текущий клиент не установлен, всё равно сохраняем его выбор,
+            // когда он присутствует в локальном списке.
             if (ComboBoxClients.SelectedIndex < 0 && ComboBoxClients.ItemCount > 0)
                 ComboBoxClients.SelectedIndex = 0;
         }
@@ -232,6 +228,7 @@ public partial class MainView : View
 
         await UpdateButtonMA(Game.Status);
     }
+
 
     private async Task UpdateButtonMA(GameStatus status)
     {
@@ -245,12 +242,6 @@ public partial class MainView : View
             }
 
             Button_MainAction.IsEnabled = true;
-
-            if (clientSyncFailed && status == GameStatus.NotRunning)
-            {
-                Button_MainAction.Content = "Повторить синхронизацию";
-                return;
-            }
 
             switch (status)
             {
@@ -277,14 +268,6 @@ public partial class MainView : View
 
         try
         {
-            if (clientSyncFailed && Game.Status == GameStatus.NotRunning)
-            {
-                await SyncInstalledClientsAsync(await Game.GetClients());
-                await UpdateClients(await Game.GetClients());
-                await UpdateButtonMA(Game.Status);
-                return;
-            }
-
             switch (Game.Status)
             {
                 case GameStatus.NotInstalled:
@@ -437,5 +420,10 @@ public partial class MainView : View
     private void Telegram_Click(object? sender, RoutedEventArgs e)
     {
         Process.Start(new ProcessStartInfo { FileName = "https://t.me/VSEM2142", UseShellExecute = true });
+    }
+
+    private void Discord_Click(object? sender, RoutedEventArgs e)
+    {
+        Process.Start(new ProcessStartInfo { FileName = "https://discord.gg/Gu47txvTkW", UseShellExecute = true });
     }
 }

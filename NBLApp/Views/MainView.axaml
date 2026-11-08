@@ -22,6 +22,9 @@
                 </StackPanel>
 				<Grid Grid.Row="4">
 					    <StackPanel>
+							<Button Click="Discord_Click" Background="Transparent" HorizontalAlignment="Center">
+								<Image Source="/Assets/discord.png" Width="19" Height="19"/>
+							</Button>
 							<Button Click="Telegram_Click" Background="Transparent" HorizontalAlignment="Center">
 								<Image Source="/Assets/Telegram.png" Width="19" Height="19"/>
 							</Button>

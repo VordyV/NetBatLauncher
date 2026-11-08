@@ -2,55 +2,54 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d"
-             d:DesignWidth="600"
-             d:DesignHeight="500"
-			 x:Name="LaunchSettingsControl"
              xmlns:c="clr-namespace:NBLApp.Controls"
              xmlns:u="https://irihi.tech/ursa"
+             xmlns:loc="clr-namespace:NBLApp.Localization"
+             mc:Ignorable="d"
+             d:DesignWidth="500"
+             d:DesignHeight="700"
+             x:Name="LaunchSettingsControl"
              x:Class="NBLApp.Forms.LaunchSettings">
-	<c:Form
-        Name="LaunchSettingsForm"
-        Title="{Binding #LaunchSettingsControl.TitleText}"
-        Height="500"
-        Width="600">
-		<c:Form.Content>
-			<ScrollViewer
-                HorizontalScrollBarVisibility="Disabled"
-                VerticalScrollBarVisibility="Auto">
-				<StackPanel Spacing="25">
-					<StackPanel Spacing="10">
-						<u:Form Name="MainContent" LabelPosition="Top" LabelWidth="*">
-						</u:Form>
 
-						<CheckBox
-                            Name="CheckBoxNoIntro"
-                            Content="{Binding #LaunchSettingsControl.NoIntroText}"/>
-						<TextBlock
-                            Name="TextBlockNoIntroStatus"
-                            Text="{Binding #LaunchSettingsControl.GameNotInstalledText}"
-                            Opacity="0.6"
-                            FontSize="12"
-                            TextWrapping="Wrap"/>
+	<c:Form Name="LaunchSettingsForm"
+            Title="{loc:Translate LaunchSettingsTitle}"
+            Height="700"
+            Width="500">
+		<c:Form.Content>
+			<ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+				<StackPanel Spacing="8">
+					<StackPanel Spacing="10">
+						<u:Form Name="MainContent"
+                                LabelPosition="Top"
+                                LabelWidth="*"/>
+
+						<CheckBox Name="CheckBoxNoIntro"
+                                  Content="{loc:Translate LaunchSettingsNoIntro}"/>
+
+						<TextBlock Name="TextBlockNoIntroStatus"
+                                   Text="{loc:Translate LaunchSettingsGameNotInstalled}"
+                                   Opacity="0.6"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"/>
 					</StackPanel>
 				</StackPanel>
 			</ScrollViewer>
 		</c:Form.Content>
+
 		<c:Form.ActionContent>
-			<StackPanel
-                Orientation="Horizontal"
-                HorizontalAlignment="Right"
-                Spacing="8">
-				<Button
-                    Name="ButtonCancel"
-                    Click="ButtonCancel_OnClick"
-                    Content="{Binding #LaunchSettingsControl.CancelText}"/>
-				<Button
-                    Name="ButtonSave"
-                    Click="ButtonSave_OnClick"
-                    Content="{Binding #LaunchSettingsControl.SaveText}"
-                    Classes="Primary"
-                    Theme="{StaticResource SolidButton}"/>
+			<StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Spacing="8">
+				<Button Name="ButtonCancel"
+                        Click="ButtonCancel_OnClick"
+                        Content="{loc:Translate Cancel}"/>
+
+				<Button Name="ButtonSave"
+                        Click="ButtonSave_OnClick"
+                        Content="{loc:Translate Save}"
+                        Classes="Primary"
+                        Theme="{StaticResource SolidButton}"/>
 			</StackPanel>
 		</c:Form.ActionContent>
 	</c:Form>

@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:c="clr-namespace:NBLApp.Controls"
              xmlns:local="clr-namespace:NBLApp.Forms"
+             xmlns:loc="clr-namespace:NBLApp.Localization"
              x:Name="SettingsGearControl"
              x:DataType="local:SettingsGear"
              mc:Ignorable="d"
@@ -11,628 +12,171 @@
              d:DesignHeight="700"
              x:Class="NBLApp.Forms.SettingsGear">
 
-	<c:Form
-        Title="{Binding #SettingsGearControl.SettingsText}"
-        Width="600"
-        Height="850">
-
+	<c:Form Title="{loc:Translate Settings}" Width="600" Height="850">
 		<c:Form.Content>
+			<TabControl VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
 
-			<TabControl
-                VerticalAlignment="Stretch"
-                HorizontalAlignment="Stretch">
-
-				<TabItem
-                    Header="{Binding #SettingsGearControl.LauncherSettingsText}">
-
-					<ScrollViewer
-                        VerticalScrollBarVisibility="Auto"
-                        HorizontalScrollBarVisibility="Disabled">
-
-						<StackPanel
-                            Spacing="25"
-                            Margin="0,15,0,15">
-
+				<TabItem Header="{loc:Translate LauncherSettings}">
+					<ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+						<StackPanel Spacing="25" Margin="0,15,0,15">
 							<StackPanel Spacing="12">
-								<Grid
-                                    ColumnDefinitions="*,220"
-                                    RowDefinitions="Auto,Auto"
-                                    RowSpacing="8">
-
-									<TextBlock
-                                        Grid.Row="0"
-                                        Grid.Column="0"
-                                        Text="{Binding #SettingsGearControl.LanguageLauncherText}"
-                                        VerticalAlignment="Center"/>
-
-									<ComboBox
-                                        Name="ComboBoxLanguage"
-                                        Grid.Row="0"
-                                        Grid.Column="1"
-                                        SelectedIndex="0">
-
-										<ComboBoxItem
-                                            Tag="auto"
-                                            Content="{Binding #SettingsGearControl.AutomaticText}"/>
-
-										<ComboBoxItem
-                                            Tag="ru-RU"
-                                            Content="{Binding #SettingsGearControl.RussianText}"/>
-
-										<ComboBoxItem
-                                            Tag="en-US"
-                                            Content="{Binding #SettingsGearControl.EnglishText}"/>
-
-									</ComboBox>
-									<TextBlock
-                                        Grid.Row="1"
-                                        Grid.Column="0"
-                                        Text="{Binding #SettingsGearControl.GameLanguageText}"
-                                        VerticalAlignment="Center"/>
-
-									<ComboBox
-                                        Name="GameLanguageComboBox"
-                                        Grid.Row="1"
-                                        Grid.Column="1">
-
-										<ComboBoxItem
-                                            Content="{Binding #SettingsGearControl.EnglishText}"/>
-
-										<ComboBoxItem
-                                            Content="{Binding #SettingsGearControl.RussianText}"/>
-
+								<Grid ColumnDefinitions="*,220" RowDefinitions="Auto,Auto" RowSpacing="8">
+									<TextBlock Grid.Row="0" Text="{loc:Translate LanguageLauncher}" VerticalAlignment="Center"/>
+									<ComboBox Name="ComboBoxLanguage" Grid.Row="0" Grid.Column="1" SelectedIndex="0">
+										<ComboBoxItem Tag="auto" Content="{loc:Translate Auto}"/>
+										<ComboBoxItem Tag="ru-RU" Content="{loc:Translate Russian}"/>
+										<ComboBoxItem Tag="en-US" Content="{loc:Translate English}"/>
 									</ComboBox>
 
+									<TextBlock Grid.Row="1" Text="{loc:Translate GameLanguage}" VerticalAlignment="Center"/>
+									<ComboBox Name="GameLanguageComboBox" Grid.Row="1" Grid.Column="1">
+										<ComboBoxItem Content="{loc:Translate English}"/>
+										<ComboBoxItem Content="{loc:Translate Russian}"/>
+									</ComboBox>
 								</Grid>
-								<Grid
-									ColumnDefinitions="*,Auto"
-									RowDefinitions="Auto"
-									ColumnSpacing="8">
 
-									<TextBlock
-										Grid.Column="0"
-										Text="{Binding #SettingsGearControl.LogFolderText}"
-										VerticalAlignment="Center"/>
-
-									<Grid
-										Grid.Column="1"
-										ColumnDefinitions="220,Auto"
-										ColumnSpacing="8">
-
-										<TextBox
-											Grid.Column="0"
-											Text="{Binding #SettingsGearControl.LogDirectory}"
-											IsReadOnly="True"
-											HorizontalContentAlignment="Left"
-											VerticalContentAlignment="Center"/>
-
-										<Button
-											Grid.Column="1"
-											Content="{Binding #SettingsGearControl.OpenText}"
-											Click="OpenLogs_Click"
-											MinWidth="100"
-											Padding="16,8"/>
-
+								<Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto" ColumnSpacing="8">
+									<TextBlock Grid.Column="0" Text="{loc:Translate Logfolder}" VerticalAlignment="Center"/>
+									<Grid Grid.Column="1" ColumnDefinitions="220,Auto" ColumnSpacing="8">
+										<TextBox Grid.Column="0" Text="{Binding #SettingsGearControl.LogDirectory}" IsReadOnly="True" HorizontalContentAlignment="Left" VerticalContentAlignment="Center"/>
+										<Button Grid.Column="1" Content="{loc:Translate Open}" Click="OpenLogs_Click" MinWidth="100" Padding="16,8"/>
 									</Grid>
-
 								</Grid>
+
 								<StackPanel Spacing="8">
-
-									<TextBlock
-										Text="{Binding #SettingsGearControl.KeyHashText}"
-										VerticalAlignment="Center"/>
-
-									<Grid
-										ColumnDefinitions="*,Auto"
-										ColumnSpacing="8">
-
-										<TextBox
-											Name="TextBoxGameKeyMd5"
-											Grid.Column="0"
-											IsReadOnly="True"
-											IsEnabled="False"
-											HorizontalContentAlignment="Left"
-											VerticalContentAlignment="Center"/>
-
-										<Button
-											Grid.Column="1"
-											Content="{Binding #SettingsGearControl.CopyText}"
-											Click="ButtonCopyGameKeyHash_OnClick"
-											Padding="16,8"/>
-
+									<TextBlock Text="{loc:Translate KeyHash}" VerticalAlignment="Center"/>
+									<Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+										<TextBox Name="TextBoxGameKeyMd5" Grid.Column="0" IsReadOnly="True" IsEnabled="False" HorizontalContentAlignment="Left" VerticalContentAlignment="Center"/>
+										<Button Grid.Column="1" Content="{loc:Translate Copy}" Click="ButtonCopyGameKeyHash_OnClick" Padding="16,8"/>
 									</Grid>
-
-									<Button
-										Name="ButtonGenerateGameKey"
-										Content="{Binding #SettingsGearControl.GenerateKeyText}"
-										HorizontalAlignment="Stretch"
-										Click="ButtonGenerateGameKey_OnClick"/>
-
+									<Button Name="ButtonGenerateGameKey" Content="{loc:Translate GenerateKey}" HorizontalAlignment="Stretch" Click="ButtonGenerateGameKey_OnClick"/>
 								</StackPanel>
-								<StackPanel
-                                    HorizontalAlignment="Center"
-                                    Margin="0,10,0,15"
-                                    Spacing="3">
-
-									<TextBlock
-                                        Text="NetBat2142 Launcher"
-                                        HorizontalAlignment="Center"
-                                        Opacity="0.7"/>
-
-									<TextBlock
-                                        Text="{Binding #SettingsGearControl.LauncherVersion}"
-                                        HorizontalAlignment="Center"
-                                        Opacity="0.5"
-                                        FontSize="12"/>
-
+								
+								<StackPanel HorizontalAlignment="Center" Margin="0,10,0,15" Spacing="3">
+									<TextBlock Text="NetBat2142 Launcher" HorizontalAlignment="Center" Opacity="0.7"/>
+									<TextBlock Text="{Binding #SettingsGearControl.LauncherVersion}" HorizontalAlignment="Center" Opacity="0.5" FontSize="12"/>
 								</StackPanel>
-
+								
 							</StackPanel>
-
 						</StackPanel>
-
 					</ScrollViewer>
-
 				</TabItem>
 
-				<TabItem
-                    Header="{Binding #SettingsGearControl.VideoSettingsText}">
-
-					<ScrollViewer
-                        VerticalScrollBarVisibility="Auto"
-                        HorizontalScrollBarVisibility="Disabled">
-
-						<StackPanel
-                            Spacing="25"
-                            Margin="0,15,0,15">
-
+				<TabItem Header="{loc:Translate VideoSettings}">
+					<ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+						<StackPanel Spacing="25" Margin="0,15,0,15">
 							<StackPanel Spacing="12">
+								<TextBlock Name="TextBlockVideoSettingsStatus" Text="{loc:Translate SettingsUnavailable}" Foreground="Red" FontWeight="Bold" Opacity="0.6" FontSize="12" IsVisible="False" TextWrapping="Wrap"/>
 
-								<TextBlock
-                                    Name="TextBlockVideoSettingsStatus"
-                                    Text="{Binding #SettingsGearControl.SettingsUnavailableText}"
-                                    Foreground="Red"
-                                    FontWeight="Bold"
-                                    Opacity="0.6"
-                                    FontSize="12"
-                                    IsVisible="False"
-                                    TextWrapping="Wrap"/>
-								<Grid
-                                    ColumnDefinitions="*,220"
-                                    RowDefinitions="Auto,Auto"
-                                    RowSpacing="8">
-
-									<TextBlock
-                                        Grid.Row="0"
-                                        Grid.Column="0"
-                                        Text="{Binding #SettingsGearControl.ResolutionText}"
-                                        VerticalAlignment="Center"/>
-
-									<ComboBox
-                                        Name="ComboBoxResolution"
-                                        Grid.Row="0"
-                                        Grid.Column="1"
-                                        SelectionChanged="ComboBoxResolution_OnSelectionChanged"/>
-
-									<TextBlock
-                                        Grid.Row="1"
-                                        Grid.Column="0"
-                                        Text="{Binding #SettingsGearControl.RefreshRateText}"
-                                        VerticalAlignment="Center"/>
-
-									<ComboBox
-                                        Name="ComboBoxRefreshRate"
-                                        Grid.Row="1"
-                                        Grid.Column="1"/>
-
-								</Grid>
-								<Grid
-                                    ColumnDefinitions="*,220"
-                                    RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
-                                    RowSpacing="8">
-
-									<TextBlock
-                                        Grid.Row="0"
-                                        Text="{Binding #SettingsGearControl.TerrainText}"/>
-
-									<ComboBox
-                                        Name="ComboBoxTerrain"
-                                        Grid.Row="0"
-                                        Grid.Column="1"/>
-
-									<TextBlock
-                                        Grid.Row="1"
-                                        Text="{Binding #SettingsGearControl.GeometryText}"/>
-
-									<ComboBox
-                                        Name="ComboBoxGeometry"
-                                        Grid.Row="1"
-                                        Grid.Column="1"/>
-
-									<TextBlock
-                                        Grid.Row="2"
-                                        Text="{Binding #SettingsGearControl.LightingText}"/>
-
-									<ComboBox
-                                        Name="ComboBoxLighting"
-                                        Grid.Row="2"
-                                        Grid.Column="1"/>
-
-									<TextBlock
-                                        Grid.Row="3"
-                                        Text="{Binding #SettingsGearControl.DynamicLightingText}"/>
-
-									<ComboBox
-                                        Name="ComboBoxDynamicLighting"
-                                        Grid.Row="3"
-                                        Grid.Column="1"/>
-
-									<TextBlock
-                                        Grid.Row="4"
-                                        Text="{Binding #SettingsGearControl.DynamicShadowsText}"/>
-
-									<ComboBox
-                                        Name="ComboBoxDynamicShadows"
-                                        Grid.Row="4"
-                                        Grid.Column="1"/>
-
-									<TextBlock
-                                        Grid.Row="5"
-                                        Text="{Binding #SettingsGearControl.EffectsText}"/>
-
-									<ComboBox
-                                        Name="ComboBoxEffects"
-                                        Grid.Row="5"
-                                        Grid.Column="1"/>
-
-									<TextBlock
-                                        Grid.Row="6"
-                                        Text="{Binding #SettingsGearControl.TexturesText}"/>
-
-									<ComboBox
-                                        Name="ComboBoxTextures"
-                                        Grid.Row="6"
-                                        Grid.Column="1"/>
-
-									<TextBlock
-                                        Grid.Row="7"
-                                        Text="{Binding #SettingsGearControl.TextureFilteringText}"/>
-
-									<ComboBox
-                                        Name="ComboBoxTextureFiltering"
-                                        Grid.Row="7"
-                                        Grid.Column="1"/>
-
+								<Grid ColumnDefinitions="*,220" RowDefinitions="Auto,Auto" RowSpacing="8">
+									<TextBlock Grid.Row="0" Text="{loc:Translate Resolution}" VerticalAlignment="Center"/>
+									<ComboBox Name="ComboBoxResolution" Grid.Row="0" Grid.Column="1" SelectionChanged="ComboBoxResolution_OnSelectionChanged"/>
+									<TextBlock Grid.Row="1" Text="{loc:Translate RefreshRate}" VerticalAlignment="Center"/>
+									<ComboBox Name="ComboBoxRefreshRate" Grid.Row="1" Grid.Column="1"/>
 								</Grid>
 
-								<Grid
-                                    ColumnDefinitions="*,220"
-                                    RowDefinitions="Auto,Auto,Auto"
-                                    RowSpacing="8">
-
-									<TextBlock
-                                        Grid.Row="0"
-                                        Text="{Binding #SettingsGearControl.AntialiasingText}"/>
-
-									<ComboBox
-                                        Name="ComboBoxAntialiasing"
-                                        Grid.Row="0"
-                                        Grid.Column="1"/>
-
-									<TextBlock
-                                        Grid.Row="1"
-                                        Text="{Binding #SettingsGearControl.ViewDistanceText}"/>
-
-									<Slider
-                                        Name="SliderViewDistance"
-                                        Grid.Row="1"
-                                        Grid.Column="1"
-                                        Minimum="0"
-                                        Maximum="1"
-                                        TickFrequency="0.1"
-                                        IsSnapToTickEnabled="True"/>
-
-									<TextBlock
-                                        Grid.Row="2"
-                                        Text="{Binding #SettingsGearControl.BloomText}"/>
-
-									<CheckBox
-                                        Name="CheckBoxBloom"
-                                        Grid.Row="2"
-                                        Grid.Column="1"
-                                        Content="{Binding #SettingsGearControl.EnabledText}"/>
-
+								<Grid ColumnDefinitions="*,220" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="8">
+									<TextBlock Grid.Row="0" Text="{loc:Translate Terrain}"/>
+									<ComboBox Name="ComboBoxTerrain" Grid.Row="0" Grid.Column="1"/>
+									<TextBlock Grid.Row="1" Text="{loc:Translate Geometry}"/>
+									<ComboBox Name="ComboBoxGeometry" Grid.Row="1" Grid.Column="1"/>
+									<TextBlock Grid.Row="2" Text="{loc:Translate Lighting}"/>
+									<ComboBox Name="ComboBoxLighting" Grid.Row="2" Grid.Column="1"/>
+									<TextBlock Grid.Row="3" Text="{loc:Translate DynamicLighting}"/>
+									<ComboBox Name="ComboBoxDynamicLighting" Grid.Row="3" Grid.Column="1"/>
+									<TextBlock Grid.Row="4" Text="{loc:Translate DynamicShadows}"/>
+									<ComboBox Name="ComboBoxDynamicShadows" Grid.Row="4" Grid.Column="1"/>
+									<TextBlock Grid.Row="5" Text="{loc:Translate Effects}"/>
+									<ComboBox Name="ComboBoxEffects" Grid.Row="5" Grid.Column="1"/>
+									<TextBlock Grid.Row="6" Text="{loc:Translate Textures}"/>
+									<ComboBox Name="ComboBoxTextures" Grid.Row="6" Grid.Column="1"/>
+									<TextBlock Grid.Row="7" Text="{loc:Translate TextureFiltering}"/>
+									<ComboBox Name="ComboBoxTextureFiltering" Grid.Row="7" Grid.Column="1"/>
 								</Grid>
 
+								<Grid ColumnDefinitions="*,220" RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
+									<TextBlock Grid.Row="0" Text="{loc:Translate Antialiasing}"/>
+									<ComboBox Name="ComboBoxAntialiasing" Grid.Row="0" Grid.Column="1"/>
+									<TextBlock Grid.Row="1" Text="{loc:Translate ViewDistance}"/>
+									<Slider Name="SliderViewDistance" Grid.Row="1" Grid.Column="1" Minimum="0" Maximum="1" TickFrequency="0.1" IsSnapToTickEnabled="True"/>
+									<TextBlock Grid.Row="2" Text="{loc:Translate Bloom}"/>
+									<CheckBox Name="CheckBoxBloom" Grid.Row="2" Grid.Column="1" Content="{loc:Translate Enabled}"/>
+								</Grid>
 							</StackPanel>
-
 						</StackPanel>
-
 					</ScrollViewer>
-
 				</TabItem>
 
-
-				<TabItem
-                    Header="{Binding #SettingsGearControl.AudioSettingsText}">
-
-					<ScrollViewer
-                        VerticalScrollBarVisibility="Auto"
-                        HorizontalScrollBarVisibility="Disabled">
-
-						<StackPanel
-                            Spacing="25"
-                            Margin="0,15,0,15">
-
+				<TabItem Header="{loc:Translate AudioSettings}">
+					<ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+						<StackPanel Spacing="25" Margin="0,15,0,15">
 							<StackPanel Spacing="12">
+								<TextBlock Name="TextBlockAudioSettingsStatus" Text="{loc:Translate SettingsUnavailable}" Foreground="Red" FontWeight="Bold" Opacity="0.6" FontSize="12" IsVisible="False" TextWrapping="Wrap"/>
 
-								<TextBlock
-                                    Name="TextBlockAudioSettingsStatus"
-                                    Text="{Binding #SettingsGearControl.SettingsUnavailableText}"
-                                    Foreground="Red"
-                                    FontWeight="Bold"
-                                    Opacity="0.6"
-                                    FontSize="12"
-                                    IsVisible="False"
-                                    TextWrapping="Wrap"/>
-
-								<Grid
-                                    ColumnDefinitions="*,220"
-                                    RowDefinitions="Auto,Auto,Auto,Auto"
-                                    RowSpacing="8">
-
-									<TextBlock
-                                        Grid.Row="0"
-                                        Text="{Binding #SettingsGearControl.EffectsVolumeText}"
-                                        VerticalAlignment="Center"/>
-
-									<Grid
-                                        Grid.Row="0"
-                                        Grid.Column="1"
-                                        ColumnDefinitions="*,45"
-                                        ColumnSpacing="8">
-
-										<Slider
-                                            Name="SliderEffectsVolume"
-                                            Grid.Column="0"
-                                            Minimum="0"
-                                            Maximum="1"
-                                            TickFrequency="0.01"
-                                            IsSnapToTickEnabled="True"
-                                            ValueChanged="SliderEffectsVolume_OnValueChanged"/>
-
-										<TextBlock
-                                            Name="TextBlockEffectsVolume"
-                                            Grid.Column="1"
-                                            Text="0%"
-                                            VerticalAlignment="Center"
-                                            HorizontalAlignment="Right"/>
-
+								<Grid ColumnDefinitions="*,220" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="8">
+									<TextBlock Grid.Row="0" Text="{loc:Translate EffectsVolume}" VerticalAlignment="Center"/>
+									<Grid Grid.Row="0" Grid.Column="1" ColumnDefinitions="*,45" ColumnSpacing="8">
+										<Slider Name="SliderEffectsVolume" Grid.Column="0" Minimum="0" Maximum="1" TickFrequency="0.01" IsSnapToTickEnabled="True" ValueChanged="SliderEffectsVolume_OnValueChanged"/>
+										<TextBlock Name="TextBlockEffectsVolume" Grid.Column="1" Text="0%" VerticalAlignment="Center" HorizontalAlignment="Right"/>
 									</Grid>
 
-
-									<TextBlock
-                                        Grid.Row="1"
-                                        Text="{Binding #SettingsGearControl.MusicVolumeText}"
-                                        VerticalAlignment="Center"/>
-
-									<Grid
-                                        Grid.Row="1"
-                                        Grid.Column="1"
-                                        ColumnDefinitions="*,45"
-                                        ColumnSpacing="8">
-
-										<Slider
-                                            Name="SliderMusicVolume"
-                                            Grid.Column="0"
-                                            Minimum="0"
-                                            Maximum="1"
-                                            TickFrequency="0.01"
-                                            IsSnapToTickEnabled="True"
-                                            ValueChanged="SliderMusicVolume_OnValueChanged"/>
-
-										<TextBlock
-                                            Name="TextBlockMusicVolume"
-                                            Grid.Column="1"
-                                            Text="0%"
-                                            VerticalAlignment="Center"
-                                            HorizontalAlignment="Right"/>
-
+									<TextBlock Grid.Row="1" Text="{loc:Translate MusicVolume}" VerticalAlignment="Center"/>
+									<Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,45" ColumnSpacing="8">
+										<Slider Name="SliderMusicVolume" Grid.Column="0" Minimum="0" Maximum="1" TickFrequency="0.01" IsSnapToTickEnabled="True" ValueChanged="SliderMusicVolume_OnValueChanged"/>
+										<TextBlock Name="TextBlockMusicVolume" Grid.Column="1" Text="0%" VerticalAlignment="Center" HorizontalAlignment="Right"/>
 									</Grid>
 
-
-									<TextBlock
-                                        Grid.Row="2"
-                                        Text="{Binding #SettingsGearControl.HelpVoiceVolumeText}"
-                                        VerticalAlignment="Center"/>
-
-									<Grid
-                                        Grid.Row="2"
-                                        Grid.Column="1"
-                                        ColumnDefinitions="*,45"
-                                        ColumnSpacing="8">
-
-										<Slider
-                                            Name="SliderHelpVoiceVolume"
-                                            Grid.Column="0"
-                                            Minimum="0"
-                                            Maximum="1"
-                                            TickFrequency="0.01"
-                                            IsSnapToTickEnabled="True"
-                                            ValueChanged="SliderHelpVoiceVolume_OnValueChanged"/>
-
-										<TextBlock
-                                            Name="TextBlockHelpVoiceVolume"
-                                            Grid.Column="1"
-                                            Text="0%"
-                                            VerticalAlignment="Center"
-                                            HorizontalAlignment="Right"/>
-
+									<TextBlock Grid.Row="2" Text="{loc:Translate HelpVoiceVolume}" VerticalAlignment="Center"/>
+									<Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,45" ColumnSpacing="8">
+										<Slider Name="SliderHelpVoiceVolume" Grid.Column="0" Minimum="0" Maximum="1" TickFrequency="0.01" IsSnapToTickEnabled="True" ValueChanged="SliderHelpVoiceVolume_OnValueChanged"/>
+										<TextBlock Name="TextBlockHelpVoiceVolume" Grid.Column="1" Text="0%" VerticalAlignment="Center" HorizontalAlignment="Right"/>
 									</Grid>
 
-
-									<TextBlock
-                                        Grid.Row="3"
-                                        Text="{Binding #SettingsGearControl.SoundQualityText}"
-                                        VerticalAlignment="Center"/>
-
-									<ComboBox
-                                        Name="ComboBoxSoundQuality"
-                                        Grid.Row="3"
-                                        Grid.Column="1"/>
-
+									<TextBlock Grid.Row="3" Text="{loc:Translate SoundQuality}" VerticalAlignment="Center"/>
+									<ComboBox Name="ComboBoxSoundQuality" Grid.Row="3" Grid.Column="1"/>
 								</Grid>
 
+								<Grid ColumnDefinitions="*,220" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="8">
+									<TextBlock Grid.Row="0" Text="{loc:Translate Voip}"/>
+									<CheckBox Name="CheckBoxVoipEnabled" Grid.Row="0" Grid.Column="1" Content="{loc:Translate Enabled}"/>
 
-								<Grid
-                                    ColumnDefinitions="*,220"
-                                    RowDefinitions="Auto,Auto,Auto,Auto"
-                                    RowSpacing="8">
-
-									<TextBlock
-                                        Grid.Row="0"
-                                        Text="{Binding #SettingsGearControl.VoipText}"/>
-
-									<CheckBox
-                                        Name="CheckBoxVoipEnabled"
-                                        Grid.Row="0"
-                                        Grid.Column="1"
-                                        Content="{Binding #SettingsGearControl.EnabledText}"/>
-
-
-									<TextBlock
-                                        Grid.Row="1"
-                                        Text="{Binding #SettingsGearControl.VoipPlaybackVolumeText}"/>
-
-									<Grid
-                                        Grid.Row="1"
-                                        Grid.Column="1"
-                                        ColumnDefinitions="*,45"
-                                        ColumnSpacing="8">
-
-										<Slider
-                                            Name="SliderVoipPlaybackVolume"
-                                            Grid.Column="0"
-                                            Minimum="0"
-                                            Maximum="1"
-                                            TickFrequency="0.01"
-                                            IsSnapToTickEnabled="True"
-                                            ValueChanged="SliderVoipPlaybackVolume_OnValueChanged"/>
-
-										<TextBlock
-                                            Name="TextBlockVoipPlaybackVolume"
-                                            Grid.Column="1"
-                                            Text="0%"
-                                            VerticalAlignment="Center"
-                                            HorizontalAlignment="Right"/>
-
+									<TextBlock Grid.Row="1" Text="{loc:Translate VoipPlaybackVolume}"/>
+									<Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,45" ColumnSpacing="8">
+										<Slider Name="SliderVoipPlaybackVolume" Grid.Column="0" Minimum="0" Maximum="1" TickFrequency="0.01" IsSnapToTickEnabled="True" ValueChanged="SliderVoipPlaybackVolume_OnValueChanged"/>
+										<TextBlock Name="TextBlockVoipPlaybackVolume" Grid.Column="1" Text="0%" VerticalAlignment="Center" HorizontalAlignment="Right"/>
 									</Grid>
 
-
-									<TextBlock
-                                        Grid.Row="2"
-                                        Text="{Binding #SettingsGearControl.VoipCaptureVolumeText}"/>
-
-									<Grid
-                                        Grid.Row="2"
-                                        Grid.Column="1"
-                                        ColumnDefinitions="*,45"
-                                        ColumnSpacing="8">
-
-										<Slider
-                                            Name="SliderVoipCaptureVolume"
-                                            Grid.Column="0"
-                                            Minimum="0"
-                                            Maximum="1"
-                                            TickFrequency="0.01"
-                                            IsSnapToTickEnabled="True"
-                                            ValueChanged="SliderVoipCaptureVolume_OnValueChanged"/>
-
-										<TextBlock
-                                            Name="TextBlockVoipCaptureVolume"
-                                            Grid.Column="1"
-                                            Text="0%"
-                                            VerticalAlignment="Center"
-                                            HorizontalAlignment="Right"/>
-
+									<TextBlock Grid.Row="2" Text="{loc:Translate VoipCaptureVolume}"/>
+									<Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,45" ColumnSpacing="8">
+										<Slider Name="SliderVoipCaptureVolume" Grid.Column="0" Minimum="0" Maximum="1" TickFrequency="0.01" IsSnapToTickEnabled="True" ValueChanged="SliderVoipCaptureVolume_OnValueChanged"/>
+										<TextBlock Name="TextBlockVoipCaptureVolume" Grid.Column="1" Text="0%" VerticalAlignment="Center" HorizontalAlignment="Right"/>
 									</Grid>
 
-
-									<TextBlock
-                                        Grid.Row="3"
-                                        Text="{Binding #SettingsGearControl.VoipPushToTalkText}"/>
-
-									<CheckBox
-                                        Name="CheckBoxVoipPushToTalk"
-                                        Grid.Row="3"
-                                        Grid.Column="1"
-                                        Content="{Binding #SettingsGearControl.EnabledText}"/>
-
+									<TextBlock Grid.Row="3" Text="{loc:Translate VoipPushToTalk}"/>
+									<CheckBox Name="CheckBoxVoipPushToTalk" Grid.Row="3" Grid.Column="1" Content="{loc:Translate Enabled}"/>
 								</Grid>
 
-
-								<CheckBox
-                                    Name="CheckBoxVoipBoost"
-                                    Content="{Binding #SettingsGearControl.VoipBoostText}"/>
-
+								<CheckBox Name="CheckBoxVoipBoost" Content="{loc:Translate VoipBoost}"/>
 							</StackPanel>
-
 						</StackPanel>
-
 					</ScrollViewer>
-
 				</TabItem>
 
-
-				<TabItem
-                    Header="{Binding #SettingsGearControl.ControlSettingsText}">
-
-					<StackPanel
-                        Margin="0,15"
-                        Spacing="12">
-
-						<TextBlock
-                            Text="Настройки управления"
-                            Classes="H7"
-                            Theme="{StaticResource TitleTextBlock}"/>
-
-						<TextBlock
-                            Text="Настройки управления Battlefield 2142 появятся здесь."
-                            Opacity="0.6"
-                            TextWrapping="Wrap"/>
-
+				<TabItem Header="{loc:Translate ControlSettings}">
+					<StackPanel Margin="0,15" Spacing="12">
+						<TextBlock Text="{loc:Translate ControlSettings}" Classes="H7" Theme="{StaticResource TitleTextBlock}"/>
+						<TextBlock Text="{loc:Translate ControlSettingsDescription}" Opacity="0.6" TextWrapping="Wrap"/>
 					</StackPanel>
-
 				</TabItem>
-
 			</TabControl>
-
 		</c:Form.Content>
 
-
 		<c:Form.ActionContent>
-
-			<StackPanel
-                Orientation="Horizontal"
-                HorizontalAlignment="Right"
-                Spacing="8">
-
-				<Button
-                    Name="ButtonCancel"
-                    Click="ButtonCancel_OnClick"
-                    Content="{Binding #SettingsGearControl.CancelText}"/>
-
-				<Button
-                    Name="ButtonSave"
-                    Click="ButtonSave_OnClick"
-                    Content="{Binding #SettingsGearControl.SaveText}"
-                    Classes="Primary"
-                    Theme="{StaticResource SolidButton}"/>
-
+			<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+				<Button Content="Удалить игру" HorizontalAlignment="Stretch" Background="#C62828" Foreground="White" FontWeight="SemiBold" Click="ButtonUninstall_OnClick"/>
+				<Button Name="ButtonCancel" Click="ButtonCancel_OnClick" Content="{loc:Translate Cancel}"/>
+				<Button Name="ButtonSave" Click="ButtonSave_OnClick" Content="{loc:Translate Save}" Classes="Primary" Theme="{StaticResource SolidButton}"/>
 			</StackPanel>
-
 		</c:Form.ActionContent>
-
 	</c:Form>
-
 </UserControl>

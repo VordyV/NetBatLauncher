@@ -540,6 +540,8 @@ sv.allowSpectators 0
 sv.allowTitanMovement 1
 """;
 
+    private const string OriginalClientId = "original";
+
     public Task SwitchAsync(string currentClientId, string targetClientId)
     {
         ValidateClientId(currentClientId);
@@ -547,24 +549,50 @@ sv.allowTitanMovement 1
 
         Directory.CreateDirectory(StoragePath);
         EnsureGeneratedFiles(ProfilesPath);
+
         SaveSnapshot(GetClientPath(currentClientId));
 
         if (currentClientId.Equals(targetClientId, StringComparison.OrdinalIgnoreCase))
             return Task.CompletedTask;
 
         string targetPath = GetClientPath(targetClientId);
+
         if (!Directory.Exists(targetPath))
         {
-            Directory.CreateDirectory(targetPath);
+            string originalPath = GetClientPath(OriginalClientId);
+
+            string sourcePath = Directory.Exists(originalPath)
+                ? originalPath
+                : GetClientPath(currentClientId);
+
+            CopyDirectory(sourcePath, targetPath);
+
+            ResetAccountData(targetPath);
             EnsureGeneratedFiles(targetPath);
-            Logger.Info($"Initial profile generated for client '{targetClientId}'");
+
+            Logger.Info($"Initial profile created for client '{targetClientId}' from '{Path.GetFileName(sourcePath)}'");
         }
 
         RestoreSnapshot(targetPath);
         EnsureGeneratedFiles(ProfilesPath);
 
         Logger.Info($"Profiles switched: '{currentClientId}' -> '{targetClientId}'");
+
         return Task.CompletedTask;
+    }
+
+    private static void ResetAccountData(string root)
+    {
+        string global = Path.Combine(root, "Global.con");
+        string profile = Path.Combine(root, "0001", "Profile.con");
+
+        Directory.CreateDirectory(Path.GetDirectoryName(global)!);
+        Directory.CreateDirectory(Path.GetDirectoryName(profile)!);
+
+        File.WriteAllText(global, DefaultGlobal + Environment.NewLine);
+        File.WriteAllText(profile, DefaultProfile + Environment.NewLine);
+
+        Logger.Info($"Account data reset: '{root}'");
     }
 
     private string GetClientPath(string clientId) => Path.Combine(StoragePath, clientId);

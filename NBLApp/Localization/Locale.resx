@@ -399,4 +399,19 @@
   <data name="NoSound" xml:space="preserve">
     <value>No sound</value>
   </data>
+  <data name="ControlSettingsDescription" xml:space="preserve">
+    <value>Soon..</value>
+  </data>
+  <data name="DescWidescreen" xml:space="preserve">
+    <value>Game window will be able to accept, in addition to 4:3, also 16:9</value>
+  </data>
+  <data name="DescFullscreen" xml:space="preserve">
+    <value>Game launches in full screen (if the game does not start in widescreen mode)</value>
+  </data>
+  <data name="DescMulti" xml:space="preserve">
+    <value>Allows launching multiple game windows simultaneously</value>
+  </data>
+  <data name="CustomParam" xml:space="preserve">
+    <value>Custom parameters</value>
+  </data>
 </root>

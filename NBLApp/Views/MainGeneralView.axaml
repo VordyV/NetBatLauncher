@@ -2,10 +2,76 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="450"
-             xmlns:l="clr-namespace:NBLApp.Forms"
+             mc:Ignorable="d"
+             d:DesignWidth="900"
+             d:DesignHeight="550"
              x:Class="NBLApp.Views.MainGeneralView">
-    <Grid ColumnDefinitions="*, Auto">
-        <Button Click="Button_OnClick"/>
-    </Grid>
+
+	<Grid RowDefinitions="Auto,Auto,Auto,*" Margin="16">
+
+		<Grid ColumnDefinitions="*,Auto" Margin="0,0,0,14">
+			<StackPanel Spacing="3">
+				<TextBlock Text="Монитор серверов" FontSize="24" FontWeight="Bold"/>
+				<TextBlock Text="Список доступных серверов Battlefield 2142" Opacity="0.65"/>
+			</StackPanel>
+			<TextBlock x:Name="RefreshInfo" Grid.Column="1" Text="Загрузка..." VerticalAlignment="Center" Opacity="0.6"/>
+		</Grid>
+
+		<Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" ColumnSpacing="10" Margin="0,0,0,14">
+			<Border Background="#55000000" CornerRadius="6" Padding="12">
+				<StackPanel Spacing="4">
+					<TextBlock Text="Серверы" Opacity="0.7"/>
+					<TextBlock x:Name="ServerCount" Text="0" FontSize="22" FontWeight="Bold"/>
+				</StackPanel>
+			</Border>
+			<Border Grid.Column="1" Background="#55000000" CornerRadius="6" Padding="12">
+				<StackPanel Spacing="4">
+					<TextBlock Text="Игроки" Opacity="0.7"/>
+					<TextBlock x:Name="PlayerCount" Text="0" FontSize="22" FontWeight="Bold"/>
+				</StackPanel>
+			</Border>
+			<Border Grid.Column="2" Background="#55000000" CornerRadius="6" Padding="12">
+				<StackPanel Spacing="4">
+					<TextBlock Text="Заполненные" Opacity="0.7"/>
+					<TextBlock x:Name="PopulatedCount" Text="0" FontSize="22" FontWeight="Bold"/>
+				</StackPanel>
+			</Border>
+			<Border Grid.Column="3" Background="#55000000" CornerRadius="6" Padding="12">
+				<StackPanel Spacing="4">
+					<TextBlock Text="Свободные места" Opacity="0.7"/>
+					<TextBlock x:Name="FreeSlots" Text="—" FontSize="22" FontWeight="Bold"/>
+				</StackPanel>
+			</Border>
+		</Grid>
+
+		<Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,0,0,12">
+			<TextBox x:Name="SearchBox" Watermark="Поиск сервера..." VerticalContentAlignment="Center"
+                     TextChanged="SearchBox_OnTextChanged"/>
+			<ComboBox x:Name="ClientFilter" Grid.Column="1" Width="170" SelectedIndex="0"
+                      SelectionChanged="ClientFilter_OnSelectionChanged">
+				<ComboBoxItem Content="Все клиенты" Tag="*"/>
+			</ComboBox>
+		</Grid>
+
+		<Grid Grid.Row="3" RowDefinitions="Auto,*">
+			<Border Background="#88000000" Padding="10">
+				<Grid ColumnDefinitions="3*,2*,1.2*,1.2*,1.2*" ColumnSpacing="8">
+					<TextBlock Text="Сервер" FontWeight="Bold"/>
+					<TextBlock Grid.Column="1" Text="Карта" FontWeight="Bold"/>
+					<TextBlock Grid.Column="2" Text="Режим" FontWeight="Bold"/>
+					<TextBlock Grid.Column="3" Text="Игроки" FontWeight="Bold"/>
+					<TextBlock Grid.Column="4" Text="Пинг" FontWeight="Bold"/>
+				</Grid>
+			</Border>
+
+			<Grid Grid.Row="1">
+				<ScrollViewer VerticalScrollBarVisibility="Auto">
+					<StackPanel x:Name="ServerList" Spacing="2"/>
+				</ScrollViewer>
+				<TextBlock x:Name="EmptyState" Text="Серверы не найдены"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Opacity="0.55"/>
+			</Grid>
+		</Grid>
+	</Grid>
 </UserControl>

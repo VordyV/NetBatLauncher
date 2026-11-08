@@ -3,6 +3,8 @@ using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Irihi.Avalonia.Shared.Contracts;
+using Avalonia;
+using Avalonia.Media;
 using NBL;
 using NBL.Models;
 using NBL.Services;
@@ -25,130 +27,8 @@ public partial class SettingsGear : UserControl
     private bool AudioSettingsAvailable;
 
     protected Game Game;
-
-    public string LogDirectory =>
-        Logger.LogDirectory;
-    public string OpenText =>
-        Locale.Get("Open");
-    public string LogFolderText =>
-        Locale.Get("Logfolder");
-    public string LauncherSettingsText =>
-        Locale.Get("LauncherSettings");
-
-    public string LanguageLauncherText =>
-        Locale.Get("LanguageLauncher");
-
-    public string AutomaticText =>
-        Locale.Get("Auto");
-
-    public string RussianText =>
-        Locale.Get("Russian");
-
-    public string EnglishText =>
-        Locale.Get("English");
-
-    public string VideoSettingsText =>
-        Locale.Get("VideoSettings");
-
-    public string ResolutionText =>
-        Locale.Get("Resolution");
-
-    public string RefreshRateText =>
-        Locale.Get("RefreshRate");
-
-    public string TerrainText =>
-        Locale.Get("Terrain");
-
-    public string GeometryText =>
-        Locale.Get("Geometry");
-
-    public string LightingText =>
-        Locale.Get("Lighting");
-
-    public string DynamicLightingText =>
-        Locale.Get("DynamicLighting");
-
-    public string DynamicShadowsText =>
-        Locale.Get("DynamicShadows");
-
-    public string EffectsText =>
-        Locale.Get("Effects");
-
-    public string TexturesText =>
-        Locale.Get("Textures");
-
-    public string TextureFilteringText =>
-        Locale.Get("TextureFiltering");
-
-    public string AntialiasingText =>
-        Locale.Get("Antialiasing");
-
-    public string ViewDistanceText =>
-        Locale.Get("ViewDistance");
-
-    public string BloomText =>
-        Locale.Get("Bloom");
-
-    public string AudioSettingsText =>
-        Locale.Get("AudioSettings");
-
-    public string EffectsVolumeText =>
-        Locale.Get("EffectsVolume");
-
-    public string MusicVolumeText =>
-        Locale.Get("MusicVolume");
-
-    public string HelpVoiceVolumeText =>
-        Locale.Get("HelpVoiceVolume");
-
-    public string SoundQualityText =>
-        Locale.Get("SoundQuality");
-
-    public string VoipText =>
-        Locale.Get("Voip");
-
-    public string VoipPlaybackVolumeText =>
-        Locale.Get("VoipPlaybackVolume");
-
-    public string VoipCaptureVolumeText =>
-        Locale.Get("VoipCaptureVolume");
-
-    public string VoipPushToTalkText =>
-        Locale.Get("VoipPushToTalk");
-
-    public string VoipBoostText =>
-        Locale.Get("VoipBoost");
-
-    public string SaveText =>
-        Locale.Get("Save");
-
-    public string CancelText =>
-        Locale.Get("Cancel");
-
-    public string SettingsUnavailableText =>
-        Locale.Get("SettingsUnavailable");
-
-    public string SettingsText =>
-        Locale.Get("Settings");
-
-    public string GraphicsText =>
-        Locale.Get("Graphics");
-
-    public string AudioText =>
-        Locale.Get("Audio");
-
-    public string EnabledText =>
-        Locale.Get("Enabled");
-    public string ControlSettingsText =>
-        Locale.Get("ControlSettings");
-    public string GameLanguageText =>
-        Locale.Get("GameLanguage");
-    public string GenerateKeyText =>
-        Locale.Get("GenerateKey");
-    public string CopyText =>
-        Locale.Get("Copy");
-    public string KeyHashText =>
-        Locale.Get("KeyHash");
+    public string LogDirectory => Logger.LogDirectory;
+    public string LauncherVersion => Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Unknown";
 
     public SettingsGear(Game game)
     {
@@ -168,17 +48,6 @@ public partial class SettingsGear : UserControl
         this.LoadAudioSettings();
         this.LoadGameLanguage();
         this.LoadGameKey();
-    }
-    public string LauncherVersion =>
-    Assembly.GetExecutingAssembly()
-        .GetName()
-        .Version?
-        .ToString() ?? "Unknown";
-
-    private void Locale_LanguageChanged(
-        object? sender,
-        EventArgs e)
-    {
     }
     private void LoadLanguageSettings()
     {
@@ -283,17 +152,14 @@ public partial class SettingsGear : UserControl
                 exception);
         }
     }
-    private void SaveGameLanguage()
+    private bool SaveGameLanguage()
     {
-        string language =
-            this.GameLanguageComboBox.SelectedIndex switch
-            {
-                1 => "Russian",
-                _ => "English"
-            };
+        string language = GameLanguageComboBox.SelectedIndex == 1 ? "Russian" : "English";
 
-        LanguageKeyService.SetLanguage(
-            language);
+        if (LanguageKeyService.GetLanguage() == language)
+            return true;
+
+        return LanguageKeyService.SetLanguage(language);
     }
     private void DisableVideoSettings()
     {
@@ -537,26 +403,24 @@ public partial class SettingsGear : UserControl
             return;
         this.LoadRefreshRates();
     }
-    private void ButtonSave_OnClick(
-     object? sender,
-     RoutedEventArgs e)
+    private void ButtonSave_OnClick(object? sender, RoutedEventArgs e)
     {
         try
         {
             this.SaveLanguageSettings();
-            this.SaveGameLanguage();
+
+            if (!this.SaveGameLanguage())
+                return;
+
             this.SaveVideoSettings();
             this.SaveAudioSettings();
+
+            if (this.DataContext is IDialogContext ctx)
+                ctx.Close();
         }
         catch (Exception exception)
         {
-            Console.WriteLine(exception);
-        }
-
-        if (this.DataContext
-            is IDialogContext ctx)
-        {
-            ctx.Close();
+            Logger.Error("Failed to save settings", exception);
         }
     }
     private void ButtonCancel_OnClick(
@@ -773,6 +637,91 @@ public partial class SettingsGear : UserControl
             Logger.Error(
                 "Failed to open log directory",
                 ex);
+        }
+    }
+
+    private async void ButtonUninstall_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (TopLevel.GetTopLevel(this) is not Window owner) return;
+
+        var dialog = new Window
+        {
+            Title = "Удаление игры",
+            Width = 400,
+            Height = 190,
+            CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Content = new StackPanel
+            {
+                Margin = new Thickness(20),
+                Spacing = 18,
+                Children =
+            {
+                new TextBlock
+                {
+                    Text = "Вы действительно хотите удалить Battlefield 2142?\nВсе файлы игры и установленные клиенты будут удалены.",
+                    TextWrapping = TextWrapping.Wrap,
+                    VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+                },
+                new StackPanel
+                {
+                    Orientation = Avalonia.Layout.Orientation.Horizontal,
+                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+                    Spacing = 10,
+                    Children =
+                    {
+                        new Button
+                        {
+                            Content = "Отмена",
+                            MinWidth = 90,
+                            IsCancel = true
+                        },
+                        new Button
+                        {
+                            Content = "Удалить",
+                            MinWidth = 90,
+                            Background = new SolidColorBrush(Color.Parse("#C62828")),
+                            Foreground = Brushes.White,
+                            IsDefault = true
+                        }
+                    }
+                }
+            }
+            }
+        };
+
+        var buttons = ((StackPanel)((StackPanel)dialog.Content!).Children[1]).Children;
+        ((Button)buttons[0]).Click += (_, _) => dialog.Close(false);
+        ((Button)buttons[1]).Click += (_, _) => dialog.Close(true);
+
+        if (!await dialog.ShowDialog<bool>(owner)) return;
+
+        try
+        {
+            await Game.UninstallAsync();
+            if (DataContext is IDialogContext ctx) ctx.Close();
+        }
+        catch (Exception ex)
+        {
+            var error = new Window
+            {
+                Title = "Ошибка удаления",
+                Width = 400,
+                Height = 160,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Content = new StackPanel
+                {
+                    Margin = new Thickness(20),
+                    Spacing = 15,
+                    Children =
+                {
+                    new TextBlock { Text = ex.Message, TextWrapping = TextWrapping.Wrap },
+                    new Button { Content = "OK", HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right }
+                }
+                }
+            };
+            ((Button)((StackPanel)error.Content!).Children[1]).Click += (_, _) => error.Close();
+            await error.ShowDialog(owner);
         }
     }
 }

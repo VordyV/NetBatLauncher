@@ -1,6 +1,10 @@
-﻿using Avalonia.Controls;
+﻿
+using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
+using Avalonia.Media;
+using Avalonia.Styling;
 using Irihi.Avalonia.Shared.Contracts;
 using NBL;
 using NBL.Services;
@@ -8,343 +12,252 @@ using NBLApp.Localization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Avalonia;
-using Avalonia.Media;
-using Avalonia.Styling;
 using Ursa.Controls;
-using static NBL.LaunchParamDict;
+
 namespace NBLApp.Forms;
+
 public partial class LaunchSettings : UserControl
 {
     protected Game Game;
     protected ILaunchParam[] LaunchParams;
-    protected Dictionary<string, Control> Controls =
-        new();
-    private IntroVideoService IntroVideoService;
+    protected Dictionary<string, Control> Controls = new();
+    private readonly IntroVideoService IntroVideoService = new();
+    private readonly List<(TextBlock Label, ILaunchParam Param)> Labels = new();
+    private readonly List<(Control Control, ILaunchParam Param)> ToolTips = new();
+    private bool subscribed;
+
     public LaunchSettings()
     {
         InitializeComponent();
-        this.DataContext =
-            this;
+        DataContext = this;
+        SubscribeLanguage();
     }
-    public string TitleText =>
-        Locale.Get("LaunchSettingsTitle");
-    public string NoIntroText =>
-        Locale.Get("LaunchSettingsNoIntro");
 
-    public string IntroDisabledText =>
-        Locale.Get("LaunchSettingsIntroDisabled");
-
-    public string GameNotInstalledText =>
-        Locale.Get("LaunchSettingsGameNotInstalled");
-
-    public string CustomPlaceholderText =>
-        Locale.Get("LaunchSettingsCustomPlaceholder");
-
-    public string SaveText =>
-        Locale.Get("Save");
-
-    public string CancelText =>
-        Locale.Get("Cancel");
     public LaunchSettings(Game game)
     {
-        this.Game =
-            game;
-        this.LaunchParams =
-            game.LaunchParams.Values.ToArray();
-        this.IntroVideoService =
-            new IntroVideoService();
+        Game = game;
+        LaunchParams = game.LaunchParams.Values.ToArray();
+
         InitializeComponent();
-        this.DataContext =
-            this;
+        DataContext = this;
+
         try
         {
-            string gamePath =
-                this.Game.GetPath();
-            this.CheckBoxNoIntro.IsChecked =
-                this.IntroVideoService.AreIntrosDisabled(
-                    gamePath);
-            this.TextBlockNoIntroStatus.Text = " ";
+            CheckBoxNoIntro.IsChecked = IntroVideoService.AreIntrosDisabled(Game.GetPath());
+            TextBlockNoIntroStatus.Text = " ";
         }
         catch (GamePathNotSetException)
         {
-            this.CheckBoxNoIntro.IsChecked =
-                false;
-            this.CheckBoxNoIntro.IsEnabled =
-                false;
-            this.TextBlockNoIntroStatus.Text =
-                "Игра ещё не установлена";
+            DisableIntroOption();
         }
         catch (GamePathNotFoundException)
         {
-            this.CheckBoxNoIntro.IsChecked =
-                false;
-            this.CheckBoxNoIntro.IsEnabled =
-                false;
-            this.TextBlockNoIntroStatus.Text =
-                "Игра ещё не установлена";
+            DisableIntroOption();
         }
-        Dictionary<string, object> savedParameters =
-            this.Game.GetLaunchParameters();
-        foreach (ILaunchParam param in this.LaunchParams)
+
+        Dictionary<string, object> savedParameters = Game.GetLaunchParameters();
+
+        foreach (ILaunchParam param in LaunchParams)
         {
             Control control;
+
             if (param is LaunchParamBool)
             {
-                bool value =
-                    savedParameters.TryGetValue(
-                        param.Id,
-                        out object? savedValue)
-                    && savedValue is bool boolValue
-                        ? boolValue
-                        : false;
-                control =
-                    new CheckBox
-                    {
-                        Content =
-                            param.Name,
-                        IsChecked =
-                            value
-                    };
-                
-                this.Controls.Add(
-                    param.Id,
-                    control);
+                bool value = savedParameters.TryGetValue(param.Id, out object? savedValue)
+                    && savedValue is bool boolValue ? boolValue : param.Id == "widescreen";
+
+                control = new CheckBox { IsChecked = value };
             }
             else if (param is LaunchParamDict p)
             {
-                List<ComboBoxItem> items =
-                    new();
-                foreach (string key in p.Dictionary.Keys)
-                {
-                    items.Add(
-                        new ComboBoxItem
-                        {
-                            Content =
-                                key
-                        });
-                }
-                string selectedValue =
-                    savedParameters.TryGetValue(
-                        param.Id,
-                        out object? savedValue)
+                List<ComboBoxItem> items = p.Dictionary.Keys
+                    .Select(key => new ComboBoxItem { Content = key })
+                    .ToList();
+
+                string selectedValue = savedParameters.TryGetValue(param.Id, out object? savedValue)
                     && savedValue is string stringValue
                         ? stringValue
-                        : p.Dictionary.Keys.FirstOrDefault()
-                            ?? "";
-                ComboBox combo =
-                    new ComboBox
-                    {
-                        ItemsSource =
-                            items,
-                        SelectedIndex =
-                            Math.Max(
-                                0,
-                                p.Dictionary.Keys
-                                    .ToList()
-                                    .IndexOf(
-                                        selectedValue)),
-                        HorizontalAlignment =
-                            HorizontalAlignment.Stretch
-                    };
-                control =
-                    combo;
-                this.Controls.Add(
-                    param.Id,
-                    control);
+                        : p.Dictionary.Keys.FirstOrDefault() ?? "";
+
+                control = new ComboBox
+                {
+                    ItemsSource = items,
+                    SelectedIndex = Math.Max(0, p.Dictionary.Keys.ToList().IndexOf(selectedValue)),
+                    HorizontalAlignment = HorizontalAlignment.Stretch
+                };
             }
             else if (param is LaunchOptionDict options)
             {
-                StackPanel optionsPanel =
-                    new StackPanel
-                    {
-                        Spacing = 6
-                    };
-                string[] selectedValues =
-                    savedParameters.TryGetValue(
-                        param.Id,
-                        out object? savedValue)
-                    && savedValue is string[] values
-                        ? values
-                        : Array.Empty<string>();
+                StackPanel panel = new() { Spacing = 6 };
+
+                string[] selectedValues = savedParameters.TryGetValue(param.Id, out object? savedValue)
+                    && savedValue is string[] values ? values : Array.Empty<string>();
+
                 foreach (string key in options.Dictionary.Keys)
-                {
-                    CheckBox checkBox =
-                        new CheckBox
-                        {
-                            Content =
-                                key,
-                            IsChecked =
-                                selectedValues.Contains(
-                                    key)
-                        };
-                    optionsPanel.Children.Add(
-                        checkBox);
-                }
-                control =
-                    optionsPanel;
-                this.Controls.Add(
-                    param.Id,
-                    control);
+                    panel.Children.Add(new CheckBox { Content = key, IsChecked = selectedValues.Contains(key) });
+
+                control = panel;
             }
             else if (param is LaunchParamCustom)
             {
-                string value =
-                    savedParameters.TryGetValue(
-                        param.Id,
-                        out object? savedValue)
-                    && savedValue is string stringValue
-                        ? stringValue
-                        : "";
-                StackPanel panel =
-                    new StackPanel
-                    {
-                        Spacing = 6
-                    };
-                TextBox textBox =
-                    new TextBox
-                    {
-                        PlaceholderText =
-                            "...+nosound 1...+widescreen 1...",
-                        Text =
-                            value,
-                        HorizontalAlignment =
-                            HorizontalAlignment.Stretch
-                    };
-                panel.Children.Add(
-                    textBox);
-                control =
-                    panel;
-                this.Controls.Add(
-                    param.Id,
-                    control);
+                string value = savedParameters.TryGetValue(param.Id, out object? savedValue)
+                    && savedValue is string stringValue ? stringValue : "";
+
+                StackPanel panel = new() { Spacing = 6 };
+                panel.Children.Add(new TextBox
+                {
+                    PlaceholderText = "...+nosound 1...+widescreen 1...",
+                    Text = value,
+                    HorizontalAlignment = HorizontalAlignment.Stretch
+                });
+
+                control = panel;
             }
             else
+                throw new InvalidOperationException($"Launch parameter '{param.Name}' type not specified");
+
+            Controls.Add(param.Id, control);
+
+            StackPanel label = new() { Orientation = Orientation.Horizontal, Spacing = 6 };
+            TextBlock title = new() { Text = GetName(param), VerticalAlignment = VerticalAlignment.Center };
+            label.Children.Add(title);
+            Labels.Add((title, param));
+
+            if (!string.IsNullOrWhiteSpace(param.Description)
+                && Application.Current!.Styles.TryGetResource("SemiIconHelpCircle", ThemeVariant.Default, out var resource)
+                && resource is Geometry geometry)
             {
-                throw new InvalidOperationException(
-                    $"Launch parameter '{param.Name}' type not specified");
+                PathIcon icon = new()
+                {
+                    Data = geometry,
+                    Width = 16,
+                    Height = 16,
+                    Foreground = new SolidColorBrush(Color.Parse("#777777"))
+                };
+
+                ToolTip.SetTip(icon, GetDescription(param));
+                ToolTips.Add((icon, param));
+                label.Children.Add(icon);
             }
-            
-            //TextBlock sd = new TextBlock() { Text = " (?)" };
-            
-            if (param.Description != null && Application.Current!.Styles.TryGetResource("SemiIconHelpCircle", ThemeVariant.Default, out var resource) && resource is Geometry geometry)
-            {
-                PathIcon sd = new PathIcon { Data = geometry, Width = 16, Height = 16, Foreground = new SolidColorBrush(Color.Parse("#777777"))};
-                ToolTip.SetTip(sd, param.Description);
-                FormItem.SetLabel(control, new StackPanel() {Orientation = Orientation.Horizontal, Spacing = 12, Children = {new TextBlock() { Text = param.ShortDescription } ,  sd}});
-                this.MainContent.Items.Add(control);
-            }
+
+            if (control is CheckBox checkBox)
+                checkBox.Content = label;
             else
-            {
-                FormItem.SetLabel(control, new TextBlock() { Text = param.ShortDescription });
-                this.MainContent.Items.Add(control);
-            }
+                FormItem.SetLabel(control, label);
+
+            MainContent.Items.Add(control);
         }
+
+        SubscribeLanguage();
     }
-    private void ButtonCancel_OnClick(
-        object? sender,
-        RoutedEventArgs e)
+
+    private static string GetName(ILaunchParam param) =>
+        param.NameKey is string key ? Locale.Get(key) : param.Name;
+
+    private static string? GetDescription(ILaunchParam param) =>
+        param.DescriptionKey is string key ? Locale.Get(key) : param.Description;
+
+    private void DisableIntroOption()
     {
-        if (this.DataContext
-            is IDialogContext ctx)
-        {
+        CheckBoxNoIntro.IsChecked = false;
+        CheckBoxNoIntro.IsEnabled = false;
+        TextBlockNoIntroStatus.Text = Locale.Get("LaunchSettingsGameNotInstalled");
+    }
+
+    private void SubscribeLanguage()
+    {
+        if (subscribed)
+            return;
+
+        Locale.LanguageChanged += OnLanguageChanged;
+        subscribed = true;
+    }
+
+    private void OnLanguageChanged(object? sender, EventArgs e)
+    {
+        foreach (var (label, param) in Labels)
+            label.Text = GetName(param);
+
+        foreach (var (control, param) in ToolTips)
+            ToolTip.SetTip(control, GetDescription(param));
+
+        CheckBoxNoIntro.Content = Locale.Get("LaunchSettingsNoIntro");
+
+        if (!CheckBoxNoIntro.IsEnabled)
+            TextBlockNoIntroStatus.Text = Locale.Get("LaunchSettingsGameNotInstalled");
+
+        if (ButtonCancel.Content is not null)
+            ButtonCancel.Content = Locale.Get("Cancel");
+
+        if (ButtonSave.Content is not null)
+            ButtonSave.Content = Locale.Get("Save");
+
+        LaunchSettingsForm.Title = Locale.Get("LaunchSettingsTitle");
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        Locale.LanguageChanged -= OnLanguageChanged;
+        subscribed = false;
+        base.OnDetachedFromVisualTree(e);
+    }
+
+    private void ButtonCancel_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is IDialogContext ctx)
             ctx.Close();
-        }
     }
-    private void ButtonSave_OnClick(
-        object? sender,
-        RoutedEventArgs e)
+
+    private void ButtonSave_OnClick(object? sender, RoutedEventArgs e)
     {
-        Dictionary<string, object> parameters =
-            new();
-        foreach (ILaunchParam launchParam in this.LaunchParams)
+        Dictionary<string, object> parameters = new();
+
+        foreach (ILaunchParam launchParam in LaunchParams)
         {
-            if (!this.Controls.TryGetValue(
-                    launchParam.Id,
-                    out Control? control))
-            {
+            if (!Controls.TryGetValue(launchParam.Id, out Control? control))
                 continue;
-            }
+
             if (launchParam is LaunchParamBool)
-            {
-                parameters[launchParam.Id] =
-                    ((CheckBox)control).IsChecked
-                    ?? false;
-            }
+                parameters[launchParam.Id] = ((CheckBox)control).IsChecked ?? false;
             else if (launchParam is LaunchParamDict)
             {
-                ComboBox combo =
-                    (ComboBox)control;
-                if (combo.SelectedItem
-                    is ComboBoxItem item)
-                {
-                    parameters[launchParam.Id] =
-                        item.Content?.ToString()
-                        ?? "";
-                }
+                if (((ComboBox)control).SelectedItem is ComboBoxItem item)
+                    parameters[launchParam.Id] = item.Content?.ToString() ?? "";
             }
             else if (launchParam is LaunchOptionDict)
             {
-                StackPanel optionsPanel =
-                    (StackPanel)control;
-                List<string> selectedOptions =
-                    new();
-                foreach (Control child
-                    in optionsPanel.Children)
-                {
-                    if (child is CheckBox checkBox
-                        && checkBox.IsChecked == true
-                        && checkBox.Content is string option)
-                    {
-                        selectedOptions.Add(
-                            option);
-                    }
-                }
-                parameters[launchParam.Id] =
-                    selectedOptions.ToArray();
+                List<string> selectedOptions = ((StackPanel)control).Children
+                    .OfType<CheckBox>()
+                    .Where(checkBox => checkBox.IsChecked == true && checkBox.Content is string)
+                    .Select(checkBox => checkBox.Content!.ToString()!)
+                    .ToList();
+
+                parameters[launchParam.Id] = selectedOptions.ToArray();
             }
             else if (launchParam is LaunchParamCustom)
             {
-                StackPanel panel =
-                    (StackPanel)control;
-                TextBox? textBox =
-                    panel.Children
-                        .OfType<TextBox>()
-                        .FirstOrDefault();
-                parameters[launchParam.Id] =
-                    textBox?.Text
-                    ?? "";
+                TextBox? textBox = ((StackPanel)control).Children.OfType<TextBox>().FirstOrDefault();
+                parameters[launchParam.Id] = textBox?.Text ?? "";
             }
         }
+
         try
         {
-            this.Game.SetLaunchParameters(
-                parameters);
+            Game.SetLaunchParameters(parameters);
+
             try
             {
-                string gamePath =
-                    this.Game.GetPath();
-                this.IntroVideoService.SetIntrosDisabled(
-                    gamePath,
-                    this.CheckBoxNoIntro.IsChecked
-                    ?? false);
+                IntroVideoService.SetIntrosDisabled(Game.GetPath(), CheckBoxNoIntro.IsChecked ?? false);
             }
-            catch (GamePathNotSetException)
-            {
-            }
-            catch (GamePathNotFoundException)
-            {
-            }
-            if (this.DataContext
-                is IDialogContext ctx)
-            {
+            catch (GamePathNotSetException) { }
+            catch (GamePathNotFoundException) { }
+
+            if (DataContext is IDialogContext ctx)
                 ctx.Close();
-            }
         }
         catch (Exception exception)
         {
-            Console.WriteLine(
-                exception);
+            Console.WriteLine(exception);
         }
     }
 }
