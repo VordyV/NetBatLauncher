@@ -1,158 +1,110 @@
-﻿using NBL.Services;
+﻿
+using NBL.Services;
 using System.Diagnostics;
 using System.Text.Json;
 using static NBL.LaunchParamDict;
+
 namespace NBL;
+
 public class Game
 {
     public string Id { get; }
     public string Name { get; }
     public string ShortName { get; }
-    public GameStatus Status { get; protected set; } =
-        GameStatus.NotInstalled;
+    public GameStatus Status { get; protected set; } = GameStatus.NotInstalled;
     public bool IsInstall { get; protected set; }
     public string[] Determinants { get; }
-    public string ReferenceClient { get; protected set; } =
-        string.Empty;
-    public string Client { get; protected set; } =
-        string.Empty;
-    public Dictionary<string, ClientData> Clients { get; protected set; } =
-        new();
-    public Dictionary<string, ILaunchParam> LaunchParams { get; protected set; } =
-        new();
+    public string ReferenceClient { get; protected set; } = string.Empty;
+    public string Client { get; protected set; } = string.Empty;
+    public Dictionary<string, ClientData> Clients { get; protected set; } = new();
+    public Dictionary<string, ILaunchParam> LaunchParams { get; protected set; } = new();
+
     public event Func<GameStatus, Task>? OnChangeStatus;
+
     protected Launcher Launcher;
     protected Configurator RegistryInternal;
 
-    public Configurator Registry => this.RegistryInternal;
+    public Configurator Registry => RegistryInternal;
+
+    public Configurator GetRegistry() => Registry;
+
+
     private Process? _gameProcess;
-    public Game(
-        Launcher launcher,
-        Configurator registry,
-        string id,
-        string name,
-        string shortName,
-        string[] determinants,
-        ILaunchParam[] launchParams)
+
+    public Game(Launcher launcher, Configurator registry, string id, string name,
+        string shortName, string[] determinants, ILaunchParam[] launchParams)
     {
-        this.Launcher = launcher;
-        this.RegistryInternal = registry;
-        this.Id = id;
-        this.Name = name;
-        this.ShortName = shortName;
-        this.Determinants = determinants;
+        Launcher = launcher;
+        RegistryInternal = registry;
+        Id = id;
+        Name = name;
+        ShortName = shortName;
+        Determinants = determinants;
+
         foreach (var param in launchParams)
-        {
-            this.LaunchParams.Add(
-                param.Id,
-                param);
-        }
+            LaunchParams.Add(param.Id, param);
     }
-    public Configurator GetRegistry()
-    {
-        return this.Registry;
-    }
+
     public async Task<bool> CheckInstall()
     {
-        Logger.Debug($"Checking installation: {this.Id}");
+        Logger.Debug($"Checking installation: {Id}");
 
-        await this.Launcher.Registry.WaitReadiness();
+        await Launcher.Registry.WaitReadiness();
 
-        bool isInstall =
-            this.HasGameInRegistry("path") &&
-            this.CheckPathInstall();
+        if (HasGameInRegistry())
+            InitializeLaunchParameters();
 
-        this.IsInstall =
-            isInstall;
+        IsInstall = HasGameInRegistry("path") && CheckPathInstall();
 
-        Logger.Info(
-            $"Game installation check: {this.Id}, installed={this.IsInstall}");
+        Logger.Info($"Game installation check: {Id}, installed={IsInstall}");
 
-        if (!this.IsInstall)
+        if (!IsInstall)
         {
-            await this.SetStatus(
-                GameStatus.NotInstalled);
-
+            await SetStatus(GameStatus.NotInstalled);
             return false;
         }
 
-        if (this.IsGameRunning())
-        {
-            await this.SetStatus(
-                GameStatus.Running);
-        }
-        else
-        {
-            await this.SetStatus(
-                GameStatus.NotRunning);
-        }
-
+        await SetStatus(IsGameRunning() ? GameStatus.Running : GameStatus.NotRunning);
         return true;
     }
+
     public bool CheckPathInstall()
     {
-        if (!this.HasGameInRegistry("path"))
+        if (!HasGameInRegistry("path"))
         {
-            Logger.Warning(
-                $"Game path is not configured: {this.Id}");
-
+            Logger.Warning($"Game path is not configured: {Id}");
             return false;
         }
 
-        string path =
-            this.Registry.Get<string>(
-                this.Id,
-                "path");
+        string path = Registry.Get<string>(Id, "path");
+        string exePath = Path.Combine(path, "BF2142.exe");
 
-        string exePath =
-            Path.Combine(
-                path,
-                "BF2142.exe");
+        bool directoryExists = Directory.Exists(path);
+        bool executableExists = File.Exists(exePath);
 
-        bool directoryExists =
-            Directory.Exists(path);
-
-        bool executableExists =
-            File.Exists(exePath);
-
-        Logger.Debug(
-            $"Game path check: path='{path}', " +
-            $"directoryExists={directoryExists}, " +
-            $"exeExists={executableExists}");
+        Logger.Debug($"Game path check: path='{path}', directoryExists={directoryExists}, exeExists={executableExists}");
 
         return directoryExists && executableExists;
     }
-    public void AddGameRegistry(string path)
+
+    public void AddGameRegistry(string path) => Launcher.AddGameRegistry(Id, path);
+
+    protected async Task SetStatus(GameStatus status)
     {
-        this.Launcher.AddGameRegistry(
-            this.Id,
-            path);
+        Status = status;
+        if (OnChangeStatus != null)
+            await OnChangeStatus(status);
     }
-    protected async Task SetStatus(
-        GameStatus status)
-    {
-        this.Status =
-            status;
-        if (this.OnChangeStatus != null)
-        {
-            await this.OnChangeStatus(
-                status);
-        }
-    }
+
     public bool IdentifyGame(string path)
     {
         if (!Directory.Exists(path))
             return false;
-        string pf = "";
-        foreach (string filename in this.Determinants)
-        {
-            pf =
-                Path.Combine(
-                    path,
-                    filename);
-            if (!File.Exists(pf))
+
+        foreach (string filename in Determinants)
+            if (!File.Exists(Path.Combine(path, filename)))
                 return false;
-        }
+
         return true;
     }
 
@@ -171,367 +123,226 @@ public class Game
         foreach (string file in Directory.GetFiles(gamePath))
         {
             string name = Path.GetFileName(file);
-            if (Launcher.InvalidClientFileExtensions.Contains(Path.GetExtension(file))) continue;
+            if (Launcher.InvalidClientFileExtensions.Contains(Path.GetExtension(file)))
+                continue;
 
             File.Copy(file, Path.Combine(clientPath, name), true);
             files.Add(name);
         }
 
-        ClientData client = new() { ID = Launcher.ClientId, Name = Launcher.ClientName, Files = files.ToArray() };
-        await File.WriteAllTextAsync(manifestPath, JsonSerializer.Serialize(client, new JsonSerializerOptions { WriteIndented = true }));
+        ClientData client = new()
+        {
+            ID = Launcher.ClientId,
+            Name = Launcher.ClientName,
+            Files = files.ToArray()
+        };
+
+        await File.WriteAllTextAsync(manifestPath,
+            JsonSerializer.Serialize(client, new JsonSerializerOptions { WriteIndented = true }));
+
         return client;
     }
 
-    protected bool HasGameInRegistry(
-        string? option = null)
+    protected bool HasGameInRegistry(string? option = null)
     {
         if (option == null)
-        {
-            return this.Registry.HasSection(
-                this.Id);
-        }
-        return
-            this.Registry.HasSection(this.Id) &&
-            this.Registry.HasOption(
-                this.Id,
-                option);
+            return Registry.HasSection(Id);
+
+        return Registry.HasSection(Id) && Registry.HasOption(Id, option);
     }
+
     protected void CheckGameInRegistry()
     {
-        if (!this.HasGameInRegistry())
-        {
-            throw new GameNotSetRegistryException(
-                $"Игра '{this.Id}' не была добавлена в реестр лаунчера");
-        }
+        if (!HasGameInRegistry())
+            throw new GameNotSetRegistryException($"Игра '{Id}' не была добавлена в реестр лаунчера");
     }
+
     public string GetPath()
     {
-        if (!this.HasGameInRegistry("path"))
+        if (!HasGameInRegistry("path"))
         {
-            Logger.Warning(
-                $"Game path is not configured: {this.Id}");
-
-            throw new GamePathNotSetException(
-                $"Игра '{this.Id}' путь не установлен");
+            Logger.Warning($"Game path is not configured: {Id}");
+            throw new GamePathNotSetException($"Игра '{Id}' путь не установлен");
         }
 
-        string path =
-            this.Registry.Get<string>(
-                this.Id,
-                "path");
+        string path = Registry.Get<string>(Id, "path");
 
         if (!Directory.Exists(path))
         {
-            Logger.Error(
-                $"Game path does not exist: '{path}'");
-
-            throw new GamePathNotFoundException(
-                $"Путь '{path}' игры '{this.Id}' не найден");
+            Logger.Error($"Game path does not exist: '{path}'");
+            throw new GamePathNotFoundException($"Путь '{path}' игры '{Id}' не найден");
         }
 
         return path;
     }
-    public bool TryGetPath(
-        out string? data)
+
+    public bool TryGetPath(out string? data)
     {
         data = null;
-        if (!this.HasGameInRegistry("path"))
+
+        if (!HasGameInRegistry("path"))
             return false;
-        string path =
-            this.Registry.Get<string>(
-                this.Id,
-                "path");
+
+        string path = Registry.Get<string>(Id, "path");
+
         if (!Directory.Exists(path))
             return false;
-        data =
-            path;
+
+        data = path;
         return true;
     }
-    public void SetReferenceClient(
-        string clientId)
+
+    public void SetReferenceClient(string clientId)
     {
-        this.CheckGameInRegistry();
-        this.Registry.Set(
-            this.Id,
-            "referenceClient",
-            clientId);
-        this.ReferenceClient =
-            clientId;
+        CheckGameInRegistry();
+        Registry.Set(Id, "referenceClient", clientId);
+        ReferenceClient = clientId;
     }
+
     public string GetReferenceClient()
     {
-        if (!this.HasGameInRegistry(
-                "referenceClient"))
-        {
-            throw new GameNotSetRegistryException(
-                $"Ссылка на игру '{this.Id}' не установлена");
-        }
-        string clientId =
-            this.Registry.Get<string>(
-                this.Id,
-                "referenceClient");
-        this.ReferenceClient =
-            clientId;
-        return clientId;
+        if (!HasGameInRegistry("referenceClient"))
+            throw new GameNotSetRegistryException($"Ссылка на игру '{Id}' не установлена");
+
+        ReferenceClient = Registry.Get<string>(Id, "referenceClient");
+        return ReferenceClient;
     }
-    public void SetCurrentClient(
-        string clientId)
+
+    public void SetCurrentClient(string clientId)
     {
-        this.CheckGameInRegistry();
-        this.Registry.Set(
-            this.Id,
-            "client",
-            clientId);
-        this.Client =
-            clientId;
+        CheckGameInRegistry();
+        Registry.Set(Id, "client", clientId);
+        Client = clientId;
     }
+
     public string GetCurrentClient()
     {
-        if (!this.HasGameInRegistry("client"))
-        {
-            throw new GameNotSetRegistryException(
-                $"Клиент игры '{this.Id}' не установлен");
-        }
-        string clientId =
-            this.Registry.Get<string>(
-                this.Id,
-                "client");
-        this.Client =
-            clientId;
-        return clientId;
+        if (!HasGameInRegistry("client"))
+            throw new GameNotSetRegistryException($"Клиент игры '{Id}' не установлен");
+
+        Client = Registry.Get<string>(Id, "client");
+        return Client;
     }
+
     public async Task<ClientData[]> GetClients()
     {
-        ClientData[] clients =
-            await this.Launcher.GetClients(
-                this.Id);
-        this.Clients.Clear();
-        foreach (var client in clients)
-        {
-            this.Clients.Add(
-                client.ID,
-                client);
-        }
-        return clients;
+        ClientData[] clients = await Launcher.GetClients(Id);
+        Clients.Clear();
 
+        foreach (var client in clients)
+            Clients.Add(client.ID, client);
+
+        return clients;
     }
-    public async Task ChangeClientGame(
-        string clientId)
+
+    public async Task ChangeClientGame(string clientId) =>
+        await Launcher.ChangeClientGame(Id, clientId);
+
+    public async Task SetStateSnapshot(StateSnapshot state) =>
+        await Launcher.SetStateSnapshot(Id, state);
+
+    public async Task<StateSnapshot?> GetStateSnapshot() =>
+        await Launcher.GetStateSnapshot(Id);
+
+    public string[] BuildLaunchParams(Dictionary<string, object> parameters)
     {
-        await this.Launcher.ChangeClientGame(
-            this.Id,
-            clientId);
-    }
-    public async Task SetStateSnapshot(
-        StateSnapshot state)
-    {
-        await this.Launcher.SetStateSnapshot(
-            this.Id,
-            state);
-    }
-    public async Task<StateSnapshot?> GetStateSnapshot()
-    {
-        return await this.Launcher.GetStateSnapshot(
-            this.Id);
-    }
-    public string[] BuildLaunchParams(
-        Dictionary<string, object> parameters)
-    {
-        List<string> args =
-            new();
+        List<string> args = new();
+
         foreach (var param in parameters)
         {
-            if (!this.LaunchParams.TryGetValue(
-                    param.Key,
-                    out ILaunchParam? launchParam))
+            if (!LaunchParams.TryGetValue(param.Key, out ILaunchParam? launchParam))
+                throw new LaunchParamNotFoundException($"Параметр запуска '{param.Key}' не зарегистрирован");
+
+            IEnumerable<string> builtArgs = launchParam switch
             {
-                throw new LaunchParamNotFoundException(
-                    $"Параметр запуска '{param.Key}' не зарегистрирован");
-            }
-            if (launchParam is LaunchParamStr p)
-            {
-                foreach (var item in p.BuildArgs(
-                             (string)param.Value))
-                {
-                    args.Add(item);
-                }
-            }
-            else if (launchParam is LaunchParamBool p2)
-            {
-                foreach (var item in p2.BuildArgs(
-                             (bool)param.Value))
-                {
-                    args.Add(item);
-                }
-            }
-            else if (launchParam is LaunchParamDict p3)
-            {
-                foreach (var item in p3.BuildArgs(
-                             (string)param.Value))
-                {
-                    args.Add(item);
-                }
-            }
-            else if (launchParam is LaunchOptionDict p4)
-            {
-                foreach (string item in
-                         p4.BuildArgs((string[])param.Value))
-                {
-                    args.Add(item);
-                }
-            }
-            else if (launchParam is LaunchParamCustom custom)
-            {
-                foreach (string item in
-                         custom.BuildArgs((string)param.Value))
-                {
-                    args.Add(item);
-                }
-            }
+                LaunchParamStr p => p.BuildArgs((string)param.Value),
+                LaunchParamBool p => p.BuildArgs((bool)param.Value),
+                LaunchParamDict p => p.BuildArgs((string)param.Value),
+                LaunchOptionDict p => p.BuildArgs((string[])param.Value),
+                LaunchParamCustom p => p.BuildArgs((string)param.Value),
+                _ => throw new InvalidOperationException($"Unknown launch parameter type: {launchParam.GetType().Name}")
+            };
+
+            args.AddRange(builtArgs);
         }
-        Logger.Debug(
-    $"Built launch arguments for '{this.Id}': " +
-    $"{(args.Count > 0 ? string.Join(" ", args) : "none")}");
+
+        Logger.Debug($"Built launch arguments for '{Id}': {(args.Count > 0 ? string.Join(" ", args) : "none")}");
         return args.ToArray();
     }
-    public void SetLaunchParameters(
-        Dictionary<string, object> parameters)
+
+    public void SetLaunchParameters(Dictionary<string, object> parameters)
     {
         BuildLaunchParams(parameters);
-        this.CheckGameInRegistry();
+        CheckGameInRegistry();
+
         foreach (var parameter in parameters)
+            Registry.Set(Id, $"launch.{parameter.Key}", parameter.Value);
+    }
+
+    public void InitializeLaunchParameters()
+    {
+        if (!HasGameInRegistry("launch.widescreen"))
         {
-            this.Registry.Set(
-                this.Id,
-                $"launch.{parameter.Key}",
-                parameter.Value);
+            Registry.Set(Id, "launch.widescreen", true);
+            Logger.Info($"Default launch parameter initialized: {Id}.launch.widescreen=true");
         }
     }
+
     public Dictionary<string, object> GetLaunchParameters()
     {
-        Dictionary<string, object> parameters =
-            new();
-        foreach (var launchParam in this.LaunchParams.Values)
+        Dictionary<string, object> parameters = new();
+
+        foreach (var param in LaunchParams.Values)
         {
-            if (launchParam is LaunchParamBool)
+            string key = $"launch.{param.Id}";
+            bool exists = HasGameInRegistry(key);
+
+            if (param is LaunchParamBool)
             {
-                bool value = false;
-                if (this.HasGameInRegistry())
-                {
-                    value =
-                        this.Registry.Get(
-                            this.Id,
-                            $"launch.{launchParam.Id}",
-                            false);
-                }
-                parameters[launchParam.Id] =
-                    value;
+                bool defaultValue = param.Id == "widescreen";
+                parameters[param.Id] = exists ? Registry.Get(Id, key, defaultValue) : defaultValue;
             }
-            else if (launchParam is LaunchParamDict dict)
+            else if (param is LaunchParamStr or LaunchParamCustom)
             {
-                string defaultValue =
-                    dict.Dictionary.Keys.FirstOrDefault()
-                    ?? "";
-                string value =
-                    defaultValue;
-                if (this.HasGameInRegistry())
-                {
-                    value =
-                        this.Registry.Get(
-                            this.Id,
-                            $"launch.{launchParam.Id}",
-                            defaultValue);
-                }
-                if (!dict.Dictionary.ContainsKey(value))
-                {
-                    value =
-                        defaultValue;
-                }
-                parameters[launchParam.Id] =
-                    value;
+                parameters[param.Id] = exists ? Registry.Get(Id, key, "") : "";
             }
-            else if (launchParam is LaunchOptionDict options)
+            else if (param is LaunchParamDict dict)
             {
-                string[] defaultValue =
-                    Array.Empty<string>();
-                if (this.HasGameInRegistry())
-                {
-                    defaultValue =
-                        this.Registry.Get(
-                            this.Id,
-                            $"launch.{launchParam.Id}",
-                            defaultValue);
-                }
-                parameters[launchParam.Id] =
-                    defaultValue.Where(
-                        options.Dictionary.ContainsKey).ToArray();
+                string defaultValue = dict.Dictionary.Keys.FirstOrDefault() ?? "";
+                string value = exists ? Registry.Get(Id, key, defaultValue) : defaultValue;
+                parameters[param.Id] = dict.Dictionary.ContainsKey(value) ? value : defaultValue;
             }
-            else if (launchParam is LaunchOptionDict Additinaloptions)
+            else if (param is LaunchOptionDict options)
             {
-                string[] defaultValue =
-                    Array.Empty<string>();
-                string[] value =
-                    defaultValue;
-                if (this.HasGameInRegistry())
-                {
-                    value =
-                        this.Registry.Get(
-                            this.Id,
-                            $"launch.{launchParam.Id}",
-                            defaultValue);
-                }
-                parameters[launchParam.Id] =
-                    value
-                        .Where(Additinaloptions.Dictionary.ContainsKey)
-                        .ToArray();
-            }
-            else if (launchParam is LaunchParamCustom)
-            {
-                string value = "";
-                if (this.HasGameInRegistry())
-                {
-                    value =
-                        this.Registry.Get(
-                            this.Id,
-                            $"launch.{launchParam.Id}",
-                            "");
-                }
-                parameters[launchParam.Id] = value;
+                string[] value = exists ? Registry.Get(Id, key, Array.Empty<string>()) : Array.Empty<string>();
+                parameters[param.Id] = value.Where(options.Dictionary.ContainsKey).ToArray();
             }
         }
-        Logger.Debug(
-    $"Loaded launch parameters for '{this.Id}': " +
-    string.Join(
-        ", ",
-        parameters.Select(
-            x => $"{x.Key}={FormatLaunchParameterValue(x.Value)}")));
+
+        Logger.Debug($"Loaded launch parameters for '{Id}': " +
+            string.Join(", ", parameters.Select(x => $"{x.Key}={FormatLaunchParameterValue(x.Value)}")));
+
         return parameters;
     }
-    private static string FormatLaunchParameterValue(object? value)
-    {
-        if (value is string[] array)
-            return $"[{string.Join(", ", array)}]";
 
-        return value?.ToString() ?? "null";
-    }
-    public string[] BuildSavedLaunchParams()
-    {
-        return BuildLaunchParams(
-            GetLaunchParameters());
-    }
+    private static string FormatLaunchParameterValue(object? value) =>
+        value is string[] array ? $"[{string.Join(", ", array)}]" : value?.ToString() ?? "null";
+
+    public string[] BuildSavedLaunchParams() => BuildLaunchParams(GetLaunchParameters());
+
     public bool IsGameRunning()
     {
         if (_gameProcess == null)
             return false;
+
         try
         {
-            if (_gameProcess.HasExited)
-            {
-                _gameProcess.Dispose();
-                _gameProcess = null;
-                return false;
-            }
-            return true;
+            if (!_gameProcess.HasExited)
+                return true;
+
+            _gameProcess.Dispose();
+            _gameProcess = null;
+            return false;
         }
         catch
         {
@@ -541,135 +352,104 @@ public class Game
     }
     public async Task Launch()
     {
-        Logger.Info($"Launch requested: {this.Id}");
+        Logger.Info($"Launch requested: {Id}");
 
-        if (!this.IsInstall)
+        if (!IsInstall)
         {
-            Logger.Warning(
-                $"Launch cancelled: game is not installed: {this.Id}");
-
-            throw new GameInstallException(
-                "Игра не установлена");
+            Logger.Warning($"Launch cancelled: game is not installed: {Id}");
+            throw new GameInstallException("Игра не установлена");
         }
 
-        if (this.IsGameRunning())
+        if (IsGameRunning())
         {
-            Logger.Info(
-                $"Launch cancelled: game is already running: {this.Id}");
-
+            Logger.Info($"Launch cancelled: game is already running: {Id}");
             return;
         }
 
-        string gamePath =
-            this.GetPath();
+        string gamePath = GetPath();
+        string exePath = Path.Combine(gamePath, "BF2142.exe");
 
-        string exePath =
-            Path.Combine(
-                gamePath,
-                "BF2142.exe");
-
-        Logger.Info(
-            $"Game executable: '{exePath}'");
+        Logger.Info($"Game executable: '{exePath}'");
 
         if (!File.Exists(exePath))
         {
-            Logger.Error(
-                $"Game executable not found: '{exePath}'");
-
-            throw new FileNotFoundException(
-                "BF2142.exe не найден",
-                exePath);
+            Logger.Error($"Game executable not found: '{exePath}'");
+            throw new FileNotFoundException("BF2142.exe не найден", exePath);
         }
 
-        string[] args =
-            this.BuildSavedLaunchParams();
+        string[] args = BuildSavedLaunchParams();
 
-        Logger.Info(
-            $"Launch parameters: {(args.Length > 0 ? string.Join(" ", args) : "none")}");
+        Logger.Info($"Launch parameters: {(args.Length > 0 ? string.Join(" ", args) : "none")}");
 
-        ProcessStartInfo startInfo =
-            new ProcessStartInfo
-            {
-                FileName =
-                    exePath,
-                WorkingDirectory =
-                    gamePath,
-                UseShellExecute =
-                    false
-            };
+        ProcessStartInfo startInfo = new()
+        {
+            FileName = exePath,
+            WorkingDirectory = gamePath,
+            UseShellExecute = false
+        };
 
         foreach (string arg in args)
+            startInfo.ArgumentList.Add(arg);
+
+        Logger.Debug($"Working directory: '{gamePath}'");
+
+        _gameProcess = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
+
+        _gameProcess.Exited += async (_, _) =>
         {
-            startInfo.ArgumentList.Add(
-                arg);
-        }
+            Process? process = _gameProcess;
+            _gameProcess = null;
 
-        Logger.Debug(
-            $"Working directory: '{gamePath}'");
+            Logger.Info($"Game process exited: {Id}");
+            process?.Dispose();
 
-        _gameProcess =
-            new Process
-            {
-                StartInfo =
-                    startInfo,
-                EnableRaisingEvents =
-                    true
-            };
-
-        _gameProcess.Exited +=
-            async (_, _) =>
-            {
-                Process? process =
-                    _gameProcess;
-
-                _gameProcess =
-                    null;
-
-                Logger.Info(
-                    $"Game process exited: {this.Id}");
-
-                if (process != null)
-                {
-                    process.Dispose();
-                }
-
-                await SetStatus(
-                    GameStatus.NotRunning);
-            };
+            await SetStatus(GameStatus.NotRunning);
+        };
 
         try
         {
-            Logger.Info(
-                $"Starting game process: {exePath}");
+            Logger.Info($"Starting game process: {exePath}");
 
             if (!_gameProcess.Start())
             {
-                Logger.Error(
-                    $"Process.Start returned false: {exePath}");
-
+                Logger.Error($"Process.Start returned false: {exePath}");
                 _gameProcess.Dispose();
                 _gameProcess = null;
-
-                throw new Exception(
-                    "Не удалось запустить BF2142.exe");
+                throw new Exception("Не удалось запустить BF2142.exe");
             }
 
-            Logger.Info(
-                $"Game process started successfully: {this.Id}, PID={_gameProcess.Id}");
-
-            await SetStatus(
-                GameStatus.Running);
+            Logger.Info($"Game process started successfully: {Id}, PID={_gameProcess.Id}");
+            await SetStatus(GameStatus.Running);
         }
         catch (Exception ex)
         {
-            Logger.Error(
-                $"Failed to start game: {exePath}",
-                ex);
-
+            Logger.Error($"Failed to start game: {exePath}", ex);
             _gameProcess?.Dispose();
             _gameProcess = null;
-
             throw;
         }
+    }
+    public async Task UninstallAsync()
+    {
+        string path = System.IO.Path.GetFullPath(GetPath()).TrimEnd('\\');
+        string root = System.IO.Path.GetPathRoot(path)?.TrimEnd('\\') ?? "";
+        string app = AppContext.BaseDirectory.TrimEnd('\\');
+
+        if (string.Equals(path, root, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(path, app, StringComparison.OrdinalIgnoreCase) ||
+            app.StartsWith(path + "\\", StringComparison.OrdinalIgnoreCase) ||
+            !File.Exists(System.IO.Path.Combine(path, "BF2142.exe")))
+            throw new InvalidOperationException("Некорректный путь установки игры.");
+
+        if (System.Diagnostics.Process.GetProcessesByName("BF2142").Length > 0)
+            throw new InvalidOperationException("Сначала закройте игру.");
+
+        Directory.Delete(path, true);
+
+        if (Registry.HasSection(Id))
+            Registry.RemoveSection(Id);
+
+        await Registry.WaitSafeMoment();
+        CheckInstall();
     }
 }
