@@ -7,6 +7,7 @@ using NBL.Services;
 using System;
 using System.IO;
 using static NBL.LaunchParamDict;
+using NBLApp.Localization;
 
 namespace NBLApp;
 
@@ -56,70 +57,82 @@ public partial class App : Application
             Console.WriteLine(Localization.Locale.Get("Settings"));
             Console.WriteLine(Localization.Locale.Get("Parameters"));
             Console.WriteLine(Localization.Locale.Get("FullScreen"));
-            ILaunchParam[] launchParams = new ILaunchParam[]
-            {
-                new LaunchParamDict()
-                {
-                    Id = "resolution",
-                    Name = "Resolution",
-                    Description = null,
-                    ShortDescription = "Game window resolution",
-                    Dictionary = new()
-                    {
-                        {"2560×1440", "+szx 2560 +szy 1440"},
-                        {"1920×1080", "+szx 1920 +szy 1080"},
-                        {"1600×900", "+szx 1600 +szy 900"},
-                        {"1280×1024", "+szx 1280 +szy 1024"},
-                        {"1024×768", "+szx 1024 +szy 768"},
-                        {"800×600", "+szx 800 +szy 600"}
-                    }
-                },
-                
-                new LaunchParamBool()
-                {
-                    Id = "fullscreen",
-                    Name = Localization.Locale.Get("FullScreen"),
-                    Description = "Game launches in full screen on the monitor",
-                    ShortDescription = "Start game in full screen mode",
-                },
-                new LaunchParamBool()
-                {
-                    Id = "widescreen",
-                    Name = Localization.Locale.Get("WideScreen"),
-                    Description = "Game window will be able to accept, in addition to 4:3, also 16:9",
-                    ShortDescription = "Change the FOV to fit Wide-Screens",
-                },
-                new LaunchParamBool()
-                {
-                    Id = "multi",
-                    Name = Localization.Locale.Get("Multi"),
-                    Description = "Allows launching multiple game windows simultaneously",
-                    ShortDescription = "Allow starting multiple BF2 instances",
-                },
-                new LaunchParamBool()
-                {
-                    Id = "lowPriority",
-                    Name = Localization.Locale.Get("LowPriority"),
-                    Description = null,
-                    ShortDescription = "Run the game with slightly lower priority",
-                },
-                new LaunchParamBool()
-                {
-                    Id = "noSound",
-                    Name = Localization.Locale.Get("NoSound"),
-                    Description = null,
-                    ShortDescription = "Start game without sound",
-                },
 
-                new LaunchParamCustom()
-                {
-                    Id = "customparam",
-                    Name = "CustomParam",
-                    Description = null,
-                    ShortDescription = "",
-                    FullFormat = true
-                }
-            };
+            ILaunchParam[] launchParams =
+            [
+                new LaunchParamDict
+    {
+        Id = "resolution",
+        Name = Locale.Get("Resolution"),
+        NameKey = "Resolution",
+        Description = null,
+        DescriptionKey = null,
+        ShortDescription = "Game window resolution",
+        Dictionary = new()
+        {
+            ["2560×1440"] = "+szx 2560 +szy 1440",
+            ["1920×1080"] = "+szx 1920 +szy 1080",
+            ["1920x1440"] = "+szx 1920 +szy 1440",
+            ["1600×900"] = "+szx 1600 +szy 900",
+            ["1280×1024"] = "+szx 1280 +szy 1024",
+            ["1024×768"] = "+szx 1024 +szy 768",
+            ["800×600"] = "+szx 800 +szy 600"
+        }
+    },
+    new LaunchParamBool
+    {
+        Id = "fullscreen",
+        Name = Locale.Get("FullScreen"),
+        NameKey = "FullScreen",
+        Description = Locale.Get("DescFullscreen"),
+        DescriptionKey = "DescFullscreen",
+        ShortDescription = ""
+    },
+    new LaunchParamBool
+    {
+        Id = "widescreen",
+        Name = Locale.Get("WideScreen"),
+        NameKey = "WideScreen",
+        Description = Locale.Get("DescWidescreen"),
+        DescriptionKey = "DescWidescreen",
+        ShortDescription = ""
+    },
+    new LaunchParamBool
+    {
+        Id = "multi",
+        Name = Locale.Get("Multi"),
+        NameKey = "Multi",
+        Description = Locale.Get("DescMulti"),
+        DescriptionKey = "DescMulti",
+        ShortDescription = ""
+    },
+    new LaunchParamBool
+    {
+        Id = "lowPriority",
+        Name = Locale.Get("LowPriority"),
+        NameKey = "LowPriority",
+        Description = null,
+        ShortDescription = ""
+    },
+    new LaunchParamBool
+    {
+        Id = "noSound",
+        Name = Locale.Get("NoSound"),
+        NameKey = "NoSound",
+        Description = null,
+        ShortDescription = ""
+    },
+    new LaunchParamCustom
+    {
+        Id = "customparam",
+        Name = Locale.Get("CustomParam"),
+        NameKey = "CustomParam",
+        Description = null,
+        ShortDescription = null,
+        FullFormat = true
+    }
+            ];
+
 
             Launcher.RegisterGame(
                 gameId: "bf2142",

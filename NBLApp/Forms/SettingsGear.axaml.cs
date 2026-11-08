@@ -1,6 +1,9 @@
-﻿using Avalonia.Controls;
+﻿
+using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Irihi.Avalonia.Shared.Contracts;
 using NBL;
@@ -12,767 +15,518 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using Avalonia.Threading;
+
 namespace NBLApp.Forms;
+
 public partial class SettingsGear : UserControl
 {
+    private readonly Game Game;
+    private readonly DisplayModeService DisplayModeService = new();
+
     private VideoSettingsService? VideoSettingsService;
     private GameVideoSettings VideoSettings = new();
-    private DisplayModeService DisplayModeService;
     private bool VideoSettingsAvailable;
 
     private AudioSettingsService? AudioSettingsService;
     private GameAudioSettings AudioSettings = new();
     private bool AudioSettingsAvailable;
 
-    protected Game Game;
+    public string LogDirectory => Logger.LogDirectory;
+    public string LauncherVersion => Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Unknown";
+    protected override void OnAttachedToVisualTree(
+    VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
 
-    public string LogDirectory =>
-        Logger.LogDirectory;
-    public string OpenText =>
-        Locale.Get("Open");
-    public string LogFolderText =>
-        Locale.Get("Logfolder");
-    public string LauncherSettingsText =>
-        Locale.Get("LauncherSettings");
+        LocaleProvider.Instance.LanguageChanged -= OnLanguageChanged;
+        LocaleProvider.Instance.LanguageChanged += OnLanguageChanged;
+    }
 
-    public string LanguageLauncherText =>
-        Locale.Get("LanguageLauncher");
+    protected override void OnDetachedFromVisualTree(
+        VisualTreeAttachmentEventArgs e)
+    {
+        LocaleProvider.Instance.LanguageChanged -= OnLanguageChanged;
 
-    public string AutomaticText =>
-        Locale.Get("Auto");
-
-    public string RussianText =>
-        Locale.Get("Russian");
-
-    public string EnglishText =>
-        Locale.Get("English");
-
-    public string VideoSettingsText =>
-        Locale.Get("VideoSettings");
-
-    public string ResolutionText =>
-        Locale.Get("Resolution");
-
-    public string RefreshRateText =>
-        Locale.Get("RefreshRate");
-
-    public string TerrainText =>
-        Locale.Get("Terrain");
-
-    public string GeometryText =>
-        Locale.Get("Geometry");
-
-    public string LightingText =>
-        Locale.Get("Lighting");
-
-    public string DynamicLightingText =>
-        Locale.Get("DynamicLighting");
-
-    public string DynamicShadowsText =>
-        Locale.Get("DynamicShadows");
-
-    public string EffectsText =>
-        Locale.Get("Effects");
-
-    public string TexturesText =>
-        Locale.Get("Textures");
-
-    public string TextureFilteringText =>
-        Locale.Get("TextureFiltering");
-
-    public string AntialiasingText =>
-        Locale.Get("Antialiasing");
-
-    public string ViewDistanceText =>
-        Locale.Get("ViewDistance");
-
-    public string BloomText =>
-        Locale.Get("Bloom");
-
-    public string AudioSettingsText =>
-        Locale.Get("AudioSettings");
-
-    public string EffectsVolumeText =>
-        Locale.Get("EffectsVolume");
-
-    public string MusicVolumeText =>
-        Locale.Get("MusicVolume");
-
-    public string HelpVoiceVolumeText =>
-        Locale.Get("HelpVoiceVolume");
-
-    public string SoundQualityText =>
-        Locale.Get("SoundQuality");
-
-    public string VoipText =>
-        Locale.Get("Voip");
-
-    public string VoipPlaybackVolumeText =>
-        Locale.Get("VoipPlaybackVolume");
-
-    public string VoipCaptureVolumeText =>
-        Locale.Get("VoipCaptureVolume");
-
-    public string VoipPushToTalkText =>
-        Locale.Get("VoipPushToTalk");
-
-    public string VoipBoostText =>
-        Locale.Get("VoipBoost");
-
-    public string SaveText =>
-        Locale.Get("Save");
-
-    public string CancelText =>
-        Locale.Get("Cancel");
-
-    public string SettingsUnavailableText =>
-        Locale.Get("SettingsUnavailable");
-
-    public string SettingsText =>
-        Locale.Get("Settings");
-
-    public string GraphicsText =>
-        Locale.Get("Graphics");
-
-    public string AudioText =>
-        Locale.Get("Audio");
-
-    public string EnabledText =>
-        Locale.Get("Enabled");
-    public string ControlSettingsText =>
-        Locale.Get("ControlSettings");
-    public string GameLanguageText =>
-        Locale.Get("GameLanguage");
-    public string GenerateKeyText =>
-        Locale.Get("GenerateKey");
-    public string CopyText =>
-        Locale.Get("Copy");
-    public string KeyHashText =>
-        Locale.Get("KeyHash");
-
+        base.OnDetachedFromVisualTree(e);
+    }
     public SettingsGear(Game game)
     {
-        this.Game = game;
-
+        Game = game;
         InitializeComponent();
+        DataContext = this;
 
-        this.LoadLanguageSettings();
-
-        this.DataContext =
-     this;
-
-        this.DisplayModeService =
-            new DisplayModeService();
-
-        this.LoadVideoSettings();
-        this.LoadAudioSettings();
-        this.LoadGameLanguage();
-        this.LoadGameKey();
+        LoadLanguageSettings();
+        LoadVideoSettings();
+        LoadAudioSettings();
+        LoadGameLanguage();
+        LoadGameKey();
     }
-    public string LauncherVersion =>
-    Assembly.GetExecutingAssembly()
-        .GetName()
-        .Version?
-        .ToString() ?? "Unknown";
 
-    private void Locale_LanguageChanged(
-        object? sender,
-        EventArgs e)
-    {
-    }
     private void LoadLanguageSettings()
     {
-        Configurator registry =
-            this.Game.GetRegistry();
-
+        var registry = Game.GetRegistry();
         if (!registry.HasSection("launcher"))
-        {
             registry.AddSection("launcher");
-        }
 
-        string language =
-            registry.Get(
-                "launcher",
-                "language",
-                "auto");
-
-        this.ComboBoxLanguage.SelectedIndex =
-            language switch
-            {
-                "ru-RU" => 1,
-                "en-US" => 2,
-                _ => 0
-            };
+        ComboBoxLanguage.SelectedIndex = registry.Get("launcher", "language", "auto") switch
+        {
+            "ru-RU" => 1,
+            "en-US" => 2,
+            _ => 0
+        };
     }
 
     private void SaveLanguageSettings()
     {
-        string language =
-            this.ComboBoxLanguage.SelectedIndex switch
-            {
-                1 => "ru-RU",
-                2 => "en-US",
-                _ => "auto"
-            };
-
-        Configurator registry =
-            this.Game.GetRegistry();
-
-        if (!registry.HasSection("launcher"))
+        string language = ComboBoxLanguage.SelectedIndex switch
         {
+            1 => "ru-RU",
+            2 => "en-US",
+            _ => "auto"
+        };
+
+        var registry = Game.GetRegistry();
+        if (!registry.HasSection("launcher"))
             registry.AddSection("launcher");
-        }
 
-        registry.Set(
-            "launcher",
-            "language",
-            language);
-
+        registry.Set("launcher", "language", language);
         Locale.SetLanguage(language);
     }
+
     private void LoadGameLanguage()
     {
-        string language =
-            LanguageKeyService.GetLanguage();
-
         GameLanguageComboBox.SelectedIndex =
-            language == "Russian" ? 1 : 0;
+            LanguageKeyService.GetLanguage() == "Russian" ? 1 : 0;
     }
+
+    private bool SaveGameLanguage()
+    {
+        string language = GameLanguageComboBox.SelectedIndex == 1 ? "Russian" : "English";
+        return LanguageKeyService.GetLanguage() == language ||
+               LanguageKeyService.SetLanguage(language);
+    }
+
     private void LoadGameKey()
     {
-        this.TextBoxGameKeyMd5.Text =
-            RegistryKeyService.GetKeyMd5() ?? "";
+        TextBoxGameKeyMd5.Text = RegistryKeyService.GetKeyMd5() ?? "";
     }
-    private void ButtonGenerateGameKey_OnClick(
-     object? sender,
-     RoutedEventArgs e)
-    {
-        bool result =
-            RegistryKeyService.GenerateAndSetKey();
 
-        if (result)
-        {
-            this.TextBoxGameKeyMd5.Text =
-                RegistryKeyService.GetKeyMd5() ?? "";
-        }
+    private void ButtonGenerateGameKey_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (RegistryKeyService.GenerateAndSetKey())
+            LoadGameKey();
     }
-    private async void ButtonCopyGameKeyHash_OnClick(
-     object? sender,
-     RoutedEventArgs e)
+
+    private async void ButtonCopyGameKeyHash_OnClick(object? sender, RoutedEventArgs e)
     {
         try
         {
-            string? hash =
-                this.TextBoxGameKeyMd5.Text;
-
+            string? hash = TextBoxGameKeyMd5.Text;
             if (string.IsNullOrWhiteSpace(hash))
                 return;
 
-            TopLevel? topLevel =
-                TopLevel.GetTopLevel(this);
-
-            if (topLevel?.Clipboard == null)
-                return;
-
-            await topLevel.Clipboard.SetTextAsync(hash);
+            await TopLevel.GetTopLevel(this)?.Clipboard?.SetTextAsync(hash)!;
         }
-        catch (Exception exception)
+        catch (Exception ex)
         {
-            Logger.Error(
-                "Failed to copy game key hash",
-                exception);
+            Logger.Error("Failed to copy game key hash", ex);
         }
     }
-    private void SaveGameLanguage()
-    {
-        string language =
-            this.GameLanguageComboBox.SelectedIndex switch
-            {
-                1 => "Russian",
-                _ => "English"
-            };
 
-        LanguageKeyService.SetLanguage(
-            language);
-    }
     private void DisableVideoSettings()
     {
-        this.VideoSettingsAvailable = false;
-        this.ComboBoxResolution.IsEnabled = false;
-        this.ComboBoxRefreshRate.IsEnabled = false;
-        this.ComboBoxTerrain.IsEnabled = false;
-        this.ComboBoxGeometry.IsEnabled = false;
-        this.ComboBoxLighting.IsEnabled = false;
-        this.ComboBoxDynamicLighting.IsEnabled = false;
-        this.ComboBoxDynamicShadows.IsEnabled = false;
-        this.ComboBoxEffects.IsEnabled = false;
-        this.ComboBoxTextures.IsEnabled = false;
-        this.ComboBoxTextureFiltering.IsEnabled = false;
-        this.ComboBoxAntialiasing.IsEnabled = false;
-        this.SliderViewDistance.IsEnabled = false;
-        this.CheckBoxBloom.IsEnabled = false;
-        this.TextBlockVideoSettingsStatus.IsVisible = true;
+        VideoSettingsAvailable = false;
+
+        foreach (var control in new Control[]
+        {
+            ComboBoxResolution, ComboBoxRefreshRate,
+            ComboBoxTerrain, ComboBoxGeometry, ComboBoxLighting,
+            ComboBoxDynamicLighting, ComboBoxDynamicShadows,
+            ComboBoxEffects, ComboBoxTextures, ComboBoxTextureFiltering,
+            ComboBoxAntialiasing, SliderViewDistance, CheckBoxBloom
+        })
+            control.IsEnabled = false;
+
+        TextBlockVideoSettingsStatus.IsVisible = true;
     }
+
     private void LoadVideoSettings()
     {
         try
         {
-            string videoSettingsPath =
-                VideoSettingsPath.GetPath();
-            this.VideoSettingsService =
-                new VideoSettingsService(
-                    videoSettingsPath);
-            this.VideoSettings =
-                this.VideoSettingsService.Load();
-            this.VideoSettingsAvailable =
-                true;
-            this.TextBlockVideoSettingsStatus.IsVisible =
-                false;
-            List<DisplayMode> displayModes =
-                this.DisplayModeService.GetModes();
-            List<string> resolutions =
-                displayModes
-                    .Select(x => $"{x.Width}x{x.Height}")
-                    .Distinct()
-                    .ToList();
-            this.ComboBoxResolution.ItemsSource =
-                resolutions;
-            string currentResolution =
-                $"{this.VideoSettings.ResolutionWidth}x" +
-                $"{this.VideoSettings.ResolutionHeight}";
-            int resolutionIndex =
-                resolutions.IndexOf(
-                    currentResolution);
-            this.ComboBoxResolution.SelectedIndex =
-                resolutionIndex >= 0
-                    ? resolutionIndex
-                    : 0;
-            this.FillQualityComboBox(
-                this.ComboBoxTerrain,
-                this.VideoSettings.TerrainQuality);
-            this.FillQualityComboBox(
-                this.ComboBoxGeometry,
-                this.VideoSettings.GeometryQuality);
-            this.FillQualityComboBox(
-                this.ComboBoxLighting,
-                this.VideoSettings.LightingQuality);
-            this.FillQualityComboBox(
-                this.ComboBoxDynamicLighting,
-                this.VideoSettings.DynamicLightingQuality);
-            this.FillQualityComboBox(
-                this.ComboBoxDynamicShadows,
-                this.VideoSettings.DynamicShadowsQuality);
-            this.FillQualityComboBox(
-                this.ComboBoxEffects,
-                this.VideoSettings.EffectsQuality);
-            this.FillQualityComboBox(
-                this.ComboBoxTextures,
-                this.VideoSettings.TextureQuality);
-            this.FillQualityComboBox(
-                this.ComboBoxTextureFiltering,
-                this.VideoSettings.TextureFilteringQuality);
-            this.ComboBoxAntialiasing.ItemsSource =
-                new[]
-                {
-                    Locale.Get("Off"),
-                    "2x",
-                    "4x",
-                    "8x"
-                };
-            this.ComboBoxAntialiasing.SelectedIndex =
-                this.VideoSettings.AntialiasingSamples switch
-                {
-                    2 => 1,
-                    4 => 2,
-                    8 => 3,
-                    _ => 0
-                };
-            this.SliderViewDistance.Value =
-                Math.Clamp(
-                    this.VideoSettings.ViewDistanceScale,
-                    0.0f,
-                    1.0f);
-            this.CheckBoxBloom.IsChecked =
-                this.VideoSettings.UseBloom;
-            this.LoadRefreshRates();
+            VideoSettingsService = new VideoSettingsService(VideoSettingsPath.GetPath());
+            VideoSettings = VideoSettingsService.Load();
+            VideoSettingsAvailable = true;
+            TextBlockVideoSettingsStatus.IsVisible = false;
+
+            var modes = DisplayModeService.GetModes();
+            var resolutions = modes.Select(x => $"{x.Width}x{x.Height}").Distinct().ToList();
+
+            ComboBoxResolution.ItemsSource = resolutions;
+            string current = $"{VideoSettings.ResolutionWidth}x{VideoSettings.ResolutionHeight}";
+            ComboBoxResolution.SelectedIndex = Math.Max(0, resolutions.IndexOf(current));
+
+            FillQualityComboBox(ComboBoxTerrain, VideoSettings.TerrainQuality);
+            FillQualityComboBox(ComboBoxGeometry, VideoSettings.GeometryQuality);
+            FillQualityComboBox(ComboBoxLighting, VideoSettings.LightingQuality);
+            FillQualityComboBox(ComboBoxDynamicLighting, VideoSettings.DynamicLightingQuality);
+            FillQualityComboBox(ComboBoxDynamicShadows, VideoSettings.DynamicShadowsQuality);
+            FillQualityComboBox(ComboBoxEffects, VideoSettings.EffectsQuality);
+            FillQualityComboBox(ComboBoxTextures, VideoSettings.TextureQuality);
+            FillQualityComboBox(ComboBoxTextureFiltering, VideoSettings.TextureFilteringQuality);
+
+            ComboBoxAntialiasing.ItemsSource = new[] { Locale.Get("Off"), "2x", "4x", "8x" };
+            ComboBoxAntialiasing.SelectedIndex = VideoSettings.AntialiasingSamples switch
+            {
+                2 => 1,
+                4 => 2,
+                8 => 3,
+                _ => 0
+            };
+
+            SliderViewDistance.Value = Math.Clamp(VideoSettings.ViewDistanceScale, 0f, 1f);
+            CheckBoxBloom.IsChecked = VideoSettings.UseBloom;
+
+            LoadRefreshRates();
         }
         catch
         {
-            this.DisableVideoSettings();
+            DisableVideoSettings();
         }
     }
-    private void DisableAudioSettings()
+
+    private void FillQualityComboBox(ComboBox comboBox, int value)
     {
-        this.AudioSettingsAvailable = false;
-        this.SliderEffectsVolume.IsEnabled = false;
-        this.SliderMusicVolume.IsEnabled = false;
-        this.SliderHelpVoiceVolume.IsEnabled = false;
-        this.ComboBoxSoundQuality.IsEnabled = false;
-        this.CheckBoxVoipEnabled.IsEnabled = false;
-        this.SliderVoipPlaybackVolume.IsEnabled = false;
-        this.SliderVoipCaptureVolume.IsEnabled = false;
-        this.CheckBoxVoipPushToTalk.IsEnabled = false;
-        this.CheckBoxVoipBoost.IsEnabled = false;
-        this.TextBlockAudioSettingsStatus.IsVisible = true;
+        comboBox.ItemsSource = new[]
+        {
+            Locale.Get("Low"), Locale.Get("Medium"),
+            Locale.Get("High"), Locale.Get("VeryHigh")
+        };
+        comboBox.SelectedIndex = Math.Clamp(value, 0, 3);
     }
 
     private void LoadRefreshRates()
     {
-        if (!this.VideoSettingsAvailable)
+        if (!VideoSettingsAvailable)
             return;
-        string? resolution =
-            this.ComboBoxResolution.SelectedItem
-                as string;
+
+        string? resolution = ComboBoxResolution.SelectedItem as string;
         if (string.IsNullOrWhiteSpace(resolution))
             return;
-        List<DisplayMode> displayModes =
-            this.DisplayModeService.GetModes()
-                .Where(x =>
-                    $"{x.Width}x{x.Height}" ==
-                    resolution)
-                .ToList();
-        List<int> refreshRates =
-            displayModes
-                .Select(x => x.RefreshRate)
-                .Distinct()
-                .OrderBy(x => x)
-                .ToList();
-        this.ComboBoxRefreshRate.ItemsSource =
-            refreshRates;
-        int index =
-            refreshRates.IndexOf(
-                this.VideoSettings.RefreshRate);
-        this.ComboBoxRefreshRate.SelectedIndex =
-            index >= 0
-                ? index
-                : 0;
+
+        var rates = DisplayModeService.GetModes()
+            .Where(x => $"{x.Width}x{x.Height}" == resolution)
+            .Select(x => x.RefreshRate)
+            .Distinct()
+            .OrderBy(x => x)
+            .ToList();
+
+        ComboBoxRefreshRate.ItemsSource = rates;
+        int index = rates.IndexOf(VideoSettings.RefreshRate);
+        ComboBoxRefreshRate.SelectedIndex = index >= 0 ? index : 0;
     }
-    private void FillQualityComboBox(
-        ComboBox comboBox,
-        int value)
+
+    private void ComboBoxResolution_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        comboBox.ItemsSource =
-    new[]
-    {
-        Locale.Get("Low"),
-        Locale.Get("Medium"),
-        Locale.Get("High"),
-        Locale.Get("VeryHigh")
-    };
-        comboBox.SelectedIndex =
-            Math.Clamp(
-                value,
-                0,
-                3);
+        if (VideoSettingsAvailable)
+            LoadRefreshRates();
     }
+
     private void SaveVideoSettings()
     {
-        if (!this.VideoSettingsAvailable)
+        if (!VideoSettingsAvailable || VideoSettingsService == null)
             return;
-        if (this.VideoSettingsService == null)
-            return;
-        string? resolution =
-            this.ComboBoxResolution.SelectedItem
-                as string;
-        if (!string.IsNullOrWhiteSpace(resolution))
+
+        if (ComboBoxResolution.SelectedItem is string resolution)
         {
-            string[] parts =
-                resolution.Split('x');
+            var parts = resolution.Split('x');
             if (parts.Length == 2 &&
-                int.TryParse(
-                    parts[0],
-                    out int width) &&
-                int.TryParse(
-                    parts[1],
-                    out int height))
+                int.TryParse(parts[0], out int width) &&
+                int.TryParse(parts[1], out int height))
             {
-                this.VideoSettings.ResolutionWidth =
-                    width;
-                this.VideoSettings.ResolutionHeight =
-                    height;
+                VideoSettings.ResolutionWidth = width;
+                VideoSettings.ResolutionHeight = height;
             }
         }
-        if (this.ComboBoxRefreshRate.SelectedItem
-            is int refreshRate)
-        {
-            this.VideoSettings.RefreshRate =
-                refreshRate;
-        }
-        this.VideoSettings.TerrainQuality =
-            this.ComboBoxTerrain.SelectedIndex;
-        this.VideoSettings.GeometryQuality =
-            this.ComboBoxGeometry.SelectedIndex;
-        this.VideoSettings.LightingQuality =
-            this.ComboBoxLighting.SelectedIndex;
-        this.VideoSettings.DynamicLightingQuality =
-            this.ComboBoxDynamicLighting.SelectedIndex;
-        this.VideoSettings.DynamicShadowsQuality =
-            this.ComboBoxDynamicShadows.SelectedIndex;
-        this.VideoSettings.EffectsQuality =
-            this.ComboBoxEffects.SelectedIndex;
-        this.VideoSettings.TextureQuality =
-            this.ComboBoxTextures.SelectedIndex;
-        this.VideoSettings.TextureFilteringQuality =
-            this.ComboBoxTextureFiltering.SelectedIndex;
-        this.VideoSettings.AntialiasingSamples =
-            this.ComboBoxAntialiasing.SelectedIndex switch
-            {
-                1 => 2,
-                2 => 4,
-                3 => 8,
-                _ => 0
-            };
-        this.VideoSettings.ViewDistanceScale =
-            (float)this.SliderViewDistance.Value;
-        this.VideoSettings.UseBloom =
-            this.CheckBoxBloom.IsChecked == true;
-        this.VideoSettingsService.Save(
-            this.VideoSettings);
-    }
-    private void ComboBoxResolution_OnSelectionChanged(
-        object? sender,
-        SelectionChangedEventArgs e)
-    {
-        if (!this.VideoSettingsAvailable)
-            return;
-        this.LoadRefreshRates();
-    }
-    private void ButtonSave_OnClick(
-     object? sender,
-     RoutedEventArgs e)
-    {
-        try
-        {
-            this.SaveLanguageSettings();
-            this.SaveGameLanguage();
-            this.SaveVideoSettings();
-            this.SaveAudioSettings();
-        }
-        catch (Exception exception)
-        {
-            Console.WriteLine(exception);
-        }
 
-        if (this.DataContext
-            is IDialogContext ctx)
+        if (ComboBoxRefreshRate.SelectedItem is int rate)
+            VideoSettings.RefreshRate = rate;
+
+        VideoSettings.TerrainQuality = ComboBoxTerrain.SelectedIndex;
+        VideoSettings.GeometryQuality = ComboBoxGeometry.SelectedIndex;
+        VideoSettings.LightingQuality = ComboBoxLighting.SelectedIndex;
+        VideoSettings.DynamicLightingQuality = ComboBoxDynamicLighting.SelectedIndex;
+        VideoSettings.DynamicShadowsQuality = ComboBoxDynamicShadows.SelectedIndex;
+        VideoSettings.EffectsQuality = ComboBoxEffects.SelectedIndex;
+        VideoSettings.TextureQuality = ComboBoxTextures.SelectedIndex;
+        VideoSettings.TextureFilteringQuality = ComboBoxTextureFiltering.SelectedIndex;
+
+        VideoSettings.AntialiasingSamples = ComboBoxAntialiasing.SelectedIndex switch
         {
-            ctx.Close();
-        }
+            1 => 2,
+            2 => 4,
+            3 => 8,
+            _ => 0
+        };
+
+        VideoSettings.ViewDistanceScale = (float)SliderViewDistance.Value;
+        VideoSettings.UseBloom = CheckBoxBloom.IsChecked == true;
+
+        VideoSettingsService.Save(VideoSettings);
     }
-    private void ButtonCancel_OnClick(
-        object? sender,
-        RoutedEventArgs e)
+
+    private void DisableAudioSettings()
     {
-        if (this.DataContext
-            is IDialogContext ctx)
+        AudioSettingsAvailable = false;
+
+        foreach (var control in new Control[]
         {
-            ctx.Close();
-        }
+            SliderEffectsVolume, SliderMusicVolume, SliderHelpVoiceVolume,
+            ComboBoxSoundQuality, CheckBoxVoipEnabled,
+            SliderVoipPlaybackVolume, SliderVoipCaptureVolume,
+            CheckBoxVoipPushToTalk, CheckBoxVoipBoost
+        })
+            control.IsEnabled = false;
+
+        TextBlockAudioSettingsStatus.IsVisible = true;
     }
+
     private void LoadAudioSettings()
     {
         try
         {
-            string audioSettingsPath =
-                AudioSettingsPath.GetPath();
+            AudioSettingsService = new AudioSettingsService(AudioSettingsPath.GetPath());
+            AudioSettings = AudioSettingsService.Load();
+            AudioSettingsAvailable = true;
+            TextBlockAudioSettingsStatus.IsVisible = false;
 
-            this.AudioSettingsService =
-                new AudioSettingsService(
-                    audioSettingsPath);
+            SliderEffectsVolume.Value = Math.Clamp(AudioSettings.EffectsVolume, 0f, 1f);
+            SliderMusicVolume.Value = Math.Clamp(AudioSettings.MusicVolume, 0f, 1f);
+            SliderHelpVoiceVolume.Value = Math.Clamp(AudioSettings.HelpVoiceVolume, 0f, 1f);
 
-            this.AudioSettings =
-                this.AudioSettingsService.Load();
+            ComboBoxSoundQuality.ItemsSource = new[]
+            {
+                Locale.Get("Low"), Locale.Get("Medium"), Locale.Get("High")
+            };
 
-            this.AudioSettingsAvailable =
-                true;
+            ComboBoxSoundQuality.SelectedIndex = AudioSettings.SoundQuality switch
+            {
+                "Medium" => 1,
+                "High" => 2,
+                _ => 0
+            };
 
-            this.TextBlockAudioSettingsStatus.IsVisible =
-                false;
-
-            this.SliderEffectsVolume.Value =
-                Math.Clamp(
-                    this.AudioSettings.EffectsVolume,
-                    0.0f,
-                    1.0f);
-
-            this.SliderMusicVolume.Value =
-                Math.Clamp(
-                    this.AudioSettings.MusicVolume,
-                    0.0f,
-                    1.0f);
-
-            this.SliderHelpVoiceVolume.Value =
-                Math.Clamp(
-                    this.AudioSettings.HelpVoiceVolume,
-                    0.0f,
-                    1.0f);
-
-            this.ComboBoxSoundQuality.ItemsSource =
-                new[]
-                {
-        Locale.Get("Low"),
-        Locale.Get("Medium"),
-        Locale.Get("High"),
-                };
-
-            this.ComboBoxSoundQuality.SelectedIndex =
-                this.AudioSettings.SoundQuality switch
-                {
-                    "Medium" => 1,
-                    "High" => 2,
-                    _ => 0
-                };
-
-            this.CheckBoxVoipEnabled.IsChecked =
-                this.AudioSettings.VoipEnabled;
-
-            this.SliderVoipPlaybackVolume.Value =
-                Math.Clamp(
-                    this.AudioSettings.VoipPlaybackVolume,
-                    0.0f,
-                    1.0f);
-
-            this.SliderVoipCaptureVolume.Value =
-                Math.Clamp(
-                    this.AudioSettings.VoipCaptureVolume,
-                    0.0f,
-                    1.0f);
-
-            this.CheckBoxVoipPushToTalk.IsChecked =
-                this.AudioSettings.VoipUsePushToTalk;
-
-            this.CheckBoxVoipBoost.IsChecked =
-                this.AudioSettings.VoipBoostEnabled;
+            CheckBoxVoipEnabled.IsChecked = AudioSettings.VoipEnabled;
+            SliderVoipPlaybackVolume.Value = Math.Clamp(AudioSettings.VoipPlaybackVolume, 0f, 1f);
+            SliderVoipCaptureVolume.Value = Math.Clamp(AudioSettings.VoipCaptureVolume, 0f, 1f);
+            CheckBoxVoipPushToTalk.IsChecked = AudioSettings.VoipUsePushToTalk;
+            CheckBoxVoipBoost.IsChecked = AudioSettings.VoipBoostEnabled;
         }
         catch
         {
-            this.DisableAudioSettings();
+            DisableAudioSettings();
         }
     }
 
     private void SaveAudioSettings()
     {
-        if (!this.AudioSettingsAvailable)
+        if (!AudioSettingsAvailable || AudioSettingsService == null)
             return;
 
-        if (this.AudioSettingsService == null)
-            return;
+        AudioSettings.EffectsVolume = (float)SliderEffectsVolume.Value;
+        AudioSettings.MusicVolume = (float)SliderMusicVolume.Value;
+        AudioSettings.HelpVoiceVolume = (float)SliderHelpVoiceVolume.Value;
+        AudioSettings.SoundQuality = ComboBoxSoundQuality.SelectedIndex switch
+        {
+            1 => "Medium",
+            2 => "High",
+            _ => "Low"
+        };
 
-        this.AudioSettings.EffectsVolume =
-            (float)this.SliderEffectsVolume.Value;
+        AudioSettings.VoipEnabled = CheckBoxVoipEnabled.IsChecked == true;
+        AudioSettings.VoipPlaybackVolume = (float)SliderVoipPlaybackVolume.Value;
+        AudioSettings.VoipCaptureVolume = (float)SliderVoipCaptureVolume.Value;
+        AudioSettings.VoipUsePushToTalk = CheckBoxVoipPushToTalk.IsChecked == true;
+        AudioSettings.VoipBoostEnabled = CheckBoxVoipBoost.IsChecked == true;
 
-        this.AudioSettings.MusicVolume =
-            (float)this.SliderMusicVolume.Value;
-
-        this.AudioSettings.HelpVoiceVolume =
-            (float)this.SliderHelpVoiceVolume.Value;
-
-        this.AudioSettings.SoundQuality =
-            this.ComboBoxSoundQuality.SelectedIndex switch
-            {
-                1 => "Medium",
-                2 => "High",
-                _ => "Low"
-            };
-
-        this.AudioSettings.VoipEnabled =
-            this.CheckBoxVoipEnabled.IsChecked == true;
-
-        this.AudioSettings.VoipPlaybackVolume =
-            (float)this.SliderVoipPlaybackVolume.Value;
-
-        this.AudioSettings.VoipCaptureVolume =
-            (float)this.SliderVoipCaptureVolume.Value;
-
-        this.AudioSettings.VoipUsePushToTalk =
-            this.CheckBoxVoipPushToTalk.IsChecked == true;
-
-        this.AudioSettings.VoipBoostEnabled =
-            this.CheckBoxVoipBoost.IsChecked == true;
-
-        this.AudioSettingsService.Save(
-            this.AudioSettings);
+        AudioSettingsService.Save(AudioSettings);
     }
 
-    private void UpdateVolumeText(
-    TextBlock textBlock,
-    double value)
+    private void UpdateVolumeText(TextBlock textBlock, double value)
     {
-        textBlock.Text =
-            $"{Math.Round(value * 100)}%";
+        textBlock.Text = $"{Math.Round(value * 100)}%";
     }
 
-    private void SliderEffectsVolume_OnValueChanged(
-    object? sender,
-    Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e)
-    {
-        this.UpdateVolumeText(
-            this.TextBlockEffectsVolume,
-            e.NewValue);
-    }
+    private void SliderEffectsVolume_OnValueChanged(object? sender, Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e)
+        => UpdateVolumeText(TextBlockEffectsVolume, e.NewValue);
 
-    private void SliderMusicVolume_OnValueChanged(
-        object? sender,
-        Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e)
-    {
-        this.UpdateVolumeText(
-            this.TextBlockMusicVolume,
-            e.NewValue);
-    }
+    private void SliderMusicVolume_OnValueChanged(object? sender, Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e)
+        => UpdateVolumeText(TextBlockMusicVolume, e.NewValue);
 
-    private void SliderHelpVoiceVolume_OnValueChanged(
-        object? sender,
-        Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e)
-    {
-        this.UpdateVolumeText(
-            this.TextBlockHelpVoiceVolume,
-            e.NewValue);
-    }
+    private void SliderHelpVoiceVolume_OnValueChanged(object? sender, Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e)
+        => UpdateVolumeText(TextBlockHelpVoiceVolume, e.NewValue);
 
-    private void SliderVoipPlaybackVolume_OnValueChanged(
-        object? sender,
-        Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e)
-    {
-        this.UpdateVolumeText(
-            this.TextBlockVoipPlaybackVolume,
-            e.NewValue);
-    }
+    private void SliderVoipPlaybackVolume_OnValueChanged(object? sender, Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e)
+        => UpdateVolumeText(TextBlockVoipPlaybackVolume, e.NewValue);
 
-    private void SliderVoipCaptureVolume_OnValueChanged(
-        object? sender,
-        Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e)
-    {
-        this.UpdateVolumeText(
-            this.TextBlockVoipCaptureVolume,
-            e.NewValue);
-    }
-    private async void OpenLogs_Click(
-    object? sender,
-    Avalonia.Interactivity.RoutedEventArgs e)
+    private void SliderVoipCaptureVolume_OnValueChanged(object? sender, Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e)
+        => UpdateVolumeText(TextBlockVoipCaptureVolume, e.NewValue);
+
+    private async void OpenLogs_Click(object? sender, RoutedEventArgs e)
     {
         try
         {
-            Directory.CreateDirectory(
-                Logger.LogDirectory);
-
-            var topLevel =
-                TopLevel.GetTopLevel(this);
-
-            if (topLevel == null)
-                return;
-
-            var folder =
-                new DirectoryInfo(
-                    Logger.LogDirectory);
-
-            await topLevel.Launcher
-                .LaunchDirectoryInfoAsync(folder);
+            Directory.CreateDirectory(LogDirectory);
+            var topLevel = TopLevel.GetTopLevel(this);
+            if (topLevel != null)
+                await topLevel.Launcher.LaunchDirectoryInfoAsync(new DirectoryInfo(LogDirectory));
         }
         catch (Exception ex)
         {
-            Logger.Error(
-                "Failed to open log directory",
-                ex);
+            Logger.Error("Failed to open log directory", ex);
+        }
+    }
+    private void OnLanguageChanged(object? sender, EventArgs e)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            int antialiasingIndex = ComboBoxAntialiasing.SelectedIndex;
+            int soundQualityIndex = ComboBoxSoundQuality.SelectedIndex;
+
+            ComboBoxAntialiasing.ItemsSource =
+                new[] { Locale.Get("Off"), "2x", "4x", "8x" };
+
+            ComboBoxAntialiasing.SelectedIndex = antialiasingIndex;
+
+            FillQualityComboBox(ComboBoxTerrain, VideoSettings.TerrainQuality);
+            FillQualityComboBox(ComboBoxGeometry, VideoSettings.GeometryQuality);
+            FillQualityComboBox(ComboBoxLighting, VideoSettings.LightingQuality);
+            FillQualityComboBox(ComboBoxDynamicLighting, VideoSettings.DynamicLightingQuality);
+            FillQualityComboBox(ComboBoxDynamicShadows, VideoSettings.DynamicShadowsQuality);
+            FillQualityComboBox(ComboBoxEffects, VideoSettings.EffectsQuality);
+            FillQualityComboBox(ComboBoxTextures, VideoSettings.TextureQuality);
+            FillQualityComboBox(ComboBoxTextureFiltering, VideoSettings.TextureFilteringQuality);
+
+            ComboBoxSoundQuality.ItemsSource = new[]
+            {
+            Locale.Get("Low"),
+            Locale.Get("Medium"),
+            Locale.Get("High")
+        };
+
+            ComboBoxSoundQuality.SelectedIndex = soundQualityIndex;
+        });
+    }
+    private async void ButtonSave_OnClick(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            SaveLanguageSettings();
+            if (!SaveGameLanguage())
+                return;
+
+            SaveVideoSettings();
+            SaveAudioSettings();
+            if (DataContext is IDialogContext ctx)
+                ctx.Close();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Failed to save settings", ex);
+        }
+    }
+
+    private void ButtonCancel_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is IDialogContext ctx)
+            ctx.Close();
+    }
+
+    private async void ButtonUninstall_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (TopLevel.GetTopLevel(this) is not Window owner)
+            return;
+
+        var cancel = new Button { Content = Locale.Get("UninstallGameCancel"), MinWidth = 90, IsCancel = true };
+        var confirm = new Button
+        {
+            Content = Locale.Get("UninstallGameConfirmButton"),
+            MinWidth = 90,
+            Background = new SolidColorBrush(Color.Parse("#C62828")),
+            Foreground = Brushes.White,
+            IsDefault = true
+        };
+
+        var dialog = new Window
+        {
+            Title = Locale.Get("UninstallGameTitle"),
+            Width = 400,
+            Height = 190,
+            CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Content = new StackPanel
+            {
+                Margin = new Thickness(20),
+                Spacing = 18,
+                Children =
+                {
+                    new TextBlock
+                    {
+                        Text = Locale.Get("UninstallGameConfirm"),
+                        TextWrapping = TextWrapping.Wrap
+                    },
+                    new StackPanel
+                    {
+                        Orientation = Avalonia.Layout.Orientation.Horizontal,
+                        HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+                        Spacing = 10,
+                        Children = { cancel, confirm }
+                    }
+                }
+            }
+        };
+
+        cancel.Click += (_, _) => dialog.Close(false);
+        confirm.Click += (_, _) => dialog.Close(true);
+
+        if (!await dialog.ShowDialog<bool>(owner))
+            return;
+
+        try
+        {
+            await Game.UninstallAsync();
+            if (DataContext is IDialogContext ctx)
+                ctx.Close();
+        }
+        catch (Exception ex)
+        {
+            var ok = new Button
+            {
+                Content = Locale.Get("CommonOk"),
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right
+            };
+
+            var error = new Window
+            {
+                Title = Locale.Get("UninstallGameError"),
+                Width = 400,
+                Height = 160,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Content = new StackPanel
+                {
+                    Margin = new Thickness(20),
+                    Spacing = 15,
+                    Children =
+                    {
+                        new TextBlock { Text = ex.Message, TextWrapping = TextWrapping.Wrap },
+                        ok
+                    }
+                }
+            };
+
+            ok.Click += (_, _) => error.Close();
+            await error.ShowDialog(owner);
         }
     }
 }
