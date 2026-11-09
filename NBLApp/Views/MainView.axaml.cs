@@ -14,7 +14,9 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using NBLNet;
 using Ursa.Controls;
+using Game = NBL.Game;
 
 namespace NBLApp.Views;
 
@@ -55,6 +57,11 @@ public partial class MainView : View
         DataContext = this;
     }
 
+    public MainView()
+    {
+        InitializeComponent();
+    }
+
     public MainView(Launcher launcher, ViewPresenter<Launcher> viewPresenter, object? arg) : base(launcher, viewPresenter, arg)
     {
         Launcher = launcher;
@@ -73,6 +80,7 @@ public partial class MainView : View
         Pages.ShowView("general", Game.Id);
     }
 
+
     protected async Task OnLoaded()
     {
         await Game.CheckInstall();
@@ -82,17 +90,19 @@ public partial class MainView : View
             try { Game.GetCurrentClient(); }
             catch (GameNotSetRegistryException) { Logger.Warning("Current client not selected."); }
 
-            var clients = await Game.GetClients();
-            await UpdateClients(clients);
-            await SyncInstalledClientsAsync(clients);
             await UpdateClients(await Game.GetClients());
         }
         else
             await UpdateClients([]);
 
         isLoaded = true;
+
+        _ = UpdateLabelPlayers();
+        _ = UpdateLabelPing();
+
         await UpdateButtonMA(Game.Status);
     }
+
 
     private async Task SyncInstalledClientsAsync(ClientData[] clients)
     {
@@ -116,7 +126,7 @@ public partial class MainView : View
                 {
                     await update.SyncClientAsync(Launcher.ServerAddress, Game.Id, Game.GetPath(), id);
                     Logger.Info($"Client synchronization completed: {id}");
-                    Notify.ShowInfo("Синхронизация завершена", $"{id}: проверка файлов выполнена успешно.");
+                    //Notify.ShowInfo("Синхронизация завершена", $"{id}: проверка файлов выполнена успешно.");
                 }
                 catch (Exception ex)
                 {
@@ -173,6 +183,7 @@ public partial class MainView : View
         }
     }
 
+
     protected async Task UpdateClients(ClientData[] clients)
     {
         isUpdatingClients = true;
@@ -184,33 +195,29 @@ public partial class MainView : View
             try { current = Game.GetCurrentClient(); }
             catch { current = Launcher.ClientId; }
 
-            ApiClient[] available;
-
-            try { available = await Launcher.GetAvailableClientsAsync(Game.Id); }
-            catch (Exception ex)
-            {
-                Logger.Warning($"Failed to load available clients: {ex.Message}");
-                available = clients.Select(c => new ApiClient { Ident = c.ID, Name = c.Name }).ToArray();
-            }
+            // Сначала показываем установленные локально клиенты.
+            var available = clients
+                .Select(c => new ApiClient { Ident = c.ID, Name = c.Name })
+                .ToList();
 
             ComboBoxClients.Items.Clear();
             ComboBoxClients.SelectedIndex = -1;
 
             foreach (var client in available)
             {
-                bool installed = clients.Any(c => c.ID.Equals(client.Ident, StringComparison.OrdinalIgnoreCase));
-
                 ComboBoxClients.Items.Add(new ComboBoxItem
                 {
                     Content = client.Name,
                     Name = $"ComboBoxItemClients_{client.Ident}",
-                    Foreground = installed ? Brushes.White : Brushes.Gray
+                    Foreground = Brushes.White
                 });
 
                 if (client.Ident.Equals(current, StringComparison.OrdinalIgnoreCase))
                     ComboBoxClients.SelectedIndex = ComboBoxClients.ItemCount - 1;
             }
 
+            // Если текущий клиент не установлен, всё равно сохраняем его выбор,
+            // когда он присутствует в локальном списке.
             if (ComboBoxClients.SelectedIndex < 0 && ComboBoxClients.ItemCount > 0)
                 ComboBoxClients.SelectedIndex = 0;
         }
@@ -221,6 +228,7 @@ public partial class MainView : View
 
         await UpdateButtonMA(Game.Status);
     }
+
 
     private async Task UpdateButtonMA(GameStatus status)
     {
@@ -234,12 +242,6 @@ public partial class MainView : View
             }
 
             Button_MainAction.IsEnabled = true;
-
-            if (clientSyncFailed && status == GameStatus.NotRunning)
-            {
-                Button_MainAction.Content = "Повторить синхронизацию";
-                return;
-            }
 
             switch (status)
             {
@@ -266,14 +268,6 @@ public partial class MainView : View
 
         try
         {
-            if (clientSyncFailed && Game.Status == GameStatus.NotRunning)
-            {
-                await SyncInstalledClientsAsync(await Game.GetClients());
-                await UpdateClients(await Game.GetClients());
-                await UpdateButtonMA(Game.Status);
-                return;
-            }
-
             switch (Game.Status)
             {
                 case GameStatus.NotInstalled:
@@ -326,8 +320,6 @@ public partial class MainView : View
 
                             break;
                         }
-
-                        await SwitchClientWithProfilesAsync(clientId);
                         await Game.Launch();
                         break;
                     }
@@ -350,13 +342,151 @@ public partial class MainView : View
         await OverlayDialog.ShowCustomAsync<SettingsGear>(new SettingsGear(Game) { DataContext = context }, context, hostId: "main", new OverlayDialogOptions { CanResize = false });
     }
 
-    private async void ComboBoxClients_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    private async Task UpdateLabelPlayers()
     {
-        if (!isLoaded || isUpdatingClients || !Game.IsInstall || ComboBoxClients.SelectedItem is not ComboBoxItem)
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            this.Players.IsVisible = !this.Players.IsVisible;
+            this.LoadingIconPlayers.IsVisible = !this.LoadingIconPlayers.IsVisible;
+        });
+        
+        try
+        {
+            int num = await this.Launcher.Server.GetNumberPlayers("bf2142", this.GetSelectedClientId());
+            await Dispatcher.UIThread.InvokeAsync(() => { this.Players.Text = num.ToString(); });
+        }
+        catch (Exception e)
+        {
+            await Dispatcher.UIThread.InvokeAsync(() => { this.Players.Text = "-1"; });
+        }
+        finally
+        {
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                this.Players.IsVisible = !this.Players.IsVisible;
+                this.LoadingIconPlayers.IsVisible = !this.LoadingIconPlayers.IsVisible;
+            });
+        }
+    }
+    
+    private async Task UpdateLabelPing()
+    {
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            this.Ping.IsVisible = !this.Ping.IsVisible;
+            this.LoadingIconPing.IsVisible = !this.LoadingIconPing.IsVisible;
+        });
+
+        try
+        {
+            GameClient client = await this.Launcher.Server.GetGameClient("bf2142", this.GetSelectedClientId());
+            long delay = await client.DetermineDelay();
+            await Dispatcher.UIThread.InvokeAsync(() => { this.Ping.Text = $" {delay} ms"; });
+
+        }
+        catch (Exception e)
+        {
+            await Dispatcher.UIThread.InvokeAsync(() => { this.Ping.Text = "-1"; });
+        }
+        finally
+        {
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                this.Ping.IsVisible = !this.Ping.IsVisible;
+                this.LoadingIconPing.IsVisible = !this.LoadingIconPing.IsVisible;
+            });
+        }
+    }
+
+    private async void ComboBoxClients_OnSelectionChanged(
+        object? sender,
+        SelectionChangedEventArgs e)
+    {
+        if (!isLoaded ||
+            isUpdatingClients ||
+            !Game.IsInstall ||
+            ComboBoxClients.SelectedItem is not ComboBoxItem)
             return;
 
-        await UpdateButtonMA(Game.Status);
+        string currentClient;
+
+        try { currentClient = Game.GetCurrentClient(); }
+        catch { currentClient = Launcher.ClientId; }
+
+        string targetClient = GetSelectedClientId();
+
+        if (currentClient.Equals(
+            targetClient,
+            StringComparison.OrdinalIgnoreCase))
+            return;
+
+        // Не переключаем профили во время работы игры.
+        if (Game.Status != GameStatus.NotRunning)
+        {
+            isUpdatingClients = true;
+
+            try
+            {
+                foreach (ComboBoxItem item in ComboBoxClients.Items)
+                {
+                    if (item.Name?.EndsWith(
+                        $"_{currentClient}",
+                        StringComparison.OrdinalIgnoreCase) == true)
+                    {
+                        ComboBoxClients.SelectedItem = item;
+                        break;
+                    }
+                }
+            }
+            finally
+            {
+                isUpdatingClients = false;
+            }
+
+            return;
+        }
+
+        isUpdatingClients = true;
+        ComboBoxClients.IsEnabled = false;
+
+        try
+        {
+            await SwitchClientWithProfilesAsync(targetClient);
+
+            Logger.Info($"Selected client changed: {currentClient} -> {targetClient}");
+
+            _ = UpdateLabelPlayers();
+            _ = UpdateLabelPing();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Client profile switch failed.", ex);
+
+            Notify.ShowError(
+                Locale.Get("ClientChangeFailed"),
+                ex.Message);
+
+            // Возвращаем предыдущую платформу в ComboBox.
+            foreach (ComboBoxItem item in ComboBoxClients.Items)
+            {
+                if (item.Name?.EndsWith(
+                    $"_{currentClient}",
+                    StringComparison.OrdinalIgnoreCase) == true)
+                {
+                    ComboBoxClients.SelectedItem = item;
+                    break;
+                }
+            }
+        }
+        finally
+        {
+            isUpdatingClients = false;
+            ComboBoxClients.IsEnabled = true;
+
+            await UpdateButtonMA(Game.Status);
+        }
     }
+
 
     private async void ButtonParams_OnClick(object? sender, RoutedEventArgs e)
     {
@@ -367,5 +497,10 @@ public partial class MainView : View
     private void Telegram_Click(object? sender, RoutedEventArgs e)
     {
         Process.Start(new ProcessStartInfo { FileName = "https://t.me/VSEM2142", UseShellExecute = true });
+    }
+
+    private void Discord_Click(object? sender, RoutedEventArgs e)
+    {
+        Process.Start(new ProcessStartInfo { FileName = "https://discord.gg/Gu47txvTkW", UseShellExecute = true });
     }
 }

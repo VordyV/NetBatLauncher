@@ -7,4 +7,7 @@
 	<ItemGroup>
 		<PackageReference Include="System.Management" Version="10.0.0" />
 	</ItemGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\NBLNet\NBLNet.csproj" />
+	</ItemGroup>
 </Project>

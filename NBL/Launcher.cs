@@ -1,6 +1,8 @@
 ﻿using NBL.Services;
 using System.Net.Http.Json;
 using System.Text.Json;
+using NBLNet;
+using File = System.IO.File;
 
 namespace NBL;
 
@@ -17,6 +19,7 @@ public class Launcher
 
     public Configurator Registry { get; }
     public string ServerAddress { get; }
+    public Api Server { get; }
     protected Dictionary<string, Game> Games;
 
     public Launcher(string pathConfig, string serverAddress)
@@ -24,6 +27,7 @@ public class Launcher
         Games = new();
         Registry = new Configurator(pathConfig);
         ServerAddress = serverAddress;
+        Server = new Api(serverAddress: ServerAddress);
         Logger.Info($"Launcher created: config='{pathConfig}'");
     }
 

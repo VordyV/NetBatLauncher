@@ -10,6 +10,8 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using NBLApp.Controls;
+using Ursa.Controls;
 
 namespace NBLApp.Forms;
 
@@ -27,7 +29,6 @@ public partial class SimpInst : UserControl
     public SimpInst()
     {
         InitializeComponent();
-        ApplyLocalization();
     }
 
     public SimpInst(Launcher launcher, Game game)
@@ -36,8 +37,12 @@ public partial class SimpInst : UserControl
         Launcher = launcher;
         InitializeComponent();
         PathPickerGamePath.SelectedPathsText = DefaultGamePath;
-        ApplyLocalization();
         Logger.Debug($"SimpInst opened: game='{Game.Id}'");
+        Loaded += async (_, _) =>
+        {
+            var context = new DialogContext();
+            await OverlayDialog.ShowCustomAsync<Disclaimer>(new Disclaimer(Launcher, Game) { DataContext = context }, context, hostId: "main", options: new OverlayDialogOptions { IsCloseButtonVisible = false, CanResize = false });
+        };
     }
 
     public SimpInst(Launcher launcher, Game game, string clientId, bool syncOnly)
@@ -48,13 +53,12 @@ public partial class SimpInst : UserControl
         _syncOnly = syncOnly;
 
         InitializeComponent();
-        ApplyLocalization();
 
-        TextBlockPath.Text = $"{(_syncOnly ? "Синхронизация" : "Установка клиента")}: {ClientName(clientId)}";
+        TextBlockPath.Text = $"{Locale.Get(_syncOnly ? "SyncClientTitle" : "InstallClientTitle")}: {ClientName(clientId)}";
         PathPickerGamePath.IsVisible = false;
         ButtonSave.IsVisible = false;
         PanelProgress.IsVisible = true;
-        TextBlockStatus.Text = _syncOnly ? "Подготовка синхронизации..." : "Подготовка клиента...";
+        TextBlockStatus.Text = Locale.Get(_syncOnly ? "SyncPreparing" : "ClientPreparing");
 
         Loaded += async (_, _) => await RunClientOperationAsync();
         Logger.Info($"Client dialog opened: client={clientId}, sync={syncOnly}");
@@ -67,24 +71,6 @@ public partial class SimpInst : UserControl
         "novgames" => "NovGames",
         _ => id
     };
-
-    private void ApplyLocalization()
-    {
-        try
-        {
-            TextBlockPath.Text = Locale.Get("GamePath");
-            TextBlockStatus.Text = Locale.Get("Status");
-            TextBlockSpeed.Text = Locale.Get("InstallSpeed") + ": —";
-            TextBlockEta.Text = Locale.Get("InstallRemaining") + ": —";
-            TextBlockOverall.Text = Locale.Get("InstallOverallProgress") + ": 0%";
-            ButtonCancel.Content = Locale.Get("Cancel");
-            ButtonSave.Content = Locale.Get("Install");
-        }
-        catch (Exception ex)
-        {
-            Logger.Warning($"Failed to apply SimpInst localization: {ex.Message}");
-        }
-    }
 
     private void ButtonCancel_OnClick(object? sender, RoutedEventArgs e)
     {
@@ -211,9 +197,7 @@ public partial class SimpInst : UserControl
             var progress = new Progress<ClientUpdateProgress>(UpdateProgress);
             string gamePath = Game.GetPath();
 
-            TextBlockStatus.Text = _syncOnly
-                ? "Проверка файлов клиента..."
-                : "Загрузка файлов клиента...";
+            TextBlockStatus.Text = Locale.Get(_syncOnly ? "SyncCheckingFiles" : "ClientDownloadingFiles");
 
             if (_syncOnly)
                 await update.SyncClientAsync(Launcher.ServerAddress, Game.Id, gamePath,
@@ -223,7 +207,7 @@ public partial class SimpInst : UserControl
                     _clientId, progress, _installationCancellation.Token);
 
             OperationSucceeded = true;
-            TextBlockStatus.Text = _syncOnly ? "Синхронизация завершена" : "Клиент установлен";
+            TextBlockStatus.Text = Locale.Get(_syncOnly ? "SyncCompleted" : "ClientInstalled");
             ProgressBarOverall.Value = 100;
             TextBlockOverall.Text = $"{Locale.Get("InstallOverallProgress")}: 100%";
             TextBlockSpeed.Text = Locale.Get("InstallSpeed") + ": —";
@@ -234,13 +218,13 @@ public partial class SimpInst : UserControl
         }
         catch (OperationCanceledException)
         {
-            TextBlockStatus.Text = "Операция отменена";
+            TextBlockStatus.Text = Locale.Get("OperationCancelled");
             SetInstallingState(false);
         }
         catch (Exception ex)
         {
             Logger.Error($"Client operation failed: client={_clientId}", ex);
-            TextBlockStatus.Text = "Ошибка операции";
+            TextBlockStatus.Text = Locale.Get("OperationError");
             ShowError(ex.Message);
             SetInstallingState(false);
         }
@@ -308,6 +292,6 @@ public partial class SimpInst : UserControl
         PanelProgress.IsVisible = installing;
         PathPickerGamePath.IsEnabled = !installing;
         ButtonSave.IsEnabled = !installing;
-        ButtonCancel.Content = installing ? Locale.Get("Cancel") : Locale.Get("Close");
+        ButtonCancel.Content = Locale.Get(installing ? "Cancel" : "Close");
     }
 }

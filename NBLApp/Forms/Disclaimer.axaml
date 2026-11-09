@@ -1,0 +1,26 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             xmlns:u="https://irihi.tech/ursa"
+             xmlns:c="clr-namespace:NBLApp.Controls"
+             x:Class="NBLApp.Forms.Disclaimer">
+    
+    <c:Form Title="Disclaimer" Width="500">
+        <c:Form.Content>
+            
+            <u:MarkdownLine Name="MarkdownLineText"/>
+            
+        </c:Form.Content>
+        
+        <c:Form.ActionContent>
+            
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                <Button Click="Button_OnClick" Content="I have read it"/>
+            </StackPanel>
+            
+        </c:Form.ActionContent>
+    </c:Form>
+    
+</UserControl>

@@ -4,7 +4,9 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 			 xmlns:local="clr-namespace:NBLApp.Views"
              mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="450"
+             xmlns:u="https://irihi.tech/ursa"
 			 x:DataType="local:MainView"
+             x:Name="Root"
              x:Class="NBLApp.Views.MainView">
 	<Grid ColumnDefinitions="Auto, *" RowDefinitions="Auto, *">
         <Border Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" Width="80">
@@ -20,6 +22,9 @@
                 </StackPanel>
 				<Grid Grid.Row="4">
 					    <StackPanel>
+							<Button Click="Discord_Click" Background="Transparent" HorizontalAlignment="Center">
+								<Image Source="/Assets/discord.png" Width="19" Height="19"/>
+							</Button>
 							<Button Click="Telegram_Click" Background="Transparent" HorizontalAlignment="Center">
 								<Image Source="/Assets/Telegram.png" Width="19" Height="19"/>
 							</Button>
@@ -82,9 +87,11 @@
                         </StackPanel>
                     </StackPanel>
                     <TextBlock Grid.Column="3" Grid.Row="0" Text="{Binding PlayersText}"/>
-                    <TextBlock Grid.Column="3" Grid.Row="1" Text="-" TextAlignment="Center"/>
+                    <u:LoadingIcon Grid.Column="3" Grid.Row="1" Name="LoadingIconPlayers" IsVisible="False"/>
+                    <TextBlock Grid.Column="3" Grid.Row="1" Name="Players" IsVisible="True" TextAlignment="Center"/>
                     <TextBlock Grid.Column="4" Grid.Row="0" Text="{Binding PingText}"/>
-                    <TextBlock Grid.Column="4" Grid.Row="1" Text="-" TextAlignment="Center"/>
+                    <u:LoadingIcon Grid.Column="4" Grid.Row="1" Name="LoadingIconPing" IsVisible="False"/>
+                    <TextBlock Grid.Column="4" Grid.Row="1" Name="Ping" IsVisible="True" TextAlignment="Center"/>
                     <TextBlock Grid.Column="5" Grid.Row="0" Text="{Binding PlatformAccessText}"/>
                     <TextBlock Grid.Column="5" Grid.Row="1" Text="-" TextAlignment="Center"/>
                 </Grid>                      

@@ -7,6 +7,7 @@ using NBL.Services;
 using System;
 using System.IO;
 using static NBL.LaunchParamDict;
+using NBLApp.Localization;
 
 namespace NBLApp;
 
@@ -55,44 +56,83 @@ public partial class App : Application
             Console.WriteLine(Localization.Locale.Get("LauncherTitle"));
             Console.WriteLine(Localization.Locale.Get("Settings"));
             Console.WriteLine(Localization.Locale.Get("Parameters"));
+            Console.WriteLine(Localization.Locale.Get("FullScreen"));
 
-            ILaunchParam[] launchParams = new ILaunchParam[]
-            {
-                new LaunchParamDict()
-                {
-                    Id = "screen",
-                    Name = "Screen",
-                    Dictionary = new()
-                    {
-                        {"Widesceen", "+widescreen 1"},
-                        {"Fullscreen 2560*1440", "+fullscreen 1 +szx 2560 +szy 1440"},
-                        {"Fullscreen 1920*1080", "+fullscreen 1 +szx 1920 +szy 1080"},
-                        {"Fullscreen 1600*900", "+fullscreen 1 +szx 1600 +szy 900"},
-                        {"Fullscreen 1280*1024", "+fullscreen 1 +szx 1280 +szy 1024"},
-                        {"Fullscreen 1024*768", "+fullscreen 1 +szx 1024 +szy 768"},
-                        {"Fullscreen 800*600", "+fullscreen 1 +szx 800 +szy 600"}
-                    }
-                },
+            ILaunchParam[] launchParams =
+            [
+                new LaunchParamDict
+    {
+        Id = "resolution",
+        Name = Locale.Get("Resolution"),
+        NameKey = "Resolution",
+        Description = null,
+        DescriptionKey = null,
+        ShortDescription = "Game window resolution",
+        Dictionary = new()
+        {
+            ["2560×1440"] = "+szx 2560 +szy 1440",
+            ["1920×1080"] = "+szx 1920 +szy 1080",
+            ["1920x1440"] = "+szx 1920 +szy 1440",
+            ["1600×900"] = "+szx 1600 +szy 900",
+            ["1280×1024"] = "+szx 1280 +szy 1024",
+            ["1024×768"] = "+szx 1024 +szy 768",
+            ["800×600"] = "+szx 800 +szy 600"
+        }
+    },
+    new LaunchParamBool
+    {
+        Id = "fullscreen",
+        Name = Locale.Get("FullScreen"),
+        NameKey = "FullScreen",
+        Description = Locale.Get("DescFullscreen"),
+        DescriptionKey = "DescFullscreen",
+        ShortDescription = ""
+    },
+    new LaunchParamBool
+    {
+        Id = "widescreen",
+        Name = Locale.Get("WideScreen"),
+        NameKey = "WideScreen",
+        Description = Locale.Get("DescWidescreen"),
+        DescriptionKey = "DescWidescreen",
+        ShortDescription = ""
+    },
+    new LaunchParamBool
+    {
+        Id = "multi",
+        Name = Locale.Get("Multi"),
+        NameKey = "Multi",
+        Description = Locale.Get("DescMulti"),
+        DescriptionKey = "DescMulti",
+        ShortDescription = ""
+    },
+    new LaunchParamBool
+    {
+        Id = "lowPriority",
+        Name = Locale.Get("LowPriority"),
+        NameKey = "LowPriority",
+        Description = null,
+        ShortDescription = ""
+    },
+    new LaunchParamBool
+    {
+        Id = "noSound",
+        Name = Locale.Get("NoSound"),
+        NameKey = "NoSound",
+        Description = null,
+        ShortDescription = ""
+    },
+    new LaunchParamCustom
+    {
+        Id = "customparam",
+        Name = Locale.Get("CustomParam"),
+        NameKey = "CustomParam",
+        Description = null,
+        ShortDescription = null,
+        FullFormat = true
+    }
+            ];
 
-                new LaunchOptionDict()
-                {
-                    Id = "additional",
-                    Name = "Additional",
-                    Dictionary = new()
-                    {
-                        {"Multi", "+multi 1"},
-                        {"LowPriority", "+lowPriority 1"},
-                        {"NoSound", "+noSound 1"}
-                    }
-                },
-
-                new LaunchParamCustom()
-                {
-                    Id = "customparam",
-                    Name = "CustomParam",
-                    FullFormat = true
-                }
-            };
 
             Launcher.RegisterGame(
                 gameId: "bf2142",

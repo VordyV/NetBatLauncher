@@ -243,9 +243,6 @@
   <data name="AudioSettings" xml:space="preserve">
     <value>АУДИО</value>
   </data>
-  <data name="EffectsVolume" xml:space="preserve">
-    <value>Громкость эффектов</value>
-  </data>
   <data name="MusicVolume" xml:space="preserve">
     <value>Громкость музыки</value>
   </data>
@@ -383,5 +380,113 @@
   </data>
   <data name="InstallClient" xml:space="preserve">
     <value>УСТАНОВИТЬ КЛИЕНТ</value>
+  </data>
+  <data name="FullScreen" xml:space="preserve">
+    <value>Полноэкранный режим</value>
+  </data>
+  <data name="WideScreen" xml:space="preserve">
+    <value>Широкоформатный режим</value>
+  </data>
+  <data name="Multi" xml:space="preserve">
+    <value>Множественные окна</value>
+  </data>
+  <data name="LowPriority" xml:space="preserve">
+    <value>Низкий приоритет</value>
+  </data>
+  <data name="NoSound" xml:space="preserve">
+    <value>Без звука</value>
+  </data>
+  <data name="ControlSettingsDescription" xml:space="preserve">
+    <value>Скоро..</value>
+  </data>
+  <data name="DescWidescreen" xml:space="preserve">
+    <value>Игровое окно сможет поддерживать не только формат 4:3, но и 16:9</value>
+  </data>
+  <data name="EffectsVolume" xml:space="preserve">
+    <value>Звук эффектов</value>
+  </data>
+  <data name="DescFullscreen" xml:space="preserve">
+    <value>Игра запускается в полноэкранном режиме (если игра не запускается в widescreen моде)</value>
+  </data>
+  <data name="DescMulti" xml:space="preserve">
+    <value>Позволяет запускать несколько игровых окон одновременно</value>
+  </data>
+  <data name="CustomParam" xml:space="preserve">
+    <value>Кастомные параметры</value>
+  </data>
+  <data name="ServerMonitorTitle" xml:space="preserve">
+    <value>Мониторинг серверов</value>
+  </data>
+  <data name="ServerMonitorDescription" xml:space="preserve">
+    <value>Список доступных серверов Battlefield 2142</value>
+  </data>
+  <data name="ServerMonitorLoading" xml:space="preserve">
+    <value>Загрузка...</value>
+  </data>
+  <data name="ServerMonitorFetching" xml:space="preserve">
+    <value>Получение списка серверов...</value>
+  </data>
+  <data name="ServerMonitorUpdated" xml:space="preserve">
+    <value>Обновлено 0 сек. назад</value>
+  </data>
+  <data name="ServerMonitorUpdateError" xml:space="preserve">
+    <value>Ошибка обновления · 0 сек. назад</value>
+  </data>
+  <data name="ServerCount" xml:space="preserve">
+    <value>Серверы</value>
+  </data>
+  <data name="PlayerCount" xml:space="preserve">
+    <value>Игроки</value>
+  </data>
+  <data name="PopulatedCount" xml:space="preserve">
+    <value>Заполненные</value>
+  </data>
+  <data name="FreeSlots" xml:space="preserve">
+    <value>Свободные места</value>
+  </data>
+  <data name="ServerSearchPlaceholder" xml:space="preserve">
+    <value>Поиск сервера...</value>
+  </data>
+  <data name="ServerFilterAllClients" xml:space="preserve">
+    <value>Все клиенты</value>
+  </data>
+  <data name="ServerColumnName" xml:space="preserve">
+    <value>Сервер</value>
+  </data>
+  <data name="ServerColumnMap" xml:space="preserve">
+    <value>Карта</value>
+  </data>
+  <data name="ServerColumnMode" xml:space="preserve">
+    <value>Режим</value>
+  </data>
+  <data name="ServerColumnPlayers" xml:space="preserve">
+    <value>Игроки</value>
+  </data>
+  <data name="ServerColumnPing" xml:space="preserve">
+    <value>Пинг</value>
+  </data>
+  <data name="ServerMonitorEmpty" xml:space="preserve">
+    <value>Серверы не найдены</value>
+  </data>
+  <data name="UninstallGame" xml:space="preserve">
+    <value>Удалить игру</value>
+  </data>
+  <data name="UninstallGameTitle" xml:space="preserve">
+    <value>Удаление игры</value>
+  </data>
+  <data name="UninstallGameConfirm" xml:space="preserve">
+    <value>Вы действительно хотите удалить Battlefield 2142?\nВсе файлы игры и установленные клиенты будут удалены.</value>
+  </data>
+  <data name="UninstallGameCancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="UninstallGameConfirmButton" xml:space="preserve">
+    <value>Удалить</value>
+  </data>
+  <data name="UninstallGameError" xml:space="preserve">
+    <value>Ошибка удаления</value>
+  </data>
+  <data name="CommonOk" xml:space="preserve">
+    <value>OK</value>
   </data>
 </root>
