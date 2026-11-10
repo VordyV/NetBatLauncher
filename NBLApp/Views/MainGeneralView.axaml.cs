@@ -673,6 +673,7 @@ public partial class MainGeneralView : View
             "gpm_nv" => Locale.Get("ServerModeNoVehicle"),
             "gpm_cq" => Locale.Get("ServerModeConquest"),
             "gpm_ti" => Locale.Get("ServerModeTitan"),
+            "gpm_sl" => Locale.Get("ServerModeAssaultLines"),
             _ => mode
         };
 

@@ -12,7 +12,7 @@
              x:Name="SimpInstControl"
              x:Class="NBLApp.Forms.SimpInst">
 
-	<c:Form Title="{loc:Translate InstallGameTitle}" Width="600">
+	<c:Form Title="{loc:Translate InstallGame}" Width="600">
 		<c:Form.Content>
 			<StackPanel Spacing="12">
 				<TextBlock Name="TextBlockPath"

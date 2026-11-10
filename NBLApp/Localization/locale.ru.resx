@@ -427,7 +427,7 @@
     <value>Получение списка серверов...</value>
   </data>
   <data name="ServerMonitorUpdated" xml:space="preserve">
-    <value>Обновлено 0 сек. назад</value>
+    <value>Обновлено {0} сек. назад</value>
   </data>
   <data name="ServerMonitorUpdateError" xml:space="preserve">
     <value>Ошибка обновления · 0 сек. назад</value>
@@ -530,5 +530,8 @@
   </data>
   <data name="ServerModeTitan" xml:space="preserve">
     <value>Титан</value>
+  </data>
+  <data name="ServerModeAssaultLines" xml:space="preserve">
+    <value>Штурмовые линии</value>
   </data>
 </root>

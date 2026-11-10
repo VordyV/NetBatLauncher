@@ -64,13 +64,7 @@ public partial class SimpInst : UserControl
         Logger.Info($"Client dialog opened: client={clientId}, sync={syncOnly}");
     }
 
-    private static string ClientName(string id) => id.ToLowerInvariant() switch
-    {
-        "original" => "Original",
-        "respy" => "Respy",
-        "novgames" => "NovGames",
-        _ => id
-    };
+    private static string ClientName(string id) => id;
 
     private void ButtonCancel_OnClick(object? sender, RoutedEventArgs e)
     {
