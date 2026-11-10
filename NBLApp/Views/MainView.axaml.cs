@@ -54,6 +54,7 @@ public partial class MainView : View
         Pages.ShowView("general", Game.Id);
     }
 
+
     protected async Task OnLoaded()
     {
         await Game.CheckInstall();
@@ -80,32 +81,7 @@ public partial class MainView : View
         Dispatcher.UIThread.Post(RefreshLocalization);
     }
 
-    private void RefreshLocalization()
-    {
-        TabMain.Content = Locale.Get("Main");
-        TabHeadquarters.Content = Locale.Get("Headquarters");
-        TabCommunity.Content = Locale.Get("Community");
-        TabSupport.Content = Locale.Get("Support");
-        TabMaps.Content = Locale.Get("Maps");
-        TabLeaderboard.Content = Locale.Get("Leaderboard");
-        TabBanlist.Content = Locale.Get("Banlist");
 
-        LaunchpadTitle.Text = Locale.Get("Launchpad");
-        PlatformLabel.Text = Locale.Get("Platform");
-        ModLabel.Text = Locale.Get("Mod");
-        PlayersLabel.Text = Locale.Get("Players");
-        PingLabel.Text = Locale.Get("Ping");
-        PlatformAccessLabel.Text = Locale.Get("PlatformAccess");
-
-        ButtonParams.Content = Locale.Get("Parameters");
-        _ = UpdateButtonMA(Game.Status);
-    }
-    protected override void OnDetachedFromVisualTree(
-    Avalonia.VisualTreeAttachmentEventArgs e)
-    {
-        Locale.LanguageChanged -= OnLanguageChanged;
-        base.OnDetachedFromVisualTree(e);
-    }
     private async Task SyncInstalledClientsAsync(ClientData[] clients)
     {
         isSyncingClients = true;

@@ -1,4 +1,4 @@
-﻿using NBL.Services;
+﻿
 using Avalonia.Data;
 using Avalonia.Markup.Xaml;
 using System;
@@ -16,8 +16,6 @@ public class TranslateExtension : MarkupExtension
 
     public override object ProvideValue(IServiceProvider serviceProvider)
     {
-        Logger.Info($"TranslateExtension: Binding created for '{Key}'");
-
         return new Binding($"[{Key}]")
         {
             Source = LocaleProvider.Instance,

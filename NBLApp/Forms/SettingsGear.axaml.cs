@@ -15,7 +15,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using Avalonia.Threading;
 
 namespace NBLApp.Forms;
 
@@ -34,19 +33,6 @@ public partial class SettingsGear : UserControl
 
     public string LogDirectory => Logger.LogDirectory;
     public string LauncherVersion => Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Unknown";
-    protected override void OnAttachedToVisualTree(
-    VisualTreeAttachmentEventArgs e)
-    {
-        base.OnAttachedToVisualTree(e);
-
-        LocaleProvider.Instance.LanguageChanged -= OnLanguageChanged;
-        LocaleProvider.Instance.LanguageChanged += OnLanguageChanged;
-    }
-
-    protected override void OnDetachedFromVisualTree(
-        VisualTreeAttachmentEventArgs e)
-    {
-        LocaleProvider.Instance.LanguageChanged -= OnLanguageChanged;
 
         base.OnDetachedFromVisualTree(e);
     }
@@ -387,37 +373,7 @@ public partial class SettingsGear : UserControl
             Logger.Error("Failed to open log directory", ex);
         }
     }
-    private void OnLanguageChanged(object? sender, EventArgs e)
-    {
-        Dispatcher.UIThread.Post(() =>
-        {
-            int antialiasingIndex = ComboBoxAntialiasing.SelectedIndex;
-            int soundQualityIndex = ComboBoxSoundQuality.SelectedIndex;
 
-            ComboBoxAntialiasing.ItemsSource =
-                new[] { Locale.Get("Off"), "2x", "4x", "8x" };
-
-            ComboBoxAntialiasing.SelectedIndex = antialiasingIndex;
-
-            FillQualityComboBox(ComboBoxTerrain, VideoSettings.TerrainQuality);
-            FillQualityComboBox(ComboBoxGeometry, VideoSettings.GeometryQuality);
-            FillQualityComboBox(ComboBoxLighting, VideoSettings.LightingQuality);
-            FillQualityComboBox(ComboBoxDynamicLighting, VideoSettings.DynamicLightingQuality);
-            FillQualityComboBox(ComboBoxDynamicShadows, VideoSettings.DynamicShadowsQuality);
-            FillQualityComboBox(ComboBoxEffects, VideoSettings.EffectsQuality);
-            FillQualityComboBox(ComboBoxTextures, VideoSettings.TextureQuality);
-            FillQualityComboBox(ComboBoxTextureFiltering, VideoSettings.TextureFilteringQuality);
-
-            ComboBoxSoundQuality.ItemsSource = new[]
-            {
-            Locale.Get("Low"),
-            Locale.Get("Medium"),
-            Locale.Get("High")
-        };
-
-            ComboBoxSoundQuality.SelectedIndex = soundQualityIndex;
-        });
-    }
     private async void ButtonSave_OnClick(object? sender, RoutedEventArgs e)
     {
         try
@@ -428,6 +384,7 @@ public partial class SettingsGear : UserControl
 
             SaveVideoSettings();
             SaveAudioSettings();
+
             if (DataContext is IDialogContext ctx)
                 ctx.Close();
         }

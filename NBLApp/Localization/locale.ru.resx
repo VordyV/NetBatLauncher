@@ -489,46 +489,4 @@
   <data name="CommonOk" xml:space="preserve">
     <value>OK</value>
   </data>
-  <data name="ServerFilterAllModes" xml:space="preserve">
-    <value>Все режимы</value>
-  </data>
-  <data name="ServerFilterAllMaps" xml:space="preserve">
-    <value>Все карты</value>
-  </data>
-  <data name="ServerFilterAnyPassword" xml:space="preserve">
-    <value>Любой статус пароля</value>
-  </data>
-  <data name="ServerPasswordProtected" xml:space="preserve">
-    <value>С паролем</value>
-  </data>
-  <data name="ServerPasswordFree" xml:space="preserve">
-    <value>Без пароля</value>
-  </data>
-  <data name="ServerFilterPopulated" xml:space="preserve">
-    <value>Только с игроками</value>
-  </data>
-  <data name="ServerFilterFavorites" xml:space="preserve">
-    <value>Избранное</value>
-  </data>
-  <data name="ServerPassword" xml:space="preserve">
-    <value>Пароль</value>
-  </data>
-  <data name="ServerRanked" xml:space="preserve">
-    <value>Ранговый</value>
-  </data>
-  <data name="ServerUnranked" xml:space="preserve">
-    <value>Неранговый</value>
-  </data>
-  <data name="ServerRankedColumn" xml:space="preserve">
-    <value>Ранг</value>
-  </data>
-  <data name="ServerModeNoVehicle" xml:space="preserve">
-    <value>Без техники</value>
-  </data>
-  <data name="ServerModeConquest" xml:space="preserve">
-    <value>Завоевание</value>
-  </data>
-  <data name="ServerModeTitan" xml:space="preserve">
-    <value>Титан</value>
-  </data>
 </root>

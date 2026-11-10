@@ -11,29 +11,18 @@ public static class Locale
         "NBLApp.Localization.Locale",
         typeof(Locale).Assembly);
 
-    private static volatile CultureInfo _culture =
-        CultureInfo.CurrentUICulture;
-
     public static event EventHandler? LanguageChanged;
 
     public static string Get(string key)
     {
-        return ResourceManager.GetString(key, _culture) ?? key;
+        return ResourceManager.GetString(key, CultureInfo.CurrentUICulture) ?? key;
     }
 
     public static void SetLanguage(string language)
     {
         CultureInfo culture = language == "auto"
-            ? new CultureInfo(
-                CultureInfo.InstalledUICulture.Name.StartsWith("ru")
-                    ? "ru-RU"
-                    : "en-US")
+            ? new CultureInfo(CultureInfo.InstalledUICulture.Name.StartsWith("ru") ? "ru-RU" : "en-US")
             : new CultureInfo(language);
-
-        _culture = culture;
-
-        CultureInfo.DefaultThreadCurrentUICulture = culture;
-        CultureInfo.DefaultThreadCurrentCulture = culture;
 
         CultureInfo.CurrentUICulture = culture;
         CultureInfo.CurrentCulture = culture;

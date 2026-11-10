@@ -4,175 +4,70 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:loc="clr-namespace:NBLApp.Localization"
              mc:Ignorable="d"
-             d:DesignWidth="1100"
+             d:DesignWidth="900"
              d:DesignHeight="550"
              x:Class="NBLApp.Views.MainGeneralView">
 
 	<Grid RowDefinitions="Auto,Auto,Auto,*" Margin="16">
 
-		<!-- Заголовок -->
 		<Grid ColumnDefinitions="*,Auto" Margin="0,0,0,14">
 			<StackPanel Spacing="3">
-				<TextBlock x:Name="MonitorTitle"
-                           Text="{loc:Translate ServerMonitorTitle}"
-                           FontSize="24"
-                           FontWeight="Bold"/>
-
-				<TextBlock x:Name="MonitorDescription"
-                           Text="{loc:Translate ServerMonitorDescription}"
-                           Opacity="0.65"/>
+				<TextBlock Text="{loc:Translate ServerMonitorTitle}" FontSize="24" FontWeight="Bold"/>
+				<TextBlock Text="{loc:Translate ServerMonitorDescription}" Opacity="0.65"/>
 			</StackPanel>
-
-			<TextBlock x:Name="RefreshInfo"
-                       Grid.Column="1"
-                       Text="{loc:Translate ServerMonitorLoading}"
-                       VerticalAlignment="Center"
-                       Opacity="0.6"/>
+			<TextBlock x:Name="RefreshInfo" Grid.Column="1" Text="{loc:Translate ServerMonitorLoading}" VerticalAlignment="Center" Opacity="0.6"/>
 		</Grid>
 
-		<!-- Статистика -->
-		<Grid Grid.Row="1"
-              ColumnDefinitions="*,*,*,*"
-              ColumnSpacing="10"
-              Margin="0,0,0,14">
-
+		<Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" ColumnSpacing="10" Margin="0,0,0,14">
 			<Border Background="#55000000" CornerRadius="6" Padding="12">
 				<StackPanel Spacing="4">
-					<TextBlock x:Name="ServerCountLabel"
-                               Text="{loc:Translate ServerCount}"
-                               Opacity="0.7"/>
-					<TextBlock x:Name="ServerCountValue"
-							   Text="0"
-							   FontSize="22"
-							   FontWeight="Bold"/>
+					<TextBlock Text="{loc:Translate ServerCount}" Opacity="0.7"/>
+					<TextBlock x:Name="ServerCount" Text="0" FontSize="22" FontWeight="Bold"/>
 				</StackPanel>
 			</Border>
-
 			<Border Grid.Column="1" Background="#55000000" CornerRadius="6" Padding="12">
 				<StackPanel Spacing="4">
-					<TextBlock x:Name="PlayerCountLabel"
-                               Text="{loc:Translate PlayerCount}"
-                               Opacity="0.7"/>
-					<TextBlock x:Name="PlayerCountValue"
-							   Text="0"
-							   FontSize="22"
-							   FontWeight="Bold"/>
+					<TextBlock Text="{loc:Translate PlayerCount}" Opacity="0.7"/>
+					<TextBlock x:Name="PlayerCount" Text="0" FontSize="22" FontWeight="Bold"/>
 				</StackPanel>
 			</Border>
-
 			<Border Grid.Column="2" Background="#55000000" CornerRadius="6" Padding="12">
 				<StackPanel Spacing="4">
-					<TextBlock x:Name="PopulatedCountLabel"
-                               Text="{loc:Translate PopulatedCount}"
-                               Opacity="0.7"/>
-					<TextBlock x:Name="PopulatedCountValue"
-							   Text="0"
-							   FontSize="22"
-							   FontWeight="Bold"/>
+					<TextBlock Text="{loc:Translate PopulatedCount}" Opacity="0.7"/>
+					<TextBlock x:Name="PopulatedCount" Text="0" FontSize="22" FontWeight="Bold"/>
 				</StackPanel>
 			</Border>
-
 			<Border Grid.Column="3" Background="#55000000" CornerRadius="6" Padding="12">
 				<StackPanel Spacing="4">
-					<TextBlock x:Name="FreeSlotsLabel"
-                               Text="{loc:Translate FreeSlots}"
-                               Opacity="0.7"/>
-					<TextBlock x:Name="FreeSlotsValue"
-							   Text="—"
-							   FontSize="22"
-							   FontWeight="Bold"/>
+					<TextBlock Text="{loc:Translate FreeSlots}" Opacity="0.7"/>
+					<TextBlock x:Name="FreeSlots" Text="—" FontSize="22" FontWeight="Bold"/>
 				</StackPanel>
 			</Border>
 		</Grid>
 
-		<!-- Фильтры -->
-		<Grid Grid.Row="2"
-              ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto"
-              ColumnSpacing="8"
-              Margin="0,0,0,12">
-
+		<Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,0,0,12">
 			<TextBox x:Name="SearchBox"
-                     Grid.Column="0"
                      Watermark="{loc:Translate ServerSearchPlaceholder}"
                      VerticalContentAlignment="Center"
                      TextChanged="SearchBox_OnTextChanged"/>
 
 			<ComboBox x:Name="ClientFilter"
                       Grid.Column="1"
-                      MinWidth="110"
+                      Width="170"
                       SelectedIndex="0"
-                      SelectionChanged="ClientFilter_OnSelectionChanged"/>
-
-			<ComboBox x:Name="ModeFilter"
-                      Grid.Column="2"
-                      MinWidth="115"
-                      SelectionChanged="ModeFilter_OnSelectionChanged"/>
-
-			<ComboBox x:Name="MapFilter"
-                      Grid.Column="3"
-                      MinWidth="130"
-                      SelectionChanged="MapFilter_OnSelectionChanged"/>
-
-			<ComboBox x:Name="PasswordFilter"
-                      Grid.Column="4"
-                      MinWidth="135"
-                      SelectionChanged="PasswordFilter_OnSelectionChanged"/>
-
-			<CheckBox x:Name="PopulatedFilter"
-                      Grid.Column="5"
-                      VerticalAlignment="Center"
-                      Content="{loc:Translate ServerFilterPopulated}"
-                      IsChecked="False"
-                      IsCheckedChanged="PopulatedFilter_OnChanged"/>
-
-			<CheckBox x:Name="FavoritesFilter"
-                      Grid.Column="6"
-                      VerticalAlignment="Center"
-                      Content="{loc:Translate ServerFilterFavorites}"
-                      IsChecked="False"
-                      IsCheckedChanged="FavoritesFilter_OnChanged"/>
+                      SelectionChanged="ClientFilter_OnSelectionChanged">
+				<ComboBoxItem Content="{loc:Translate ServerFilterAllClients}" Tag="*"/>
+			</ComboBox>
 		</Grid>
 
-		<!-- Таблица серверов -->
 		<Grid Grid.Row="3" RowDefinitions="Auto,*">
-
 			<Border Background="#88000000" Padding="10">
-				<Grid ColumnDefinitions="2.5*,1.35*,1.15*,2*,1.2*,1*,1*"
-                      ColumnSpacing="8">
-
-					<TextBlock x:Name="ColumnName"
-                               Text="{loc:Translate ServerColumnName}"
-                               FontWeight="Bold"/>
-
-					<TextBlock x:Name="ColumnPassword"
-                               Grid.Column="1"
-                               Text="{loc:Translate ServerPassword}"
-                               FontWeight="Bold"/>
-
-					<TextBlock x:Name="ColumnRanked"
-                               Grid.Column="2"
-                               Text="{loc:Translate ServerRankedColumn}"
-                               FontWeight="Bold"/>
-
-					<TextBlock x:Name="ColumnMap"
-                               Grid.Column="3"
-                               Text="{loc:Translate ServerColumnMap}"
-                               FontWeight="Bold"/>
-
-					<TextBlock x:Name="ColumnMode"
-                               Grid.Column="4"
-                               Text="{loc:Translate ServerColumnMode}"
-                               FontWeight="Bold"/>
-
-					<TextBlock x:Name="ColumnPlayers"
-                               Grid.Column="5"
-                               Text="{loc:Translate ServerColumnPlayers}"
-                               FontWeight="Bold"/>
-
-					<TextBlock x:Name="ColumnPing"
-                               Grid.Column="6"
-                               Text="{loc:Translate ServerColumnPing}"
-                               FontWeight="Bold"/>
+				<Grid ColumnDefinitions="3*,2*,1.2*,1.2*,1.2*" ColumnSpacing="8">
+					<TextBlock Text="{loc:Translate ServerColumnName}" FontWeight="Bold"/>
+					<TextBlock Grid.Column="1" Text="{loc:Translate ServerColumnMap}" FontWeight="Bold"/>
+					<TextBlock Grid.Column="2" Text="{loc:Translate ServerColumnMode}" FontWeight="Bold"/>
+					<TextBlock Grid.Column="3" Text="{loc:Translate ServerColumnPlayers}" FontWeight="Bold"/>
+					<TextBlock Grid.Column="4" Text="{loc:Translate ServerColumnPing}" FontWeight="Bold"/>
 				</Grid>
 			</Border>
 
@@ -182,7 +77,7 @@
 				</ScrollViewer>
 
 				<TextBlock x:Name="EmptyState"
-                           Text="{loc:Translate ServerMonitorLoading}"
+                           Text="{loc:Translate ServerMonitorEmpty}"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center"
                            Opacity="0.55"/>

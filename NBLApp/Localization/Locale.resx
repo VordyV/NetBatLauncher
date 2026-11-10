@@ -489,46 +489,4 @@
   <data name="CommonOk" xml:space="preserve">
     <value>OK</value>
   </data>
-  <data name="ServerFilterAllModes" xml:space="preserve">
-    <value>All modes</value>
-  </data>
-  <data name="ServerFilterAllMaps" xml:space="preserve">
-    <value>All maps</value>
-  </data>
-  <data name="ServerFilterAnyPassword" xml:space="preserve">
-    <value>Any password status</value>
-  </data>
-  <data name="ServerPasswordProtected" xml:space="preserve">
-    <value>With password</value>
-  </data>
-  <data name="ServerPasswordFree" xml:space="preserve">
-    <value>No password</value>
-  </data>
-  <data name="ServerFilterPopulated" xml:space="preserve">
-    <value>With players only</value>
-  </data>
-  <data name="ServerFilterFavorites" xml:space="preserve">
-    <value>Favorites</value>
-  </data>
-  <data name="ServerPassword" xml:space="preserve">
-    <value>Password</value>
-  </data>
-  <data name="ServerRanked" xml:space="preserve">
-    <value>Ranked</value>
-  </data>
-  <data name="ServerUnranked" xml:space="preserve">
-    <value>Unranked</value>
-  </data>
-  <data name="ServerRankedColumn" xml:space="preserve">
-    <value>Ranked</value>
-  </data>
-  <data name="ServerModeNoVehicle" xml:space="preserve">
-    <value>No Vehicle</value>
-  </data>
-  <data name="ServerModeConquest" xml:space="preserve">
-    <value>Conquest</value>
-  </data>
-  <data name="ServerModeTitan" xml:space="preserve">
-    <value>Titan</value>
-  </data>
 </root>

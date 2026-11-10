@@ -10,6 +10,9 @@
 
 ![Uptime Robot status](https://img.shields.io/uptimerobot/status/m804473063-06c9a43ed784cde08ef77225?style=flat-square)
 
+:arrow_right:[English](https://github.com/VordyV/NetBatLauncher/blob/master/Readme.md)
+[Русский](https://github.com/VordyV/NetBatLauncher/blob/master/Readme_ru.md)
+
 </div>
 
 ## Introduction
@@ -18,8 +21,9 @@
 
 ## What can it do?
 
-- Automatically update itself when a new version is released. The user will be prompted to perform an upgrade if their launcher version becomes outdated;
-- Launch on different platforms, **NovGames** or **Respy** and others.
+- :arrows_counterclockwise: Automatically update itself when a new version is released. The user will be prompted to perform an upgrade if their launcher version becomes outdated;
+- :computer: Launch on different platforms, **NovGames** or **Respy** and others;
+- :earth_asia: Multilingual support.
 
 ## Supported platforms
 
@@ -32,6 +36,8 @@ You can download the current version in the GitHub [Releases](https://github.com
 > [!WARNING]
 > This is the only source at the moment; if you are offered to download from another place, do so at your own risk — we definitely do not know what code may be in the exe files of this particular version.
 
+## Contacts
+For contact and questions: nbl2142@outlook.com
 
 ---
 
