@@ -169,7 +169,7 @@ public partial class LaunchSettings : UserControl
         if (subscribed)
             return;
 
-        Locale.LanguageChanged += OnLanguageChanged;
+        LocaleProvider.Instance.LanguageChanged += OnLanguageChanged;
         subscribed = true;
     }
 
@@ -193,11 +193,12 @@ public partial class LaunchSettings : UserControl
             ButtonSave.Content = Locale.Get("Save");
 
         LaunchSettingsForm.Title = Locale.Get("LaunchSettingsTitle");
+
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
-        Locale.LanguageChanged -= OnLanguageChanged;
+        LocaleProvider.Instance.LanguageChanged -= OnLanguageChanged;
         subscribed = false;
         base.OnDetachedFromVisualTree(e);
     }
