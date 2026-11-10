@@ -427,7 +427,7 @@
     <value>Retrieving server list...</value>
   </data>
   <data name="ServerMonitorUpdated" xml:space="preserve">
-    <value>Updated 0 sec. ago</value>
+    <value>Updated {0} sec. ago</value>
   </data>
   <data name="ServerMonitorUpdateError" xml:space="preserve">
     <value>Update failed · 0 sec. ago</value>
@@ -530,5 +530,8 @@
   </data>
   <data name="ServerModeTitan" xml:space="preserve">
     <value>Titan</value>
+  </data>
+  <data name="ServerModeAssaultLines" xml:space="preserve">
+    <value>Assault Lines</value>
   </data>
 </root>

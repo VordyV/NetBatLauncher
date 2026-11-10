@@ -10,11 +10,12 @@ using NBL.Services;
 using NBLApp.Controls;
 using NBLApp.Forms;
 using NBLApp.Localization;
+using NBLNet;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using NBLNet;
 using Ursa.Controls;
 using Game = NBL.Game;
 
@@ -187,6 +188,7 @@ public partial class MainView : View
     }
 
 
+
     protected async Task UpdateClients(ClientData[] clients)
     {
         isUpdatingClients = true;
@@ -198,19 +200,57 @@ public partial class MainView : View
             try { current = Game.GetCurrentClient(); }
             catch { current = Launcher.ClientId; }
 
-            // Сначала показываем установленные локально клиенты.
-            var available = clients
-                .Select(c => new ApiClient { Ident = c.ID, Name = c.Name })
-                .ToList();
+            var available = new Dictionary<string, ApiClient>(
+                StringComparer.OrdinalIgnoreCase);
+
+            // Получаем список клиентов, предлагаемых сервером.
+            try
+            {
+                var serverClients = await Launcher.GetAvailableClientsAsync(Game.Id);
+
+                foreach (var client in serverClients)
+                {
+                    if (string.IsNullOrWhiteSpace(client.Ident) ||
+                        (!client.Files && !client.Reference))
+                        continue;
+
+                    available[client.Ident] = client;
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning($"Failed to load available clients from API: {ex.Message}");
+            }
+
+            // Добавляем локальные клиенты, даже если сервер больше их не предлагает.
+            foreach (var client in clients)
+            {
+                if (string.IsNullOrWhiteSpace(client.ID))
+                    continue;
+
+                if (!available.ContainsKey(client.ID))
+                {
+                    available[client.ID] = new ApiClient
+                    {
+                        Ident = client.ID,
+                        Name = string.IsNullOrWhiteSpace(client.Name)
+                            ? client.ID
+                            : client.Name,
+                        Files = true
+                    };
+                }
+            }
 
             ComboBoxClients.Items.Clear();
             ComboBoxClients.SelectedIndex = -1;
 
-            foreach (var client in available)
+            foreach (var client in available.Values)
             {
                 ComboBoxClients.Items.Add(new ComboBoxItem
                 {
-                    Content = client.Name,
+                    Content = string.IsNullOrWhiteSpace(client.Name)
+                        ? client.Ident
+                        : client.Name,
                     Name = $"ComboBoxItemClients_{client.Ident}",
                     Foreground = Brushes.White
                 });
@@ -219,8 +259,6 @@ public partial class MainView : View
                     ComboBoxClients.SelectedIndex = ComboBoxClients.ItemCount - 1;
             }
 
-            // Если текущий клиент не установлен, всё равно сохраняем его выбор,
-            // когда он присутствует в локальном списке.
             if (ComboBoxClients.SelectedIndex < 0 && ComboBoxClients.ItemCount > 0)
                 ComboBoxClients.SelectedIndex = 0;
         }
@@ -231,6 +269,7 @@ public partial class MainView : View
 
         await UpdateButtonMA(Game.Status);
     }
+
 
 
     private async Task UpdateButtonMA(GameStatus status)

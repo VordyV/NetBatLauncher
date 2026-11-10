@@ -186,10 +186,6 @@ public class ClientUpdateService
         IProgress<ClientUpdateProgress>? progress = null,
         CancellationToken token = default)
     {
-        if (clientId is not ("respy" or "novgames"))
-            throw new ArgumentException(
-                "Поддерживаются только Respy и NovGames.", nameof(clientId));
-
         string clientPath = Path.Combine(gamePath, Launcher.ClientsDir, clientId);
 
         if (!File.Exists(Path.Combine(clientPath, Launcher.ClientManifestFilename)))
