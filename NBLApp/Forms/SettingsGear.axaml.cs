@@ -33,9 +33,7 @@ public partial class SettingsGear : UserControl
 
     public string LogDirectory => Logger.LogDirectory;
     public string LauncherVersion => Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Unknown";
-
-        base.OnDetachedFromVisualTree(e);
-    }
+    
     public SettingsGear(Game game)
     {
         Game = game;
