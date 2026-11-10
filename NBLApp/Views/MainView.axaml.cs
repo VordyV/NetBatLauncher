@@ -30,32 +30,6 @@ public partial class MainView : View
     private bool isSyncingClients;
     private bool clientSyncFailed;
 
-    public string MainText => Locale.Get("Main");
-    public string HeadquartersText => Locale.Get("Headquarters");
-    public string CommunityText => Locale.Get("Community");
-    public string SupportText => Locale.Get("Support");
-    public string MapsText => Locale.Get("Maps");
-    public string LeaderboardText => Locale.Get("Leaderboard");
-    public string BanlistText => Locale.Get("Banlist");
-    public string LaunchGameText => Locale.Get("LaunchGame");
-    public string SettingsText => Locale.Get("Settings");
-    public string PlatformText => Locale.Get("Platform");
-    public string ModText => Locale.Get("Mod");
-    public string ParametersText => Locale.Get("Parameters");
-    public string PlayersText => Locale.Get("Players");
-    public string PingText => Locale.Get("Ping");
-    public string PlatformAccessText => Locale.Get("PlatformAccess");
-    public string InstallGameText => Locale.Get("InstallGame");
-    public string GameRunningText => Locale.Get("GameRunning");
-    public string StoppingText => Locale.Get("Stopping");
-    public string LaunchpadText => Locale.Get("Launchpad");
-    public string InstallClientText => Locale.Get("InstallClient");
-
-    private void Locale_LanguageChanged(object? sender, EventArgs e)
-    {
-        DataContext = null;
-        DataContext = this;
-    }
 
     public MainView()
     {
@@ -65,7 +39,6 @@ public partial class MainView : View
     public MainView(Launcher launcher, ViewPresenter<Launcher> viewPresenter, object? arg) : base(launcher, viewPresenter, arg)
     {
         Launcher = launcher;
-        Locale.LanguageChanged += Locale_LanguageChanged;
         Loaded += async (sender, args) => await OnLoaded();
         Game = launcher.GetGame((string)arg);
         Game.OnChangeStatus += UpdateButtonMA;
@@ -75,6 +48,7 @@ public partial class MainView : View
         });
 
         InitializeComponent();
+        Locale.LanguageChanged += OnLanguageChanged;
         DataContext = this;
         MainContent.Content = Pages.Content;
         Pages.ShowView("general", Game.Id);
@@ -101,6 +75,10 @@ public partial class MainView : View
         _ = UpdateLabelPing();
 
         await UpdateButtonMA(Game.Status);
+    }
+    private void OnLanguageChanged(object? sender, EventArgs e)
+    {
+        Dispatcher.UIThread.Post(RefreshLocalization);
     }
 
 
@@ -236,7 +214,7 @@ public partial class MainView : View
         {
             if (isSyncingClients)
             {
-                Button_MainAction.Content = "Синхронизация клиентов...";
+                Button_MainAction.Content = Locale.Get("ClientSynchronization");
                 Button_MainAction.IsEnabled = false;
                 return;
             }
@@ -246,16 +224,22 @@ public partial class MainView : View
             switch (status)
             {
                 case GameStatus.NotInstalled:
-                    Button_MainAction.Content = InstallGameText;
+                    Button_MainAction.Content = Locale.Get("InstallGame");
                     break;
+
                 case GameStatus.NotRunning:
-                    Button_MainAction.Content = IsClientInstalled(GetSelectedClientId()) ? LaunchGameText : InstallClientText;
+                    Button_MainAction.Content = Locale.Get(
+                        IsClientInstalled(GetSelectedClientId())
+                            ? "LaunchGame"
+                            : "InstallClient");
                     break;
+
                 case GameStatus.Running:
-                    Button_MainAction.Content = GameRunningText;
+                    Button_MainAction.Content = Locale.Get("GameRunning");
                     break;
+
                 case GameStatus.Stopping:
-                    Button_MainAction.Content = StoppingText;
+                    Button_MainAction.Content = Locale.Get("Stopping");
                     break;
             }
         });

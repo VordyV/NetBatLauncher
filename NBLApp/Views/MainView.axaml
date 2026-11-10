@@ -7,6 +7,7 @@
              xmlns:u="https://irihi.tech/ursa"
 			 x:DataType="local:MainView"
              x:Name="Root"
+			 xmlns:loc="clr-namespace:NBLApp.Localization"
              x:Class="NBLApp.Views.MainView">
 	<Grid ColumnDefinitions="Auto, *" RowDefinitions="Auto, *">
         <Border Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" Width="80">
@@ -42,14 +43,14 @@
             </Grid>
         </Border>
         <ScrollViewer Grid.Row="0" Grid.Column="1" HorizontalScrollBarVisibility="Auto" >
-			<TabStrip Margin="20 -0.3" Padding="0 0" VerticalAlignment="Bottom">
-				<TabStripItem Content="{Binding MainText}"/>
-				<TabStripItem Content="{Binding HeadquartersText}"/>
-				<TabStripItem Content="{Binding CommunityText}"/>
-				<TabStripItem Content="{Binding SupportText}"/>
-				<TabStripItem Content="{Binding MapsText}"/>
-				<TabStripItem Content="{Binding LeaderboardText}"/>
-				<TabStripItem Content="{Binding BanlistText}"/>
+			<TabStrip x:Name="MainTabs" Margin="20 -0.3" Padding="0 0" VerticalAlignment="Bottom">
+				<TabStripItem x:Name="TabMain" Content="{loc:Translate Main}"/>
+				<TabStripItem x:Name="TabHeadquarters" Content="{loc:Translate Headquarters}"/>
+				<TabStripItem x:Name="TabCommunity" Content="{loc:Translate Community}"/>
+				<TabStripItem x:Name="TabSupport" Content="{loc:Translate Support}"/>
+				<TabStripItem x:Name="TabMaps" Content="{loc:Translate Maps}"/>
+				<TabStripItem x:Name="TabLeaderboard" Content="{loc:Translate Leaderboard}"/>
+				<TabStripItem x:Name="TabBanlist" Content="{loc:Translate Banlist}"/>
                 <TabStrip.Styles>
                     <Style Selector="TabStripItem">
                         <Setter Property="Height" Value="50"/>
@@ -71,28 +72,28 @@
         <Grid Grid.Row="1" Grid.Column="1" RowDefinitions="*, Auto" Margin="40 20">
             <ScrollViewer Grid.Row="1" Name="GameControlsPanel" HorizontalScrollBarVisibility="Auto">
                 <Grid ColumnDefinitions="Auto, Auto, *, Auto, Auto, Auto" RowDefinitions="Auto, Auto" RowSpacing="20" ColumnSpacing="40">
-					<Button Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" Name="Button_MainAction" Click="Button_MainAction_OnClick" Background="Transparent" BorderBrush="#ffffff" CornerRadius="0" Height="70" Width="250" Foreground="#ffffff" Content="{Binding LaunchGameText}"/>
-                    <TextBlock Grid.Column="1" Grid.Row="0" Text="{Binding LaunchpadText}" Classes="H7" Theme="{StaticResource TitleTextBlock}"/>
+					<Button Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" Name="Button_MainAction" Click="Button_MainAction_OnClick" Background="Transparent" BorderBrush="#ffffff" CornerRadius="0" Height="70" Width="250" Foreground="#ffffff" Content="{loc:Translate LaunchGame}"/>
+					<TextBlock x:Name="LaunchpadTitle" Grid.Column="1" Grid.Row="0" Text="{loc:Translate Launchpad}" Classes="H7" Theme="{StaticResource TitleTextBlock}"/>
                     <StackPanel Grid.Column="1" Grid.Row="1" Orientation="Horizontal">
                         <StackPanel Orientation="Horizontal" Spacing="10">
-                            <TextBlock Text="{Binding PlatformText}" VerticalAlignment="Center"/>
+							<TextBlock x:Name="PlatformLabel" Text="{loc:Translate Platform}" VerticalAlignment="Center"/>
                             <ComboBox Name="ComboBoxClients"  SelectionChanged="ComboBoxClients_OnSelectionChanged" SelectedIndex="0" VerticalAlignment="Center" Background="Transparent">
 								<ComboBoxItem Content="-"/>
                             </ComboBox>
-                            <TextBlock Text="{Binding ModText}" VerticalAlignment="Center"/>
+							<TextBlock x:Name="ModLabel" Text="{loc:Translate Mod}" VerticalAlignment="Center"/>
                             <ComboBox SelectedIndex="0" VerticalAlignment="Center" Background="Transparent">
                                 <ComboBoxItem Content="Vanila"/>
                             </ComboBox>
-                            <Button Name="ButtonParams" Click="ButtonParams_OnClick" Content="{Binding ParametersText}" Background="Transparent" Foreground="AliceBlue" VerticalAlignment="Center"/>
+                            <Button Name="ButtonParams" Click="ButtonParams_OnClick" Content="{loc:Translate Parameters}" Background="Transparent" Foreground="AliceBlue" VerticalAlignment="Center"/>
                         </StackPanel>
                     </StackPanel>
-                    <TextBlock Grid.Column="3" Grid.Row="0" Text="{Binding PlayersText}"/>
+					<TextBlock x:Name="PlayersLabel" Grid.Column="3" Grid.Row="0" Text="{loc:Translate Players}"/>
                     <u:LoadingIcon Grid.Column="3" Grid.Row="1" Name="LoadingIconPlayers" IsVisible="False"/>
                     <TextBlock Grid.Column="3" Grid.Row="1" Name="Players" IsVisible="True" TextAlignment="Center"/>
-                    <TextBlock Grid.Column="4" Grid.Row="0" Text="{Binding PingText}"/>
+					<TextBlock x:Name="PingLabel" Grid.Column="4" Grid.Row="0" Text="{loc:Translate Ping}"/>
                     <u:LoadingIcon Grid.Column="4" Grid.Row="1" Name="LoadingIconPing" IsVisible="False"/>
                     <TextBlock Grid.Column="4" Grid.Row="1" Name="Ping" IsVisible="True" TextAlignment="Center"/>
-                    <TextBlock Grid.Column="5" Grid.Row="0" Text="{Binding PlatformAccessText}"/>
+					<TextBlock x:Name="PlatformAccessLabel" Grid.Column="5" Grid.Row="0" Text="{loc:Translate PlatformAccess}"/>
                     <TextBlock Grid.Column="5" Grid.Row="1" Text="-" TextAlignment="Center"/>
                 </Grid>                      
             </ScrollViewer>
