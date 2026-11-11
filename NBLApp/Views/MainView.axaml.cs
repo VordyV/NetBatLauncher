@@ -6,6 +6,7 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Threading;
 using NBL;
+using System.IO;
 using NBL.Services;
 using NBLApp.Controls;
 using NBLApp.Forms;
@@ -57,6 +58,8 @@ public partial class MainView : View
 
     protected async Task OnLoaded()
     {
+        ProfileService.GetActiveProfilesPath();
+
         await Game.CheckInstall();
 
         if (Game.IsInstall)
@@ -159,7 +162,19 @@ public partial class MainView : View
 
     private bool IsClientInstalled(string clientId)
     {
-        return Game.Clients.Keys.Any(id => id.Equals(clientId, StringComparison.OrdinalIgnoreCase));
+        var client = Game.Clients.Values.FirstOrDefault(c =>
+            c.ID.Equals(clientId, StringComparison.OrdinalIgnoreCase));
+
+        if (client?.Files == null || client.Files.Length == 0)
+            return false;
+
+        string clientPath = Path.Combine(
+            Game.GetPath(),
+            Launcher.ClientsDir,
+            clientId);
+
+        return System.IO.File.Exists(Path.Combine(clientPath,Launcher.ClientManifestFilename)) && client.Files.All(file =>
+            System.IO.File.Exists(Path.Combine(clientPath, file.Replace('/', Path.DirectorySeparatorChar))));
     }
 
     private async Task SwitchClientWithProfilesAsync(string clientId)
@@ -248,10 +263,12 @@ public partial class MainView : View
                 ComboBoxClients.Items.Add(new ComboBoxItem
                 {
                     Content = string.IsNullOrWhiteSpace(client.Name)
-                        ? client.Ident
-                        : client.Name,
+         ? client.Ident
+         : client.Name,
                     Name = $"ComboBoxItemClients_{client.Ident}",
-                    Foreground = Brushes.White
+                    Foreground = IsClientInstalled(client.Ident)
+         ? Brushes.White
+         : Brushes.Gray
                 });
 
                 if (client.Ident.Equals(current, StringComparison.OrdinalIgnoreCase))
@@ -462,10 +479,11 @@ public partial class MainView : View
 
         string targetClient = GetSelectedClientId();
 
-        if (currentClient.Equals(
-            targetClient,
-            StringComparison.OrdinalIgnoreCase))
+        if (!IsClientInstalled(targetClient))
+        {
+            await UpdateButtonMA(Game.Status);
             return;
+        }
 
         // Не переключаем профили во время работы игры.
         if (Game.Status != GameStatus.NotRunning)
