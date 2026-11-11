@@ -292,6 +292,7 @@ public partial class MainGeneralView : View
         finally
         {
             _isRefreshing = false;
+            UpdateRefreshInfo();
         }
     }
 
@@ -580,6 +581,12 @@ public partial class MainGeneralView : View
 
     private void UpdateRefreshInfo()
     {
+        if (_isRefreshing)
+        {
+            RefreshInfo.Text = Locale.Get("ServerMonitorFetching");
+            return;
+        }
+
         if (_lastUpdated == null)
             return;
 

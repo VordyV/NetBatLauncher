@@ -7,12 +7,7 @@ public static class VideoSettingsPath
 {
     public static string GetPath()
     {
-        string profilePath =
-            Path.Combine(
-                Environment.GetFolderPath(
-                    Environment.SpecialFolder.MyDocuments),
-                "Battlefield 2142",
-                "Profiles");
+        string profilePath = ProfileService.GetActiveProfilesPath();
         string globalPath =
             Path.Combine(
                 profilePath,

@@ -1,18 +1,22 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace NBL.Services;
 
 public sealed class ProfileService
 {
-    private readonly string ProfilesPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-        "Battlefield 2142", "Profiles");
-
-    private readonly string StoragePath = Path.Combine(
+    private static readonly string StoragePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "NetBat2142", "Profiles");
+
+    private static readonly string ActiveProfilesPath =
+        Path.Combine(StoragePath, "Active");
+
+    private static readonly string DocumentsProfilesPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+        "Battlefield 2142", "Profiles");
 
     private const string DefaultGlobal = """
 GlobalSettings.setDefaultUser ""
@@ -542,17 +546,20 @@ sv.allowTitanMovement 1
 
     private const string OriginalClientId = "original";
 
+
     public Task SwitchAsync(string currentClientId, string targetClientId)
     {
         ValidateClientId(currentClientId);
         ValidateClientId(targetClientId);
 
-        Directory.CreateDirectory(StoragePath);
-        EnsureGeneratedFiles(ProfilesPath);
+        EnsureStorage();
+        EnsureGeneratedFiles(ActiveProfilesPath);
 
         SaveSnapshot(GetClientPath(currentClientId));
 
-        if (currentClientId.Equals(targetClientId, StringComparison.OrdinalIgnoreCase))
+        if (currentClientId.Equals(
+            targetClientId,
+            StringComparison.OrdinalIgnoreCase))
             return Task.CompletedTask;
 
         string targetPath = GetClientPath(targetClientId);
@@ -570,15 +577,109 @@ sv.allowTitanMovement 1
             ResetAccountData(targetPath);
             EnsureGeneratedFiles(targetPath);
 
-            Logger.Info($"Initial profile created for client '{targetClientId}' from '{Path.GetFileName(sourcePath)}'");
+            Logger.Info(
+                $"Initial profile created for client '{targetClientId}' from '{Path.GetFileName(sourcePath)}'");
         }
 
         RestoreSnapshot(targetPath);
-        EnsureGeneratedFiles(ProfilesPath);
+        EnsureGeneratedFiles(ActiveProfilesPath);
 
-        Logger.Info($"Profiles switched: '{currentClientId}' -> '{targetClientId}'");
+        Logger.Info(
+            $"Profiles switched: '{currentClientId}' -> '{targetClientId}'");
 
         return Task.CompletedTask;
+    }
+
+
+
+    public static string GetActiveProfilesPath()
+    {
+        var service = new ProfileService();
+        service.EnsureStorage();
+        EnsureGeneratedFiles(ActiveProfilesPath);
+
+        return ActiveProfilesPath;
+    }
+
+    private void EnsureStorage()
+    {
+        Directory.CreateDirectory(StoragePath);
+        Directory.CreateDirectory(ActiveProfilesPath);
+
+        // Если существуют старые профили клиентов,
+        // оставляем их в прежнем расположении.
+        // Это сохраняет совместимость с предыдущей версией.
+
+        string documentsParent = Path.GetDirectoryName(DocumentsProfilesPath)!;
+        Directory.CreateDirectory(documentsParent);
+
+        if (Directory.Exists(DocumentsProfilesPath))
+        {
+            FileAttributes attributes =
+                File.GetAttributes(DocumentsProfilesPath);
+
+            if ((attributes & FileAttributes.ReparsePoint) != 0)
+                return;
+
+            // Переносим старые профили только при первом запуске.
+            if (!Directory.EnumerateFileSystemEntries(ActiveProfilesPath).Any())
+                CopyDirectory(DocumentsProfilesPath, ActiveProfilesPath);
+
+            string backupPath = DocumentsProfilesPath +
+                ".nbl-backup-" +
+                DateTime.Now.ToString("yyyyMMdd-HHmmss");
+
+            Directory.Move(DocumentsProfilesPath, backupPath);
+
+            Logger.Info(
+                $"Previous Documents profiles backed up to '{backupPath}'");
+        }
+
+        CreateJunction();
+    }
+
+    private void CreateJunction()
+    {
+        if (Directory.Exists(DocumentsProfilesPath))
+        {
+            FileAttributes attributes =
+                File.GetAttributes(DocumentsProfilesPath);
+
+            if ((attributes & FileAttributes.ReparsePoint) != 0)
+                return;
+
+            throw new IOException(
+                "Documents Profiles already exists and is not a junction.");
+        }
+
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "cmd.exe",
+            Arguments =
+                $"/d /c mklink /J \"{DocumentsProfilesPath}\" \"{ActiveProfilesPath}\"",
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+
+        using var process = Process.Start(startInfo)
+            ?? throw new InvalidOperationException(
+                "Could not start junction creation.");
+
+        string output = process.StandardOutput.ReadToEnd();
+        string error = process.StandardError.ReadToEnd();
+
+        process.WaitForExit();
+
+        if (process.ExitCode != 0)
+        {
+            throw new IOException(
+                $"Could not create Profiles junction. {output} {error}");
+        }
+
+        Logger.Info(
+            $"Profiles junction created: '{DocumentsProfilesPath}' -> '{ActiveProfilesPath}'");
     }
 
     private static void ResetAccountData(string root)
@@ -645,7 +746,7 @@ sv.allowTitanMovement 1
 
         try
         {
-            CopyDirectory(ProfilesPath, temp);
+            CopyDirectory(ActiveProfilesPath, temp);
 
             if (Directory.Exists(destination))
                 Directory.Move(destination, old);
@@ -674,24 +775,24 @@ sv.allowTitanMovement 1
 
     private void RestoreSnapshot(string source)
     {
-        string temp = ProfilesPath + ".nbl-temp-" + Guid.NewGuid().ToString("N");
-        string old = ProfilesPath + ".nbl-old-" + Guid.NewGuid().ToString("N");
+        string temp = ActiveProfilesPath + ".nbl-temp-" + Guid.NewGuid().ToString("N");
+        string old = ActiveProfilesPath + ".nbl-old-" + Guid.NewGuid().ToString("N");
 
         try
         {
             CopyDirectory(source, temp);
 
-            if (Directory.Exists(ProfilesPath))
-                Directory.Move(ProfilesPath, old);
+            if (Directory.Exists(ActiveProfilesPath))
+                Directory.Move(ActiveProfilesPath, old);
 
             try
             {
-                Directory.Move(temp, ProfilesPath);
+                Directory.Move(temp, ActiveProfilesPath);
             }
             catch
             {
-                if (!Directory.Exists(ProfilesPath) && Directory.Exists(old))
-                    Directory.Move(old, ProfilesPath);
+                if (!Directory.Exists(ActiveProfilesPath) && Directory.Exists(old))
+                    Directory.Move(old, ActiveProfilesPath);
 
                 throw;
             }
