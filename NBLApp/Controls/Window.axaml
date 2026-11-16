@@ -14,7 +14,7 @@
                     <Border Grid.Row="0">
                         <Grid>
                             <Border Padding="-10">
-                                <Image Stretch="UniformToFill" Source="/Assets/theme1.jpg">
+                                <Image Stretch="UniformToFill" Source="/Assets/theme2.jpg">
                                     <Image.Effect>
                                         <BlurEffect Radius="18"/>
                                     </Image.Effect>

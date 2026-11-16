@@ -24,14 +24,16 @@ namespace NBLApp.Views;
 
 public partial class MainView : View
 {
-    protected ViewPresenter<Launcher> Pages;
+    protected ViewPresenter<Launcher>? Pages;
     protected Game Game;
     protected Launcher Launcher;
     protected bool isLoaded = false;
     protected bool isUpdatingClients = false;
     private bool isSyncingClients;
     private bool clientSyncFailed;
-
+    private GameMod[] availableMods = [];
+    private GameMod? selectedMod;
+    private bool isUpdatingMods;
 
     public MainView()
     {
@@ -41,15 +43,18 @@ public partial class MainView : View
     public MainView(Launcher launcher, ViewPresenter<Launcher> viewPresenter, object? arg) : base(launcher, viewPresenter, arg)
     {
         Launcher = launcher;
-        Loaded += async (sender, args) => await OnLoaded();
         Game = launcher.GetGame((string)arg);
-        Game.OnChangeStatus += UpdateButtonMA;
+
         Pages = new ViewPresenter<Launcher>(arg: Launcher, new()
         {
-            { "general", (l, vp, arg) => new MainGeneralView(l, vp, arg) }
+            { "general", (l, vp, arg) => new MainGeneralView(l, vp, arg) },
+            { "maps", (l, vp, arg) => new MainMapsView(l, vp, arg) }
         });
 
         InitializeComponent();
+
+        Loaded += async (_, _) => await OnLoaded();
+        Game.OnChangeStatus += UpdateButtonMA;
         Locale.LanguageChanged += OnLanguageChanged;
         DataContext = this;
         MainContent.Content = Pages.Content;
@@ -65,12 +70,19 @@ public partial class MainView : View
         if (Game.IsInstall)
         {
             try { Game.GetCurrentClient(); }
-            catch (GameNotSetRegistryException) { Logger.Warning("Current client not selected."); }
+            catch (GameNotSetRegistryException)
+            {
+                Logger.Warning("Current client not selected.");
+            }
 
             await UpdateClients(await Game.GetClients());
         }
         else
+        {
             await UpdateClients([]);
+        }
+
+        await UpdateMods();
 
         isLoaded = true;
 
@@ -83,7 +95,16 @@ public partial class MainView : View
     {
         Dispatcher.UIThread.Post(RefreshLocalization);
     }
+    private void MainTabs_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (Pages == null || Game == null || MainTabs?.SelectedItem == null)
+            return;
 
+        if (MainTabs.SelectedItem == TabMaps)
+            Pages.ShowView("maps", Game);
+        else if (MainTabs.SelectedItem == TabMain)
+            Pages.ShowView("general", Game.Id);
+    }
     private void RefreshLocalization()
     {
         TabMain.Content = Locale.Get("Main");
@@ -200,9 +221,58 @@ public partial class MainView : View
             throw;
         }
     }
+    private async Task UpdateMods()
+    {
+        isUpdatingMods = true;
+        ComboBoxMods.IsEnabled = false;
 
+        try
+        {
+            availableMods = await Launcher.GetAvailableModsAsync(Game.Id);
 
+            ComboBoxMods.Items.Clear();
 
+            foreach (var mod in availableMods)
+            {
+                ComboBoxMods.Items.Add(new ComboBoxItem
+                {
+                    Content = $"{mod.Name} {mod.Version}",
+                    Tag = mod.Id
+                });
+            }
+
+            var defaultMod = availableMods.FirstOrDefault(m => m.HasDefault)
+                ?? availableMods.FirstOrDefault();
+
+            if (defaultMod != null)
+            {
+                ComboBoxMods.SelectedItem = ComboBoxMods.Items
+                    .Cast<ComboBoxItem>()
+                    .FirstOrDefault(item =>
+                        item.Tag?.ToString() == defaultMod.Id);
+
+                selectedMod = defaultMod;
+            }
+
+            ComboBoxMods.IsEnabled = availableMods.Length > 0;
+
+            Logger.Info($"Loaded {availableMods.Length} game mods.");
+        }
+        catch (Exception ex)
+        {
+            availableMods = [];
+            selectedMod = null;
+
+            ComboBoxMods.Items.Clear();
+            ComboBoxMods.IsEnabled = false;
+
+            Logger.Warning($"Failed to load game mods: {ex.Message}");
+        }
+        finally
+        {
+            isUpdatingMods = false;
+        }
+    }
     protected async Task UpdateClients(ClientData[] clients)
     {
         isUpdatingClients = true;
@@ -461,7 +531,23 @@ public partial class MainView : View
             });
         }
     }
+  
+    private void ComboBoxMods_OnSelectionChanged(
+    object? sender,
+    SelectionChangedEventArgs e)
+    {
+        if (isUpdatingMods ||
+            ComboBoxMods.SelectedItem is not ComboBoxItem item)
+            return;
 
+        string? modId = item.Tag?.ToString();
+
+        selectedMod = availableMods.FirstOrDefault(m =>
+            m.Id.Equals(modId, StringComparison.OrdinalIgnoreCase));
+
+        if (selectedMod != null)
+            Logger.Info($"Selected mod: {selectedMod.Name} ({selectedMod.Id})");
+    }
     private async void ComboBoxClients_OnSelectionChanged(
         object? sender,
         SelectionChangedEventArgs e)

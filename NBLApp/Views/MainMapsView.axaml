@@ -1,0 +1,39 @@
+
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="NBLApp.Views.MainMapsView">
+    <Grid>
+		<Grid x:Name="CatalogPanel" RowDefinitions="Auto,Auto,Auto,*" Margin="16">
+            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+                <TextBlock x:Name="MapsTitle" FontSize="24" FontWeight="Bold"/>
+                <TextBlock x:Name="MapsCount" Grid.Column="1" VerticalAlignment="Center" Opacity="0.6"/>
+            </Grid>
+            <TextBox x:Name="SearchBox" Grid.Row="1" Margin="0,0,0,12" TextChanged="SearchBox_OnTextChanged"/>
+			<WrapPanel x:Name="MapFiltersPanel" Grid.Row="2" Margin="0,0,0,12"/>
+            <Grid Grid.Row="3">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <WrapPanel x:Name="MapTilesPanel"/>
+                </ScrollViewer>
+                <TextBlock x:Name="EmptyState" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.6" IsVisible="False"/>
+            </Grid>
+        </Grid>
+
+        <ScrollViewer x:Name="DetailPanel" IsVisible="False">
+            <StackPanel Margin="16" Spacing="12">
+                <Button x:Name="BackButton" HorizontalAlignment="Left" Click="Back_OnClick"/>
+                <TextBlock x:Name="DetailName" FontSize="24" FontWeight="Bold"/>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="20">
+                    <Image x:Name="DetailImage" Grid.Column="0" Height="320" MaxWidth="650" HorizontalAlignment="Center" Stretch="Uniform"/>
+                    <StackPanel Grid.Column="1" Spacing="8">
+                        <TextBlock x:Name="DescriptionTitle" FontSize="17" FontWeight="SemiBold"/>
+                        <TextBlock x:Name="DetailDescription" FontSize="16" LineHeight="23" TextWrapping="Wrap" Opacity="0.9"/>
+                    </StackPanel>
+                </Grid>
+                <TextBlock x:Name="GameModeTitle" FontSize="17" FontWeight="SemiBold"/>
+                <WrapPanel x:Name="ModeButtonsPanel"/>
+                <TextBlock x:Name="MapSizeTitle" FontSize="17" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                <WrapPanel x:Name="SizeButtonsPanel"/>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>
