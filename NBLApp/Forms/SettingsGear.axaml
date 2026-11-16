@@ -34,6 +34,16 @@
 										<ComboBoxItem Content="{loc:Translate Russian}"/>
 									</ComboBox>
 								</Grid>
+								<Grid ColumnDefinitions="*,220">
+									<TextBlock Grid.Column="0"
+											   Text="{loc:Translate OpenMaximized}"
+											   VerticalAlignment="Center"/>
+
+									<CheckBox Name="CheckBoxOpenMaximized"
+											  Grid.Column="1"
+											  Content="{loc:Translate Enabled}"
+											  VerticalAlignment="Center"/>
+								</Grid>
 
 								<Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto" ColumnSpacing="8">
 									<TextBlock Grid.Column="0" Text="{loc:Translate Logfolder}" VerticalAlignment="Center"/>

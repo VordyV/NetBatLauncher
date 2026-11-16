@@ -11,9 +11,8 @@ public static class Locale
         "NBLApp.Localization.Locale",
         typeof(Locale).Assembly);
 
-    private static volatile CultureInfo _culture =
-        CultureInfo.CurrentUICulture;
-
+    private static volatile CultureInfo _culture = CultureInfo.CurrentUICulture;
+    public static CultureInfo CurrentCulture => _culture;
     public static event EventHandler? LanguageChanged;
 
     public static string Get(string key)

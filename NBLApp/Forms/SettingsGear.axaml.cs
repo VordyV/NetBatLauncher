@@ -49,6 +49,7 @@ public partial class SettingsGear : UserControl
         DataContext = this;
 
         LoadLanguageSettings();
+        LoadWindowSettings();
         LoadVideoSettings();
         LoadAudioSettings();
         LoadGameLanguage();
@@ -410,6 +411,27 @@ public partial class SettingsGear : UserControl
             ComboBoxSoundQuality.SelectedIndex = soundQualityIndex;
         });
     }
+    private void LoadWindowSettings()
+    {
+        var registry = Game.GetRegistry();
+
+        CheckBoxOpenMaximized.IsChecked =
+            registry.Get("launcher", "openMaximized", false);
+    }
+
+    private void SaveWindowSettings()
+    {
+        var registry = Game.GetRegistry();
+
+        if (!registry.HasSection("launcher"))
+            registry.AddSection("launcher");
+
+        registry.Set(
+            "launcher",
+            "openMaximized",
+            CheckBoxOpenMaximized.IsChecked == true
+        );
+    }
     private async void ButtonSave_OnClick(object? sender, RoutedEventArgs e)
     {
         try
@@ -417,7 +439,7 @@ public partial class SettingsGear : UserControl
             SaveLanguageSettings();
             if (!SaveGameLanguage())
                 return;
-
+            SaveWindowSettings();
             SaveVideoSettings();
             SaveAudioSettings();
             if (DataContext is IDialogContext ctx)

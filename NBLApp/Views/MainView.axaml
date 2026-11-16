@@ -43,7 +43,7 @@
             </Grid>
         </Border>
         <ScrollViewer Grid.Row="0" Grid.Column="1" HorizontalScrollBarVisibility="Auto" >
-			<TabStrip x:Name="MainTabs" Margin="20 -0.3" Padding="0 0" VerticalAlignment="Bottom">
+			<TabStrip x:Name="MainTabs" SelectionChanged="MainTabs_OnSelectionChanged" Margin="20 -0.3" Padding="0 0" VerticalAlignment="Bottom">
 				<TabStripItem x:Name="TabMain" Content="{loc:Translate Main}"/>
 				<TabStripItem x:Name="TabHeadquarters" Content="{loc:Translate Headquarters}"/>
 				<TabStripItem x:Name="TabCommunity" Content="{loc:Translate Community}"/>
@@ -81,9 +81,12 @@
 								<ComboBoxItem Content="-"/>
                             </ComboBox>
 							<TextBlock x:Name="ModLabel" Text="{loc:Translate Mod}" VerticalAlignment="Center"/>
-                            <ComboBox SelectedIndex="0" VerticalAlignment="Center" Background="Transparent">
-                                <ComboBoxItem Content="Vanila"/>
-                            </ComboBox>
+							<ComboBox x:Name="ComboBoxMods"
+									  SelectionChanged="ComboBoxMods_OnSelectionChanged"
+									  SelectedIndex="-1"
+									  MinWidth="110"
+									  VerticalAlignment="Center"
+									  Background="Transparent"/>
                             <Button Name="ButtonParams" Click="ButtonParams_OnClick" Content="{loc:Translate Parameters}" Background="Transparent" Foreground="AliceBlue" VerticalAlignment="Center"/>
                         </StackPanel>
                     </StackPanel>

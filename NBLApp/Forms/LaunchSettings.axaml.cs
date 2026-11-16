@@ -11,7 +11,10 @@ using NBL.Services;
 using NBLApp.Localization;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
 using Ursa.Controls;
 
 namespace NBLApp.Forms;
@@ -39,6 +42,7 @@ public partial class LaunchSettings : UserControl
         LaunchParams = game.LaunchParams.Values.ToArray();
 
         InitializeComponent();
+        UpdateShortcutButton();
         DataContext = this;
 
         try
@@ -172,7 +176,7 @@ public partial class LaunchSettings : UserControl
         LocaleProvider.Instance.LanguageChanged += OnLanguageChanged;
         subscribed = true;
     }
-
+   
     private void OnLanguageChanged(object? sender, EventArgs e)
     {
         foreach (var (label, param) in Labels)
@@ -193,9 +197,166 @@ public partial class LaunchSettings : UserControl
             ButtonSave.Content = Locale.Get("Save");
 
         LaunchSettingsForm.Title = Locale.Get("LaunchSettingsTitle");
+        ButtonShortcut.Content = Locale.Get("LaunchSettingsCreateShortcut");
+
+        UpdateShortcutButton();
 
     }
+    private string GetShortcutPath()
+    {
+        string desktopPath = Environment.GetFolderPath(
+            Environment.SpecialFolder.DesktopDirectory);
 
+        return Path.Combine(desktopPath, "Battlefield 2142.lnk");
+    }
+
+    private void UpdateShortcutButton()
+    {
+        if (ButtonShortcut == null)
+            return;
+
+        ButtonShortcut.Content = Locale.Get(
+            File.Exists(GetShortcutPath())
+                ? "LaunchSettingsEditShortcut"
+                : "LaunchSettingsCreateShortcut");
+    }
+    private void ButtonShortcut_OnClick(object? sender, RoutedEventArgs e)
+    {
+        object? shellObject = null;
+        object? shortcutObject = null;
+
+        try
+        {
+            string gamePath = Game.GetPath();
+            string exePath = Path.Combine(gamePath, "BF2142.exe");
+            string shortcutPath = GetShortcutPath();
+
+            if (!File.Exists(exePath))
+                throw new FileNotFoundException("BF2142.exe not found", exePath);
+
+            bool existed = File.Exists(shortcutPath);
+
+            string[] args = Game.BuildLaunchParams(GetCurrentParameters());
+
+            string arguments = string.Join(" ",
+                args.Select(QuoteArgument));
+
+            Type? shellType = Type.GetTypeFromProgID("WScript.Shell");
+
+            if (shellType == null)
+                throw new InvalidOperationException("WScript.Shell unavailable");
+
+            shellObject = Activator.CreateInstance(shellType)
+                ?? throw new InvalidOperationException("Failed to create WScript.Shell");
+
+            dynamic shell = shellObject;
+
+            shortcutObject = shell.CreateShortcut(shortcutPath);
+            dynamic shortcut = shortcutObject;
+
+            shortcut.TargetPath = exePath;
+            shortcut.WorkingDirectory = gamePath;
+            shortcut.Arguments = arguments;
+            shortcut.Description = "Battlefield 2142";
+            shortcut.IconLocation = exePath;
+            shortcut.Save();
+
+            ButtonShortcut.Content = Locale.Get("LaunchSettingsShortcutSuccess");
+
+            Console.WriteLine(
+                $"[LaunchSettings] Shortcut {(existed ? "updated" : "created")}: {shortcutPath}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[LaunchSettings] Shortcut error: {ex}");
+
+            // Здесь можно будет подключить нормальное окно уведомлений,
+            // если в лаунчере появится соответствующая система.
+        }
+        finally
+        {
+            if (shortcutObject != null && Marshal.IsComObject(shortcutObject))
+                Marshal.FinalReleaseComObject(shortcutObject);
+
+            if (shellObject != null && Marshal.IsComObject(shellObject))
+                Marshal.FinalReleaseComObject(shellObject);
+        }
+    }
+    private static string QuoteArgument(string argument)
+    {
+        if (string.IsNullOrEmpty(argument))
+            return "\"\"";
+
+        if (!argument.Any(char.IsWhiteSpace) && !argument.Contains('"'))
+            return argument;
+
+        StringBuilder result = new();
+        result.Append('"');
+
+        int backslashes = 0;
+
+        foreach (char c in argument)
+        {
+            if (c == '\\')
+            {
+                backslashes++;
+                continue;
+            }
+
+            if (c == '"')
+            {
+                result.Append('\\', backslashes * 2 + 1);
+                result.Append('"');
+                backslashes = 0;
+                continue;
+            }
+
+            result.Append('\\', backslashes);
+            result.Append(c);
+            backslashes = 0;
+        }
+
+        result.Append('\\', backslashes * 2);
+        result.Append('"');
+
+        return result.ToString();
+    }
+    private Dictionary<string, object> GetCurrentParameters()
+    {
+        Dictionary<string, object> parameters = new();
+
+        foreach (ILaunchParam param in LaunchParams)
+        {
+            if (!Controls.TryGetValue(param.Id, out Control? control))
+                continue;
+
+            if (param is LaunchParamBool && control is CheckBox checkBox)
+            {
+                parameters[param.Id] = checkBox.IsChecked ?? false;
+            }
+            else if (param is LaunchParamDict p && control is ComboBox comboBox)
+            {
+                parameters[param.Id] = p.Dictionary.Keys
+                    .ElementAtOrDefault(comboBox.SelectedIndex) ?? "";
+            }
+            else if (param is LaunchOptionDict && control is StackPanel panel)
+            {
+                parameters[param.Id] = panel.Children
+                    .OfType<CheckBox>()
+                    .Where(cb => cb.IsChecked == true)
+                    .Select(cb => cb.Content?.ToString() ?? "")
+                    .ToArray();
+            }
+            else if (param is LaunchParamCustom && control is StackPanel customPanel)
+            {
+                parameters[param.Id] = customPanel.Children
+                    .OfType<TextBox>()
+                    .FirstOrDefault()?.Text ?? "";
+            }
+        }
+
+        return parameters;
+    }
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         LocaleProvider.Instance.LanguageChanged -= OnLanguageChanged;
@@ -208,39 +369,9 @@ public partial class LaunchSettings : UserControl
         if (DataContext is IDialogContext ctx)
             ctx.Close();
     }
-
     private void ButtonSave_OnClick(object? sender, RoutedEventArgs e)
     {
-        Dictionary<string, object> parameters = new();
-
-        foreach (ILaunchParam launchParam in LaunchParams)
-        {
-            if (!Controls.TryGetValue(launchParam.Id, out Control? control))
-                continue;
-
-            if (launchParam is LaunchParamBool)
-                parameters[launchParam.Id] = ((CheckBox)control).IsChecked ?? false;
-            else if (launchParam is LaunchParamDict)
-            {
-                if (((ComboBox)control).SelectedItem is ComboBoxItem item)
-                    parameters[launchParam.Id] = item.Content?.ToString() ?? "";
-            }
-            else if (launchParam is LaunchOptionDict)
-            {
-                List<string> selectedOptions = ((StackPanel)control).Children
-                    .OfType<CheckBox>()
-                    .Where(checkBox => checkBox.IsChecked == true && checkBox.Content is string)
-                    .Select(checkBox => checkBox.Content!.ToString()!)
-                    .ToList();
-
-                parameters[launchParam.Id] = selectedOptions.ToArray();
-            }
-            else if (launchParam is LaunchParamCustom)
-            {
-                TextBox? textBox = ((StackPanel)control).Children.OfType<TextBox>().FirstOrDefault();
-                parameters[launchParam.Id] = textBox?.Text ?? "";
-            }
-        }
+        Dictionary<string, object> parameters = GetCurrentParameters();
 
         try
         {
@@ -248,7 +379,9 @@ public partial class LaunchSettings : UserControl
 
             try
             {
-                IntroVideoService.SetIntrosDisabled(Game.GetPath(), CheckBoxNoIntro.IsChecked ?? false);
+                IntroVideoService.SetIntrosDisabled(
+                    Game.GetPath(),
+                    CheckBoxNoIntro.IsChecked ?? false);
             }
             catch (GamePathNotSetException) { }
             catch (GamePathNotFoundException) { }
@@ -258,7 +391,9 @@ public partial class LaunchSettings : UserControl
         }
         catch (Exception exception)
         {
+            Logger.Error("Failed to save launch settings", exception);
             Console.WriteLine(exception);
         }
     }
+   
 }

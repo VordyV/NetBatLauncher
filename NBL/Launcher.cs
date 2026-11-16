@@ -48,7 +48,10 @@ public class Launcher
             throw new GameNotFoundException($"Игра с этим ID '{gameId}' не зарегистрирована");
         return game;
     }
-
+    public async Task<GameMod[]> GetAvailableModsAsync(string gameId)
+    {
+        return await Server.GetAllGameMods(gameId);
+    }
     public List<string> GetGames() => Games.Keys.ToList();
 
     public void AddGameRegistry(string gameId, string path)
