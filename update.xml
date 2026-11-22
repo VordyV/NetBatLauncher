@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <item>
-  <version>0.6.4.0</version>
-  <url>https://github.com/VordyV/NetBatLauncher/releases/download/0.6.4/NetBat2142-0.6.4-win.zip</url>
-  <changelog>https://github.com/VordyV/NetBatLauncher/releases/tag/0.6.4</changelog>
+  <version>0.7.0.0</version>
+  <url>https://github.com/VordyV/NetBatLauncher/releases/download/0.7.0/NetBat2142-0.7.0-win.zip</url>
+  <changelog>https://github.com/VordyV/NetBatLauncher/releases/tag/0.7.0</changelog>
   <mandatory>false</mandatory>
 </item>
