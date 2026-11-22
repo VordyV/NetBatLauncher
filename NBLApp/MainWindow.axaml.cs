@@ -57,6 +57,23 @@ public partial class MainWindow : Window
     private async Task OnLoaded()
     {
         await this.Launcher.Registry.Read(createMissing: true);
+
+        var registry = this.Launcher.Registry;
+
+        if (!registry.HasSection("launcher"))
+            registry.AddSection("launcher");
+
+        bool openMaximized = registry.Get(
+            "launcher",
+            "openMaximized",
+            false
+        );
+
+        if (openMaximized)
+        {
+            this.WindowState = WindowState.Maximized;
+            this.IsMaximum = true;
+        }
     }
 
     private void Window_OnClickHide(object? sender, RoutedEventArgs e)
@@ -66,7 +83,7 @@ public partial class MainWindow : Window
 
     private void Window_OnClickMinMax(object? sender, RoutedEventArgs e)
     {
-        if (!this.IsMaximum)
+        if (this.WindowState != WindowState.Maximized)
         {
             this.WindowState = WindowState.Maximized;
         }
@@ -75,7 +92,7 @@ public partial class MainWindow : Window
             this.WindowState = WindowState.Normal;
         }
 
-        this.IsMaximum = !this.IsMaximum;
+        this.IsMaximum = this.WindowState == WindowState.Maximized;
     }
 
     private void Window_OnClickClose(object? sender, RoutedEventArgs e)

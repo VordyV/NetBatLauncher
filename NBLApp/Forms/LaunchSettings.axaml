@@ -41,6 +41,11 @@
 			<StackPanel Orientation="Horizontal"
                         HorizontalAlignment="Right"
                         Spacing="8">
+				
+				<Button Name="ButtonShortcut"
+						Click="ButtonShortcut_OnClick"
+						Content="{loc:Translate LaunchSettingsCreateShortcut}"/>
+				
 				<Button Name="ButtonCancel"
                         Click="ButtonCancel_OnClick"
                         Content="{loc:Translate Cancel}"/>

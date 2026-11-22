@@ -20,23 +20,16 @@ public sealed class LocaleProvider : INotifyPropertyChanged
     {
         get
         {
-            Logger.Info(
-                $"INDEXER: Key={key}, " +
-                $"Culture={System.Globalization.CultureInfo.CurrentUICulture.Name}, " +
-                $"Value={Locale.Get(key)}");
-
             return Locale.Get(key);
         }
     }
 
     private void OnLanguageChanged(object? sender, EventArgs e)
     {
-        Logger.Info("LocaleProvider: LanguageChanged received");
 
         PropertyChanged?.Invoke(
             this,
             new PropertyChangedEventArgs("Item[]"));
-        Logger.Info("LocaleProvider: Item[] notification sent");
 
         LanguageChanged?.Invoke(this, e);
     }

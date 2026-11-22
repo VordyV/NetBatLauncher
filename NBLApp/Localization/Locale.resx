@@ -534,4 +534,76 @@
   <data name="ServerModeAssaultLines" xml:space="preserve">
     <value>Assault Lines</value>
   </data>
+  <data name="MapsSearchPlaceholder" xml:space="preserve">
+    <value>Search maps...</value>
+  </data>
+  <data name="MapsEmpty" xml:space="preserve">
+    <value>No maps found</value>
+  </data>
+  <data name="MapsBack" xml:space="preserve">
+    <value>Back to maps</value>
+  </data>
+  <data name="MapsDescription" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="MapsGameMode" xml:space="preserve">
+    <value>Game mode</value>
+  </data>
+  <data name="MapsSize" xml:space="preserve">
+    <value>Map size</value>
+  </data>
+  <data name="MapsModeConquest" xml:space="preserve">
+    <value>Conquest</value>
+  </data>
+  <data name="MapsModeTitan" xml:space="preserve">
+    <value>Titan</value>
+  </data>
+  <data name="MapsModeNoVehicles" xml:space="preserve">
+    <value>No Vehicles</value>
+  </data>
+  <data name="MapsModeCoop" xml:space="preserve">
+    <value>Co-op</value>
+  </data>
+  <data name="MapsModeSingleplayer" xml:space="preserve">
+    <value>Singleplayer</value>
+  </data>
+  <data name="MapsModeAssaultLines" xml:space="preserve">
+    <value>Assault Lines</value>
+  </data>
+  <data name="MapsFilterAll" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="MapsFilterVanilla" xml:space="preserve">
+    <value>Vanilla</value>
+  </data>
+  <data name="MapsFilterMods" xml:space="preserve">
+    <value>Mods</value>
+  </data>
+  <data name="MapsTypeVanilla" xml:space="preserve">
+    <value>Vanilla</value>
+  </data>
+  <data name="MapsTypeMod" xml:space="preserve">
+    <value>Mod</value>
+  </data>
+  <data name="OpenMaximized" xml:space="preserve">
+    <value>Open maximized</value>
+  </data>
+  <data name="LaunchSettingsCreateShortcut" xml:space="preserve">
+    <value>Create shortcut</value>
+  </data>
+  <data name="LaunchSettingsEditShortcut" xml:space="preserve">
+    <value>Update shortcut</value>
+  </data>
+  <data name="LaunchSettingsShortcutCreated" xml:space="preserve">
+    <value>Shortcut created</value>
+  </data>
+  <data name="LaunchSettingsShortcutUpdated" xml:space="preserve">
+    <value>Shortcut updated</value>
+  </data>
+  <data name="LaunchSettingsShortcutError" xml:space="preserve">
+    <value>Failed to create shortcut</value>
+  </data>
+  <data name="LaunchSettingsShortcutSuccess" xml:space="preserve">
+    <value>Successfully!</value>
+  </data>
 </root>
