@@ -65,21 +65,35 @@ public partial class MainView : View
     {
         ProfileService.GetActiveProfilesPath();
 
+
+
         await Game.CheckInstall();
+
 
         if (Game.IsInstall)
         {
-            try { Game.GetCurrentClient(); }
+            try
+            {
+
+                Game.GetCurrentClient();
+
+            }
             catch (GameNotSetRegistryException)
             {
                 Logger.Warning("Current client not selected.");
             }
 
-            await UpdateClients(await Game.GetClients());
+            var clients = await Game.GetClients();
+
+
+            await UpdateClients(clients);
+
         }
         else
         {
+
             await UpdateClients([]);
+
         }
 
         await UpdateMods();
@@ -90,6 +104,7 @@ public partial class MainView : View
         _ = UpdateLabelPing();
 
         await UpdateButtonMA(Game.Status);
+
     }
     private void OnLanguageChanged(object? sender, EventArgs e)
     {

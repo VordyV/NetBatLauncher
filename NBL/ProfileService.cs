@@ -589,9 +589,6 @@ sv.allowTitanMovement 1
 
         return Task.CompletedTask;
     }
-
-
-
     public static string GetActiveProfilesPath()
     {
         var service = new ProfileService();
@@ -601,6 +598,38 @@ sv.allowTitanMovement 1
         return ActiveProfilesPath;
     }
 
+    private static bool IsValidProfilesJunction()
+    {
+        try
+        {
+            var link = new DirectoryInfo(DocumentsProfilesPath);
+
+            if (!link.Exists)
+                return false;
+
+            if ((link.Attributes & FileAttributes.ReparsePoint) == 0)
+                return false;
+
+            FileSystemInfo? target = link.ResolveLinkTarget(true);
+
+            if (target == null)
+                return false;
+
+            string actualPath = Path.GetFullPath(target.FullName)
+                .TrimEnd(Path.DirectorySeparatorChar);
+
+            string expectedPath = Path.GetFullPath(ActiveProfilesPath)
+                .TrimEnd(Path.DirectorySeparatorChar);
+
+            return actualPath.Equals(
+                expectedPath,
+                StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
+    }
     private void EnsureStorage()
     {
         Directory.CreateDirectory(StoragePath);
@@ -619,7 +648,13 @@ sv.allowTitanMovement 1
                 File.GetAttributes(DocumentsProfilesPath);
 
             if ((attributes & FileAttributes.ReparsePoint) != 0)
-                return;
+            {
+                if (IsValidProfilesJunction())
+                    return;
+
+                throw new IOException(
+                    "Documents Profiles junction exists, but points to an unexpected location.");
+            }
 
             // Переносим старые профили только при первом запуске.
             if (!Directory.EnumerateFileSystemEntries(ActiveProfilesPath).Any())
@@ -646,7 +681,13 @@ sv.allowTitanMovement 1
                 File.GetAttributes(DocumentsProfilesPath);
 
             if ((attributes & FileAttributes.ReparsePoint) != 0)
-                return;
+            {
+                if (IsValidProfilesJunction())
+                    return;
+
+                throw new IOException(
+                    "Documents Profiles junction exists, but points to an unexpected location.");
+            }
 
             throw new IOException(
                 "Documents Profiles already exists and is not a junction.");

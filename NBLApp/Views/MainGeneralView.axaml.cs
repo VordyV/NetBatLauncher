@@ -164,7 +164,9 @@ public partial class MainGeneralView : View
 
         try
         {
+            var clientsTimer = Stopwatch.StartNew();
             var clients = await Launcher.GetAvailableClientsAsync(GameId);
+            clientsTimer.Stop();
 
             PopulateComboBox(
                 ClientFilter,
@@ -176,21 +178,37 @@ public partial class MainGeneralView : View
 
             var servers = new List<(ApiServer Server, string ClientName, string ClientId)>();
 
+            var serverListTimer = Stopwatch.StartNew();
+
             foreach (var client in clients)
             {
+                var clientTimer = Stopwatch.StartNew();
+
                 try
                 {
                     var items = await Launcher.GetServersAsync(GameId, client.Ident);
-                    servers.AddRange(items.Select(s => (s, client.Name, client.Ident)));
+
+                    servers.AddRange(
+                        items.Select(s => (s, client.Name, client.Ident)));
+
+                    clientTimer.Stop();
+
                 }
                 catch (Exception ex)
                 {
-                    Logger.Warning($"Failed to load servers for {client.Ident}: {ex.Message}");
+                    clientTimer.Stop();
+
+                    Logger.Warning(
+                        $"Failed to load servers for {client.Ident}: {ex.Message}");
+
                 }
             }
 
-            using var semaphore = new SemaphoreSlim(5);
+            serverListTimer.Stop();
 
+            using var semaphore = new SemaphoreSlim(10);
+
+            var serverQueryTimer = Stopwatch.StartNew();
             var rows = await Task.WhenAll(servers.Select(async entry =>
             {
                 await semaphore.WaitAsync();
@@ -218,7 +236,7 @@ public partial class MainGeneralView : View
                         };
 
                         var stopwatch = Stopwatch.StartNew();
-                        await gameServer.LoadData(3000);
+                        await gameServer.LoadData(1000);
                         stopwatch.Stop();
 
                         var status = gameServer.Status;
@@ -265,6 +283,8 @@ public partial class MainGeneralView : View
                     semaphore.Release();
                 }
             }));
+
+            serverQueryTimer.Stop();
 
             _servers.Clear();
             _servers.AddRange(rows.OfType<ServerRow>().OrderBy(r => r.Name));
