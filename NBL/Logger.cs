@@ -3,13 +3,24 @@ using System.IO;
 using System.Text;
 using System.Management;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 
 namespace NBL.Services;
 
 public static class Logger
 {
     private static readonly object LockObject = new();
+    public static Stopwatch StartTimer(string name)
+    {
+        Info($"[PERF] {name} started");
+        return Stopwatch.StartNew();
+    }
 
+    public static void StopTimer(string name, Stopwatch stopwatch)
+    {
+        stopwatch.Stop();
+        Info($"[PERF] {name}: {stopwatch.ElapsedMilliseconds} ms");
+    }
     private const int LogRetentionDays = 30;
 
     public static string LogDirectory { get; } =
