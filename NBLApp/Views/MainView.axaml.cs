@@ -61,6 +61,7 @@ public partial class MainView : View
         Pages.ShowView("general", Game.Id);
     }
 
+
     protected async Task OnLoaded()
     {
         ProfileService.GetActiveProfilesPath();
