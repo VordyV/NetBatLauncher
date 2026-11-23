@@ -697,7 +697,7 @@ sv.allowTitanMovement 1
         {
             FileName = "cmd.exe",
             Arguments =
-                $"/d /c mklink /J \"{DocumentsProfilesPath}\" \"{ActiveProfilesPath}\"",
+                $"/d /c mklink /J \"Documents\\Battlefield 2142\\Profiles\" \"%LocalAppData%\\NetBat2142\\Profiles\\Active\"",
             UseShellExecute = false,
             CreateNoWindow = true,
             RedirectStandardOutput = true,
