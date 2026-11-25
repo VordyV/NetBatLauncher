@@ -27,7 +27,7 @@ public partial class MainWindow : Window
     public MainWindow(Launcher launcher)
     {
 
-        this.Loaded += async (sender, args) => await this.OnLoaded();
+        this.Loaded += async (_, _) => await Safe.RunAsync(this.OnLoaded, nameof(OnLoaded));
 
         this.Launcher = launcher;
 
@@ -54,10 +54,8 @@ public partial class MainWindow : Window
         this.DataContext = this;
     }
 
-    private async Task OnLoaded()
+    private Task OnLoaded()
     {
-        await this.Launcher.Registry.Read(createMissing: true);
-
         var registry = this.Launcher.Registry;
 
         if (!registry.HasSection("launcher"))
@@ -74,6 +72,8 @@ public partial class MainWindow : Window
             this.WindowState = WindowState.Maximized;
             this.IsMaximum = true;
         }
+
+        return Task.CompletedTask;
     }
 
     private void Window_OnClickHide(object? sender, RoutedEventArgs e)

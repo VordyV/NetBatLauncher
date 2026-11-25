@@ -65,10 +65,10 @@ public partial class MainGeneralView : View
 
         _isInitialized = true;
 
-        _timer.Tick += async (_, _) => await RefreshServersAsync();
+        _timer.Tick += async (_, _) => await Safe.RunAsync(RefreshServersAsync, nameof(RefreshServersAsync));
         _ageTimer.Tick += (_, _) => UpdateRefreshInfo();
 
-        Loaded += async (_, _) =>
+        Loaded += async (_, _) => await Safe.RunAsync(async () =>
         {
             LocaleProvider.Instance.LanguageChanged -= OnLanguageChanged;
             LocaleProvider.Instance.LanguageChanged += OnLanguageChanged;
@@ -79,7 +79,7 @@ public partial class MainGeneralView : View
             _ageTimer.Start();
 
             await RefreshServersAsync();
-        };
+        }, "MainGeneralView.Loaded");
 
         Unloaded += (_, _) =>
         {

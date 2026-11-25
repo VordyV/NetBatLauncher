@@ -38,11 +38,11 @@ public partial class SimpInst : UserControl
         InitializeComponent();
         PathPickerGamePath.SelectedPathsText = DefaultGamePath;
         Logger.Debug($"SimpInst opened: game='{Game.Id}'");
-        Loaded += async (_, _) =>
+        Loaded += async (_, _) => await Safe.RunAsync(async () =>
         {
             var context = new DialogContext();
             await OverlayDialog.ShowCustomAsync<Disclaimer>(new Disclaimer(Launcher, Game) { DataContext = context }, context, hostId: "main", options: new OverlayDialogOptions { IsCloseButtonVisible = false, CanResize = false });
-        };
+        }, "SimpInst.Disclaimer");
     }
 
     public SimpInst(Launcher launcher, Game game, string clientId, bool syncOnly)
@@ -60,7 +60,7 @@ public partial class SimpInst : UserControl
         PanelProgress.IsVisible = true;
         TextBlockStatus.Text = Locale.Get(_syncOnly ? "SyncPreparing" : "ClientPreparing");
 
-        Loaded += async (_, _) => await RunClientOperationAsync();
+        Loaded += async (_, _) => await Safe.RunAsync(RunClientOperationAsync, nameof(RunClientOperationAsync));
         Logger.Info($"Client dialog opened: client={clientId}, sync={syncOnly}");
     }
 
