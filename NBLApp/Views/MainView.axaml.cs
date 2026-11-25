@@ -53,7 +53,7 @@ public partial class MainView : View
 
         InitializeComponent();
 
-        Loaded += async (_, _) => await OnLoaded();
+        Loaded += async (_, _) => await Safe.RunAsync(OnLoaded, nameof(OnLoaded));
         Game.OnChangeStatus += UpdateButtonMA;
         Locale.LanguageChanged += OnLanguageChanged;
         DataContext = this;
@@ -64,7 +64,12 @@ public partial class MainView : View
 
     protected async Task OnLoaded()
     {
-        ProfileService.GetActiveProfilesPath();
+        try { ProfileService.GetActiveProfilesPath(); }
+        catch (Exception ex)
+        {
+            Logger.Error("Profiles preparation failed.", ex);
+            Notify.ShowError(Locale.Get("ClientChangeFailed"), ex.Message);
+        }
 
 
 

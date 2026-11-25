@@ -1,6 +1,7 @@
 ﻿
 using Avalonia;
 using System;
+using System.Threading.Tasks;
 using AutoUpdaterDotNET;
 using NBL.Services;
 
@@ -17,6 +18,15 @@ class Program
         Logger.Initialize();
         Logger.Info("Application starting");
         Logger.Info($"Arguments: {(args.Length > 0 ? string.Join(" ", args) : "none")}");
+
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+            Logger.Error("Unhandled exception (fatal)", e.ExceptionObject as Exception ?? new Exception(Convert.ToString(e.ExceptionObject)));
+
+        TaskScheduler.UnobservedTaskException += (_, e) =>
+        {
+            Logger.Error("Unobserved task exception", e.Exception);
+            e.SetObserved();
+        };
 
         try
         {

@@ -1,22 +1,29 @@
 ﻿using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics;
 
 namespace NBL.Services;
 
 public sealed class ProfileService
 {
-    private static readonly string StoragePath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "NetBat2142", "Profiles");
+    private readonly string StoragePath;
+    private readonly string ActiveProfilesPath;
+    private readonly string LivePath;
 
-    private static readonly string ActiveProfilesPath =
-        Path.Combine(StoragePath, "Active");
+    // true, если Profiles в Documents - чужая ссылка (другой лаунчер): тогда профили не переключаем и не трогаем.
+    public bool IsShared { get; private set; }
 
-    private static readonly string DocumentsProfilesPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-        "Battlefield 2142", "Profiles");
+    public ProfileService() : this(
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "NetBat2142", "Profiles"),
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Battlefield 2142", "Profiles")) { }
+
+    public ProfileService(string storagePath, string livePath)
+    {
+        StoragePath = storagePath;
+        ActiveProfilesPath = Path.Combine(storagePath, "Active");
+        LivePath = livePath;
+    }
 
     private const string DefaultGlobal = """
 GlobalSettings.setDefaultUser ""
@@ -547,181 +554,118 @@ sv.allowTitanMovement 1
     private const string OriginalClientId = "original";
 
 
-    public Task SwitchAsync(string currentClientId, string targetClientId)
+    public Task SwitchAsync(string currentClientId, string targetClientId) => Task.Run(() => Switch(currentClientId, targetClientId));
+
+    public static string GetActiveProfilesPath() => new ProfileService().PrepareLive();
+
+    private void Switch(string currentClientId, string targetClientId)
     {
         ValidateClientId(currentClientId);
         ValidateClientId(targetClientId);
 
-        EnsureStorage();
-        EnsureGeneratedFiles(ActiveProfilesPath);
+        PrepareLive();
+
+        if (IsShared)
+        {
+            Logger.Warning("Profile switch skipped: Profiles folder is shared with another launcher.");
+            return;
+        }
 
         SaveSnapshot(GetClientPath(currentClientId));
 
-        if (currentClientId.Equals(
-            targetClientId,
-            StringComparison.OrdinalIgnoreCase))
-            return Task.CompletedTask;
+        if (currentClientId.Equals(targetClientId, StringComparison.OrdinalIgnoreCase))
+            return;
 
         string targetPath = GetClientPath(targetClientId);
 
         if (!Directory.Exists(targetPath))
         {
             string originalPath = GetClientPath(OriginalClientId);
-
-            string sourcePath = Directory.Exists(originalPath)
-                ? originalPath
-                : GetClientPath(currentClientId);
+            string sourcePath = Directory.Exists(originalPath) ? originalPath : GetClientPath(currentClientId);
 
             CopyDirectory(sourcePath, targetPath);
 
             ResetAccountData(targetPath);
             EnsureGeneratedFiles(targetPath);
 
-            Logger.Info(
-                $"Initial profile created for client '{targetClientId}' from '{Path.GetFileName(sourcePath)}'");
+            Logger.Info($"Initial profile created for client '{targetClientId}' from '{Path.GetFileName(sourcePath)}'");
         }
 
         RestoreSnapshot(targetPath);
-        EnsureGeneratedFiles(ActiveProfilesPath);
+        EnsureGeneratedFiles(LivePath);
 
-        Logger.Info(
-            $"Profiles switched: '{currentClientId}' -> '{targetClientId}'");
-
-        return Task.CompletedTask;
-    }
-    public static string GetActiveProfilesPath()
-    {
-        var service = new ProfileService();
-        service.EnsureStorage();
-        EnsureGeneratedFiles(ActiveProfilesPath);
-
-        return ActiveProfilesPath;
+        Logger.Info($"Profiles switched: '{currentClientId}' -> '{targetClientId}'");
     }
 
-    private static bool IsValidProfilesJunction()
-    {
-        try
-        {
-            var link = new DirectoryInfo(DocumentsProfilesPath);
-
-            if (!link.Exists)
-                return false;
-
-            if ((link.Attributes & FileAttributes.ReparsePoint) == 0)
-                return false;
-
-            FileSystemInfo? target = link.ResolveLinkTarget(true);
-
-            if (target == null)
-                return false;
-
-            string actualPath = Path.GetFullPath(target.FullName)
-                .TrimEnd(Path.DirectorySeparatorChar);
-
-            string expectedPath = Path.GetFullPath(ActiveProfilesPath)
-                .TrimEnd(Path.DirectorySeparatorChar);
-
-            return actualPath.Equals(
-                expectedPath,
-                StringComparison.OrdinalIgnoreCase);
-        }
-        catch
-        {
-            return false;
-        }
-    }
-    private void EnsureStorage()
+    // Готовит папку профилей, которую читает игра (Documents\Battlefield 2142\Profiles, с учётом OneDrive).
+    // Ссылки (junction) больше не создаём: своя старая ссылка заменяется обычной папкой, чужая не трогается.
+    public string PrepareLive()
     {
         Directory.CreateDirectory(StoragePath);
-        Directory.CreateDirectory(ActiveProfilesPath);
+        IsShared = false;
 
-        // Если существуют старые профили клиентов,
-        // оставляем их в прежнем расположении.
-        // Это сохраняет совместимость с предыдущей версией.
+        string? link = GetLinkTarget(LivePath);
 
-        string documentsParent = Path.GetDirectoryName(DocumentsProfilesPath)!;
-        Directory.CreateDirectory(documentsParent);
-
-        if (Directory.Exists(DocumentsProfilesPath))
+        if (link != null && !SamePath(link, ActiveProfilesPath))
         {
-            FileAttributes attributes =
-                File.GetAttributes(DocumentsProfilesPath);
-
-            if ((attributes & FileAttributes.ReparsePoint) != 0)
-            {
-                if (IsValidProfilesJunction())
-                    return;
-
-                throw new IOException(
-                    "Documents Profiles junction exists, but points to an unexpected location.");
-            }
-
-            // Переносим старые профили только при первом запуске.
-            if (!Directory.EnumerateFileSystemEntries(ActiveProfilesPath).Any())
-                CopyDirectory(DocumentsProfilesPath, ActiveProfilesPath);
-
-            string backupPath = DocumentsProfilesPath +
-                ".nbl-backup-" +
-                DateTime.Now.ToString("yyyyMMdd-HHmmss");
-
-            Directory.Move(DocumentsProfilesPath, backupPath);
-
-            Logger.Info(
-                $"Previous Documents profiles backed up to '{backupPath}'");
+            IsShared = true;
+            Logger.Warning($"Profiles folder '{LivePath}' is a link to '{link}' (another launcher?). Per-client profile switching is disabled.");
+            return LivePath;
         }
 
-        CreateJunction();
+        if (link != null)
+        {
+            Logger.Info("Migrating legacy Profiles junction to a regular folder.");
+
+            string temp = LivePath + ".nbl-migrate-" + Guid.NewGuid().ToString("N");
+
+            try
+            {
+                if (Directory.Exists(ActiveProfilesPath)) CopyDirectory(ActiveProfilesPath, temp);
+                else Directory.CreateDirectory(temp);
+
+                Directory.Delete(LivePath, false);
+                Move(temp, LivePath);
+            }
+            finally
+            {
+                if (Directory.Exists(temp)) DeleteDirectory(temp);
+            }
+        }
+        else if (!Directory.Exists(LivePath))
+        {
+            Directory.CreateDirectory(LivePath);
+            if (Directory.Exists(ActiveProfilesPath)) CopyDirectory(ActiveProfilesPath, LivePath);
+        }
+
+        EnsureGeneratedFiles(LivePath);
+        return LivePath;
     }
 
-    private void CreateJunction()
+    // Не null только для настоящей ссылки (junction/symlink). У заглушек OneDrive атрибут ReparsePoint есть, а LinkTarget равен null.
+    private static string? GetLinkTarget(string path)
     {
-        if (Directory.Exists(DocumentsProfilesPath))
-        {
-            FileAttributes attributes =
-                File.GetAttributes(DocumentsProfilesPath);
-
-            if ((attributes & FileAttributes.ReparsePoint) != 0)
-            {
-                if (IsValidProfilesJunction())
-                    return;
-
-                throw new IOException(
-                    "Documents Profiles junction exists, but points to an unexpected location.");
-            }
-
-            throw new IOException(
-                "Documents Profiles already exists and is not a junction.");
-        }
-
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = "cmd.exe",
-            Arguments =
-                $"/d /c mklink /J \"Documents\\Battlefield 2142\\Profiles\" \"%LocalAppData%\\NetBat2142\\Profiles\\Active\"",
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
-
-        using var process = Process.Start(startInfo)
-            ?? throw new InvalidOperationException(
-                "Could not start junction creation.");
-
-        string output = process.StandardOutput.ReadToEnd();
-        string error = process.StandardError.ReadToEnd();
-
-        process.WaitForExit();
-
-        if (process.ExitCode != 0)
-        {
-            throw new IOException(
-                $"Could not create Profiles junction. {output} {error}");
-        }
-
-        Logger.Info(
-            $"Profiles junction created: '{DocumentsProfilesPath}' -> '{ActiveProfilesPath}'");
+        try { return new DirectoryInfo(path).LinkTarget; }
+        catch { return null; }
     }
+
+    private static bool SamePath(string a, string b)
+    {
+        static string Norm(string p) => Path.GetFullPath(p.StartsWith(@"\??\") ? p[4..] : p).TrimEnd('\\');
+        return string.Equals(Norm(a), Norm(b), StringComparison.OrdinalIgnoreCase);
+    }
+
+    // OneDrive и антивирусы могут на мгновение держать файлы и папки.
+    private static void Retry(Action action)
+    {
+        for (int attempt = 1; ; attempt++)
+        {
+            try { action(); return; }
+            catch (Exception ex) when (attempt < 5 && ex is (IOException or UnauthorizedAccessException)) { Thread.Sleep(200 * attempt); }
+        }
+    }
+
+    private static void Move(string source, string destination) => Retry(() => Directory.Move(source, destination));
 
     private static void ResetAccountData(string root)
     {
@@ -787,19 +731,19 @@ sv.allowTitanMovement 1
 
         try
         {
-            CopyDirectory(ActiveProfilesPath, temp);
+            CopyDirectory(LivePath, temp);
 
             if (Directory.Exists(destination))
-                Directory.Move(destination, old);
+                Move(destination, old);
 
             try
             {
-                Directory.Move(temp, destination);
+                Move(temp, destination);
             }
             catch
             {
                 if (!Directory.Exists(destination) && Directory.Exists(old))
-                    Directory.Move(old, destination);
+                    Move(old, destination);
 
                 throw;
             }
@@ -816,24 +760,24 @@ sv.allowTitanMovement 1
 
     private void RestoreSnapshot(string source)
     {
-        string temp = ActiveProfilesPath + ".nbl-temp-" + Guid.NewGuid().ToString("N");
-        string old = ActiveProfilesPath + ".nbl-old-" + Guid.NewGuid().ToString("N");
+        string temp = LivePath + ".nbl-temp-" + Guid.NewGuid().ToString("N");
+        string old = LivePath + ".nbl-old-" + Guid.NewGuid().ToString("N");
 
         try
         {
             CopyDirectory(source, temp);
 
-            if (Directory.Exists(ActiveProfilesPath))
-                Directory.Move(ActiveProfilesPath, old);
+            if (Directory.Exists(LivePath))
+                Move(LivePath, old);
 
             try
             {
-                Directory.Move(temp, ActiveProfilesPath);
+                Move(temp, LivePath);
             }
             catch
             {
-                if (!Directory.Exists(ActiveProfilesPath) && Directory.Exists(old))
-                    Directory.Move(old, ActiveProfilesPath);
+                if (!Directory.Exists(LivePath) && Directory.Exists(old))
+                    Move(old, LivePath);
 
                 throw;
             }
