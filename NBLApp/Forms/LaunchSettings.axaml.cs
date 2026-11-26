@@ -150,8 +150,14 @@ public partial class LaunchSettings : UserControl
                 FormItem.SetLabel(control, label);
 
             MainContent.Items.Add(control);
-        }
 
+            if (param.Id is "fullscreen" or "widescreen" && control is CheckBox modeCheckBox)
+            {
+                modeCheckBox.Click += DisplayModeCheckBox_OnClick;
+            }
+            
+        }
+        UpdateDisplayModeControls();
         SubscribeLanguage();
     }
 
@@ -201,6 +207,35 @@ public partial class LaunchSettings : UserControl
 
         UpdateShortcutButton();
 
+    }
+    private void DisplayModeCheckBox_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (!Controls.TryGetValue("fullscreen", out Control? fullControl) ||
+            !Controls.TryGetValue("widescreen", out Control? wideControl))
+            return;
+
+        if (sender is CheckBox checkBox && checkBox.IsChecked == true)
+        {
+            if (checkBox == fullControl)
+                ((CheckBox)wideControl).IsChecked = false;
+            else if (checkBox == wideControl)
+                ((CheckBox)fullControl).IsChecked = false;
+        }
+
+        UpdateDisplayModeControls();
+    }
+
+    private void UpdateDisplayModeControls()
+    {
+        if (!Controls.TryGetValue("fullscreen", out Control? fullControl) ||
+            !Controls.TryGetValue("widescreen", out Control? wideControl))
+            return;
+
+        bool fullscreen = ((CheckBox)fullControl).IsChecked == true;
+        bool widescreen = ((CheckBox)wideControl).IsChecked == true;
+
+        fullControl.IsEnabled = !widescreen;
+        wideControl.IsEnabled = !fullscreen;
     }
     private string GetShortcutPath()
     {

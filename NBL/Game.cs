@@ -3,6 +3,7 @@ using NBL.Services;
 using System.Diagnostics;
 using System.Text.Json;
 using static NBL.LaunchParamDict;
+using NBL.Models;
 
 namespace NBL;
 
@@ -244,14 +245,23 @@ public class Game
     public async Task<StateSnapshot?> GetStateSnapshot() =>
         await Launcher.GetStateSnapshot(Id);
 
+
     public string[] BuildLaunchParams(Dictionary<string, object> parameters)
     {
         List<string> args = new();
 
+        bool widescreen = parameters.TryGetValue("widescreen", out object? wideValue)
+            && wideValue is true;
+
+        bool fullscreen = !widescreen
+            && parameters.TryGetValue("fullscreen", out object? fullValue)
+            && fullValue is true;
+
         foreach (var param in parameters)
         {
             if (!LaunchParams.TryGetValue(param.Key, out ILaunchParam? launchParam))
-                throw new LaunchParamNotFoundException($"Параметр запуска '{param.Key}' не зарегистрирован");
+                throw new LaunchParamNotFoundException(
+                    $"Параметр запуска '{param.Key}' не зарегистрирован");
 
             IEnumerable<string> builtArgs = launchParam switch
             {
@@ -260,15 +270,39 @@ public class Game
                 LaunchParamDict p => p.BuildArgs((string)param.Value),
                 LaunchOptionDict p => p.BuildArgs((string[])param.Value),
                 LaunchParamCustom p => p.BuildArgs((string)param.Value),
-                _ => throw new InvalidOperationException($"Unknown launch parameter type: {launchParam.GetType().Name}")
+                _ => throw new InvalidOperationException(
+                    $"Unknown launch parameter type: {launchParam.GetType().Name}")
             };
 
             args.AddRange(builtArgs);
         }
 
-        Logger.Debug($"Built launch arguments for '{Id}': {(args.Count > 0 ? string.Join(" ", args) : "none")}");
+        if (fullscreen)
+        {
+            try
+            {
+                GameVideoSettings video =
+                    new VideoSettingsService(VideoSettingsPath.GetPath()).Load();
+
+                args.Add("+szx");
+                args.Add(video.ResolutionWidth.ToString());
+
+                args.Add("+szy");
+                args.Add(video.ResolutionHeight.ToString());
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning($"Failed to load game resolution: {ex.Message}");
+            }
+        }
+
+        Logger.Debug(
+            $"Built launch arguments for '{Id}': " +
+            (args.Count > 0 ? string.Join(" ", args) : "none"));
+
         return args.ToArray();
     }
+
 
     public void SetLaunchParameters(Dictionary<string, object> parameters)
     {
@@ -308,7 +342,7 @@ public class Game
             }
             else if (param is LaunchParamDict dict)
             {
-                string defaultValue = dict.Dictionary.Keys.FirstOrDefault() ?? "";
+                string defaultValue = dict.DefaultValue;
                 string value = exists ? Registry.Get(Id, key, defaultValue) : defaultValue;
                 parameters[param.Id] = dict.Dictionary.ContainsKey(value) ? value : defaultValue;
             }

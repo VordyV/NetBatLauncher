@@ -67,6 +67,14 @@ public partial class MainWindow : Window
             false
         );
 
+        var screen = TopLevel.GetTopLevel(this)?.Screens.ScreenFromWindow(this);
+
+        if (screen != null)
+        {
+            Width = Math.Min(1640, screen.WorkingArea.Width / screen.Scaling);
+            Height = Math.Min(940, screen.WorkingArea.Height / screen.Scaling);
+        }
+
         if (openMaximized)
         {
             this.WindowState = WindowState.Maximized;

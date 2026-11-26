@@ -226,8 +226,8 @@ public partial class MainMapsView : View
 
         var tile = new Border
         {
-            Width = 270,
-            Margin = new Thickness(0, 0, 12, 12),
+            Width = 260,
+            Margin = new Thickness(0, 0, 10, 10),
             Padding = new Thickness(10),
             Background = Brush.Parse("#55000000"),
             BorderBrush = Brush.Parse("#33FFFFFF"),

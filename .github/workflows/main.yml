@@ -86,8 +86,8 @@ jobs:
           $version = "${{ github.event.release.tag_name }}"
           $exe = "NetBat2142-$version-win.exe"
           $zip = "NetBat2142-$version-win.zip"
-          Rename-Item -Path "NetBat2142.exe" -NewName $exe
-          Compress-Archive -Path $exe -DestinationPath $zip -CompressionLevel Optimal
+          Copy-Item "NetBat2142.exe" $exe
+          Compress-Archive -Path "NetBat2142.exe" -DestinationPath $zip -CompressionLevel Optimal
 
       - name: Create/Update GitHub Release
         uses: softprops/action-gh-release@v2
