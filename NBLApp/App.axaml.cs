@@ -60,25 +60,6 @@ public partial class App : Application
 
             ILaunchParam[] launchParams =
             [
-                new LaunchParamDict
-    {
-        Id = "resolution",
-        Name = Locale.Get("Resolution"),
-        NameKey = "Resolution",
-        Description = null,
-        DescriptionKey = null,
-        ShortDescription = "Game window resolution",
-        Dictionary = new()
-        {
-            ["2560×1440"] = "+szx 2560 +szy 1440",
-            ["1920×1080"] = "+szx 1920 +szy 1080",
-            ["1920x1440"] = "+szx 1920 +szy 1440",
-            ["1600×900"] = "+szx 1600 +szy 900",
-            ["1280×1024"] = "+szx 1280 +szy 1024",
-            ["1024×768"] = "+szx 1024 +szy 768",
-            ["800×600"] = "+szx 800 +szy 600"
-        }
-    },
     new LaunchParamBool
     {
         Id = "fullscreen",

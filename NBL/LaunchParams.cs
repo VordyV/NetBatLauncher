@@ -45,10 +45,14 @@ public class LaunchParamBool : LaunchParam<bool>
 public class LaunchParamDict : LaunchParam<string>
 {
     public Dictionary<string, string> Dictionary { get; set; } = new();
+    public string DefaultValue { get; set; } = "";
 
     public override IEnumerable<string> BuildArgs(string param)
     {
         if (!Dictionary.TryGetValue(param, out string? args))
+            args = DefaultValue;
+
+        if (string.IsNullOrEmpty(args))
             yield break;
 
         foreach (string arg in SplitArguments(args))

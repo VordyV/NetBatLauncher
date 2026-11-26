@@ -182,13 +182,23 @@ public partial class SettingsGear : UserControl
             CheckBoxBloom.IsChecked = VideoSettings.UseBloom;
 
             LoadRefreshRates();
+            UpdateResolutionAvailability();
         }
         catch
         {
             DisableVideoSettings();
         }
     }
+    private void UpdateResolutionAvailability()
+    {
+        bool widescreen =
+            Game.GetRegistry().Get(Game.Id, "launch.widescreen", true);
 
+        bool enabled = VideoSettingsAvailable && !widescreen;
+
+        ComboBoxResolution.IsEnabled = enabled;
+        ComboBoxRefreshRate.IsEnabled = enabled;
+    }
     private void FillQualityComboBox(ComboBox comboBox, int value)
     {
         comboBox.ItemsSource = new[]

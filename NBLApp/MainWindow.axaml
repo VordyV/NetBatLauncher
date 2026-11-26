@@ -16,9 +16,11 @@
         <c:Window.TitleContent>
             <TextBlock Foreground="#fcffff" Text="{Binding LauncherTitle}"/>
         </c:Window.TitleContent>
-        <Grid>
-            <ContentControl Name="MainContent"/>
-            <u:OverlayDialogHost HostId="main"/>
-        </Grid>
+		<Viewbox Stretch="Fill" StretchDirection="Both">
+			<Grid Width="1600" Height="900">
+				<ContentControl Name="MainContent"/>
+				<u:OverlayDialogHost HostId="main"/>
+			</Grid>
+		</Viewbox>
     </c:Window>
 </Window>
